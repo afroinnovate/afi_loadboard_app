@@ -10,13 +10,13 @@ Welcome to the AfroInnovate TMS Landing Page App built using React. This reposit
 - [License](#license)
 
 ## Dependencies
-
+Go to react readme here
 This app is built using the React framework and has the following main dependencies:
 
 - `react`: Core library for building user interfaces
 - `react-dom`: React library for DOM rendering
 - `react-router-dom`: For routing and navigation
-- ... _(Add other dependencies as needed)_
+
 
 You can check out `package.json` for a full list of dependencies.
 
