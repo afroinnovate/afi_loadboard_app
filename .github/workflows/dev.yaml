@@ -25,7 +25,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
 
     - name: Extract tag based on environment from manifest.yaml
       # if: github.ref == 'refs/heads/main'
