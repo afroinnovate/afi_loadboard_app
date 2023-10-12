@@ -26,9 +26,10 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Extract tag based on environment from manifest.yaml
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      # if: github.ref == 'refs/heads/main'
+      if: github.event_name == 'push'
       run: |
-        ENV=${{ github.event.inputs.env:-'prod' }}
+        ENV=${{ github.event.inputs.env || 'prod' }}
         TAG=$(grep -A1 "${ENV}:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
         echo "TAG=${TAG}" >> $GITHUB_ENV
