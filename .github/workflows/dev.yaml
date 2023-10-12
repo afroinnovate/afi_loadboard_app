@@ -24,6 +24,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Extract tag based on environment from manifest.yaml
       # if: github.ref == 'refs/heads/main'
