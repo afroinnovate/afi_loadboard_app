@@ -37,6 +37,29 @@ To run this project locally:
 4. Run the development server:
 `npm start`
 
+## Running with Docker Compose
+
+Using Docker Compose is a convenient way to run multi-container applications. With the provided `docker-compose.yml` file, you can easily start the `afi-tms-app` service.
+
+### Prerequisites
+
+- Ensure you have Docker and Docker Compose installed. If not, download and install [Docker](https://www.docker.com/get-started) and follow the [Docker Compose installation guide](https://docs.docker.com/compose/install/).
+
+### Building and Running the React App with Docker Compose
+
+1. Navigate to the root directory of the project where the `docker-compose.yml` file resides.
+2. Build and start the service:
+   ```shell
+   docker-compose up --build
+
+After the services start, you can access the app in your browser at http://localhost:3000.
+
+**NB**: Your development environment is being listened to, so any change you made, you don't need to run the docker again, it'll pick it up from the host and sync the container automatically.
+
+To stop the services, simply run:
+
+```docker-compose down```
+
 
 This will start the development server, and you can view the app in your browser at `http://localhost:3000`.
 
@@ -61,6 +84,7 @@ We appreciate all contributions! If you'd like to contribute, please follow thes
 9. Create a Pull Request targeting the `develop` branch of the original repository.
 
 Once your Pull Request is approved and merged, you can safely delete your branch.
+
 
 
 

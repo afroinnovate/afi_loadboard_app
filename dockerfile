@@ -1,20 +1,18 @@
-# Use an official Node runtime as a parent image
-FROM node:latest
+# Use a specific Node.js version for consistent behavior
+FROM node:20
 
-# Set working directory in docker
+# Set working directory in Docker
 WORKDIR /app
 
-# Only copy the package.json file to work directory
-COPY package*.json /app/
+# Copy package.json and package-lock.json to leverage Docker cache
+# This way, npm install only runs if these files change
+COPY ./app/package*.json ./
 
 # Install all dependencies
 RUN npm install
 
-# Copy all files from local machine to work directory
-COPY ./app /app/
-
-# Build the app
-RUN npm run build
+# Copy the rest of the application code
+COPY ./app .
 
 # Specify port
 EXPOSE 3000
