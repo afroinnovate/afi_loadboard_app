@@ -6,6 +6,7 @@ on:
       - 'stage-v*'  # Only run for tags with the prefix "stage-v"
     branches:
       - develop
+      - bugfix/*
   workflow_dispatch:
     inputs:
       env:
@@ -19,7 +20,7 @@ env:
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'develop') || github.event_name == 'workflow_dispatch' 
+    if: (github.event_name == 'push' && contains(github.ref, 'bugfix/')) || github.event_name == 'workflow_dispatch' 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -29,14 +30,15 @@ jobs:
         TAG=$(grep -A1 "${{ github.event.inputs.env }}:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Create Release      
+      uses: ncipollo/release-action@v1.13.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        release_name: Release ${{ env.RELEASE_TAG }}
+        tag: ${{ env.RELEASE_TAG }}
+        name: Prerelease ${{ env.RELEASE_TAG }}
+        artifacts: |
+          build/*
         draft: false
         prerelease: true
         body: |
@@ -72,30 +74,30 @@ jobs:
       image_digest: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
 
   
-  deploy:
-    needs: build_and_push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout files
-        uses: actions/checkout@v3
+  # deploy:
+  #   needs: build_and_push
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout files
+  #       uses: actions/checkout@v3
 
-      - name: Get Tag
-        run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
+  #     - name: Get Tag
+  #       run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+  #     - name: Install doctl
+  #       uses: digitalocean/action-doctl@v2
+  #       with:
+  #         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Provision Droplet and deploy container
-        run: |
-          doctl compute droplet create afi-load-board-app \
-            --tag-names ${{ env.RELEASE_TAG }} \
-            --region sfo3 \
-            --size s-1vcpu-1gb \
-            --image docker-20-04 \
-            --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }} \
-            --wait \
-            --enable-monitoring
+  #     - name: Provision Droplet and deploy container
+  #       run: |
+  #         doctl compute droplet create afi-load-board-app \
+  #           --tag-names ${{ env.RELEASE_TAG }} \
+  #           --region sfo3 \
+  #           --size s-1vcpu-1gb \
+  #           --image docker-20-04 \
+  #           --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }} \
+  #           --wait \
+  #           --enable-monitoring
      
           
