@@ -43,10 +43,10 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: echo "RELEASE_TAG=${{ github.sha }}" >> $GITHUB_ENV
       
-    # - name: Set Git Config
-    #   run: |
-    #     git config --global --replace-all user.email '"tew9'
-    #     git config --global --replace-all user.name 'tango.tew@outlook.com'
+    - name: Set Git Config
+      run: |
+        git config --global --replace-all user.email '"tew9'
+        git config --global --replace-all user.name 'tango.tew@outlook.com'
     
     - name: Create Git Tag
       # if: github.ref == 'refs/heads/main'
