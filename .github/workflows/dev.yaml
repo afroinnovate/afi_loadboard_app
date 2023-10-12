@@ -39,7 +39,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build_and_deploy:
+  build_and_push:
     needs: [prepare]
     runs-on: ubuntu-latest
     steps:
@@ -49,29 +49,32 @@ jobs:
     - name: Determine tag for image
       run: echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-    - name: Build and Push Docker image
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: ./aDockerfile
         push: true
         tags: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
 
     outputs:
       image_digest: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
 
   
   deploy:
-    needs: build
+    needs: build_and_push
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
         uses: actions/checkout@v3
 
       - name: Get Tag
-        run: echo "RELEASE_TAG=${{ needs.build.outputs.image_digest }}" >> $GITHUB_ENV
+        run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
 
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
