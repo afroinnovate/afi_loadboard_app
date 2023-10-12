@@ -1,6 +1,6 @@
-# afi-tms-app (AfroInnovate Transportation Management Service)
+# afi-loadboard-app (AfroInnovate Transportation Management Service)
 
-Welcome to the AfroInnovate TMS Landing Page App built using React. This repository houses the frontend codebase for the landing page that showcases our innovative transportation management solutions.
+Welcome to the AfroInnovate loadboard Landing Page App built using React. This repository houses the frontend codebase for the landing page that showcases our innovative transportation management solutions.
 
 ## Table of Contents
 
@@ -26,10 +26,10 @@ You can check out `package.json` for a full list of dependencies.
 To run this project locally:
 
 1. Clone the repository:
-`git clone https://github.com/afroinnovate/afi-tms-app.git`
+`git clone https://github.com/afroinnovate/afi-loadboard-app.git`
 
 2. Change directory into the cloned repository:
-`cd afi-tms-app`
+`cd afi-loadboard-app`
 
 3. Install the dependencies:
 `npm install`
@@ -39,7 +39,7 @@ To run this project locally:
 
 ## Running with Docker Compose
 
-Using Docker Compose is a convenient way to run multi-container applications. With the provided `docker-compose.yml` file, you can easily start the `afi-tms-app` service.
+Using Docker Compose is a convenient way to run multi-container applications. With the provided `docker-compose.yml` file, you can easily start the `afi-loadboard-app` service.
 
 ### Prerequisites
 
@@ -69,10 +69,10 @@ We appreciate all contributions! If you'd like to contribute, please follow thes
 
 1. Fork the repository.
 2. Clone your forked repository:
-`git clone https://github.com/afroinnovate/afi-tms-app.git`
+`git clone https://github.com/afroinnovate/afi-loadboard-app.git`
 
 4. Change directory into the cloned repository:
-`cd afi-tms-app`
+`cd afi-loadboard-app`
 
 6. Create a new branch off the `develop` branch:
 `git checkout -b feature/my-new-feature develop`
