@@ -41,11 +41,16 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: echo "RELEASE_TAG=${{ github.sha }}" >> $GITHUB_ENV
       
+    - name: Set Git Config
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+    
     - name: Create Git Tag
       # if: github.ref == 'refs/heads/main'
       if: github.event_name == 'push'
       run: |
-        git tag -a v${{ env.TAG }} -m "Release v${{ env.TAG }}"
+        git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push origin v${{ github.sha }}
 
     - name: Create Release
