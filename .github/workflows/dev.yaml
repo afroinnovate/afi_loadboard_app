@@ -29,7 +29,7 @@ jobs:
 
     - name: Extract tag based on environment from manifest.yaml
       # if: github.ref == 'refs/heads/main'
-      if: github.event_name == 'push'
+      if: github.event_name == 'workflow_dispatch'
       run: |
         ENV=${{ github.event.inputs.env || 'prod' }}
         TAG=$(grep -A1 "${ENV}:" manifest.yaml | grep 'version:' | awk '{print $2}')
@@ -43,20 +43,20 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: echo "RELEASE_TAG=${{ github.sha }}" >> $GITHUB_ENV
       
-    # - name: Set Git Config
-    #   run: |
-    #     git config --global --replace-all user.email '"tew9'
-    #     git config --global --replace-all user.name 'tango.tew@outlook.com'
+    - name: Set Git Config
+      run: |
+        git config --global --replace-all user.email 'GitHub Action'
+        git config --global --replace-all user.name 'actions@github.com'
     
     - name: Create Git Tag
       # if: github.ref == 'refs/heads/main'
-      if: github.event_name == 'push'
+      if: github.event_name == 'workflow_dispatch'
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
 
     - name: Create GitHub Release
-      if: github.event_name == 'push'
+      if: github.event_name == 'workflow_dispatch'
       run: |
         curl -X POST \
           -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
