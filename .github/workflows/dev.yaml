@@ -19,7 +19,7 @@ env:
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ github.event_name == "workflow_dispatch" }} || (github.event_name == "push" && github.ref == "develop")
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
