@@ -45,8 +45,8 @@ jobs:
       
     - name: Set Git Config
       run: |
-        git config user.name "tew9"
-        git config user.email "tango.tew@outlook.com"
+        git config --global --replace-all user.email '"tew9'
+        git config --global --replace-all user.name 'tango.tew@outlook.com'
     
     - name: Create Git Tag
       # if: github.ref == 'refs/heads/main'
