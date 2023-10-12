@@ -1,11 +1,20 @@
-version: '3'
-services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
+version: '3'  # Specifies the version of the Docker Compose file format.
+
+services:  # The main section defining each service (container) that will be run.
+  web:  # Name of the service (in this case, the React app).
+    build:  # Configuration for building the Docker image for the service.
+      context: .  # Specifies the directory containing the source code (and Dockerfile).
+      dockerfile: Dockerfile  # Path to the Dockerfile, relative to the context.
+    ports:  # Port mapping between the host and the container.
+      - "3000:3000"  # Maps port 3000 on the host to port 3000 in the container.
+    volumes:  # Define the storage volumes attached to this service.
+      - ./app:/app # Mounts the current directory on the host to /app in the container, allowing for real-time code changes during development.
+      - /app/node_modules  # An anonymous volume for node_modules. Ensures the host's node_modules doesn't override the container's.
+    environment:  # Environment variables to be set inside the container.
+      - REACT_APP_API_ENDPOINT=http://localhost:5000/api  # The endpoint for the API. Assumes the API service will be reachable via the name 'api' within the same network.
+    networks:  # Specifies which networks this service is connected to.
+      - afinetwork  # Connects the service to the user-defined bridge network named 'mynetwork'.
+
+networks:  # Section to define custom networks.
+  afinetwork:  # Name of the custom network.
+    driver: bridge  # Specifies that this network uses Docker's default bridge network driver.
