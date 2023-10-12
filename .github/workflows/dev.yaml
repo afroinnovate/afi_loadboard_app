@@ -55,23 +55,21 @@ jobs:
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
 
-    - name: Create Release
-      # if: github.ref == 'refs/heads/main'
+    - name: Create GitHub Release
       if: github.event_name == 'push'
-      uses: ncipollo/release-action@v1
-      with:
-        token: ${{ secrets.ORG_GITHUB_TOKEN }}
-        tag: ${{ env.TAG }}
-        name: Prerelease ${{ env.TAG }}
-        artifacts: |
-          build/*
-        draft: false
-        prerelease: true
-        body: |
-            Changes in this Release
-            - Added Automation for docker build and push
-            - Added autodeployment pipeline 
-        repo: ${{ github.repository }}
+      run: |
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/releases \
+          -d '{
+            "tag_name": "'${{ env.TAG }}'",
+            "name": "Prerelease '${{ env.TAG }}'",
+            "body": "Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline",
+            "draft": false,
+            "prerelease": true
+          }'
+    
     
     outputs:
       TAG: "${{env.RELEASE_TAG}}"
