@@ -51,7 +51,7 @@ jobs:
       if: github.event_name == 'push'
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
-        git push origin v${{ github.sha }}
+        git push origin refs/tags/${{ env.TAG }}
 
     - name: Create Release
       # if: github.ref == 'refs/heads/main'
