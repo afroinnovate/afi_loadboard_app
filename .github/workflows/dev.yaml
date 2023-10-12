@@ -39,21 +39,28 @@ jobs:
         echo "${{env.RELEASE_TAG}}"
     
 
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        custom_tag: ${{ env.TAG }}
+
     - name: Use SHA for tag if not main
       if: github.ref == 'refs/heads/main'
       run: echo "RELEASE_TAG=${{ github.sha }}" >> $GITHUB_ENV
       
-    - name: Set Git Config
-      run: |
-        git config --global --replace-all user.email '"tew9'
-        git config --global --replace-all user.name 'tango.tew@outlook.com'
+    # - name: Set Git Config
+    #   run: |
+    #     git config --global --replace-all user.email '"tew9'
+    #     git config --global --replace-all user.name 'tango.tew@outlook.com'
     
-    - name: Create Git Tag
-      # if: github.ref == 'refs/heads/main'
-      if: github.event_name == 'push'
-      run: |
-        git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
-        git push --no-verify origin refs/tags/${{ env.TAG }}
+    # - name: Create Git Tag
+    #   # if: github.ref == 'refs/heads/main'
+    #   if: github.event_name == 'push'
+    #   run: |
+    #     git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
+    #     git push --no-verify origin refs/tags/${{ env.TAG }}
 
     - name: Create Release
       # if: github.ref == 'refs/heads/main'
