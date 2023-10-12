@@ -1,2 +1,8 @@
 dev:
   version: stage-v0.0.1
+
+test:
+  version: stage-v0.0.1
+
+prod:
+  version: v0.0.1
