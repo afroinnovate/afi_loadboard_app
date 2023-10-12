@@ -1,4 +1,4 @@
-name: Build, Tag and Deploy
+name: deploy dev
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
       env:
         description: 'Environment (dev/test/prod/...)'
         required: true
+        default: 'dev'
 
 env:
   REPOSITORY: tangotew/afi-load-board-app
@@ -26,18 +27,23 @@ jobs:
     - name: Extract tag based on environment from manifest.yaml
       run: |
         TAG=$(grep -A1 "${{ github.event.inputs.env }}:" manifest.yaml | grep 'version:' | awk '{print $2}')
-        echo "MATCHING_TAG=${TAG}" >> $GITHUB_ENV
+        echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
 
-
-    - name: Create GitHub Release
+    - name: Create Release
+      id: create_release
       uses: actions/create-release@v1
-      with:
-        tag_name: ${{ env.MATCHING_TAG }}
-        release_name: Release ${{ env.MATCHING_TAG }}
-        draft: false
-        prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        release_name: Release ${{ env.RELEASE_TAG }}
+        draft: false
+        prerelease: true
+        body: |
+            Changes in this Release
+            - Added Automation for docker build and push
+            - Added autodeployment pipeline 
+        repo: ${{ github.repository }}
 
   build_and_push:
     needs: [prepare]
