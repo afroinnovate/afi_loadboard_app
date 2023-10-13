@@ -6,7 +6,7 @@ services:  # The main section defining each service (container) that will be run
       context: .  # Specifies the directory containing the source code (and Dockerfile).
       dockerfile: Dockerfile  # Path to the Dockerfile, relative to the context.
     ports:  # Port mapping between the host and the container.
-      - "3000:3000"  # Maps port 3000 on the host to port 3000 in the container.
+      - "80:3000"  # Maps port 3000 on the host to port 3000 in the container.
     volumes:  # Define the storage volumes attached to this service.
       - ./app:/app # Mounts the current directory on the host to /app in the container, allowing for real-time code changes during development.
       - /app/node_modules  # An anonymous volume for node_modules. Ensures the host's node_modules doesn't override the container's.
