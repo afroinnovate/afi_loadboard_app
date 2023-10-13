@@ -55,7 +55,7 @@ jobs:
         echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
 
     - name: Push Git Tag
-      if: ${{ steps.check_tag.outputs.tag-exists }} != true && (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop')
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
