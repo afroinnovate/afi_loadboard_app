@@ -121,7 +121,7 @@ jobs:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.ORG_GITHUB_TOKEN }}
+          token: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
 
       - name: Provision Droplet and deploy container
         run: |
