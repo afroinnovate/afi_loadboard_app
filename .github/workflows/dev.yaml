@@ -20,7 +20,7 @@ jobs:
         token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
     - name: Extract tag based on environment from manifest.yaml
-      if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+      if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
       run: |
         TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
@@ -64,61 +64,46 @@ jobs:
     needs: [prepare]
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Determine tag for image
-      run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+      - name: Determine tag for image
+        run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
 
-    - name: Display tag
-      run: echo "tag=${{env.RELEASE_TAG}}"
+      - name: Display tag
+        run: echo "tag=${{env.RELEASE_TAG}}"
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # - name: Set Docker Hub credentials
-    #   run: |
-    #     echo "${{ secrets.DOCKER_USERNAME }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-    #   env:
-    #     DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-    #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Check if Docker image exists
-      id: check-image
-      run: |
-        DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
-        IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
-        if [ $IMAGE_CHECK -eq 200 ]; then
-          echo "Image already exists on Docker Hub"
-          echo "image_exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "Image does not exist on Docker Hub"
-          echo "image_exists=false" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Build and push Docker image
-      if: steps.check-image.outputs.image_exists == 'false'
-      run: |
-        DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
-        docker build -t $DOCKER_IMAGE .
-        docker push $DOCKER_IMAGE
-    
-    - name: Display tag
-      run: echo "::notice title='Tag'::${{env.RELEASE_TAG}}"
-  
-   
-    # - name: Build and push
-    #   uses: docker/build-push-action@v2
-    #   with:
-    #     context: .
-    #     push: true
-    #     tags: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
+      - name: Check if Docker image exists
+        id: check-image
+        run: |
+          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+          IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
+          if [ $IMAGE_CHECK -eq 200 ]; then
+            echo "Image already exists on Docker Hub"
+            echo "image_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image does not exist on Docker Hub"
+            echo "image_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Build and push Docker image
+        if: steps.check-image.outputs.image_exists == 'false'
+        run: |
+          DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
+          docker build -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
+      
+      - name: Display tag
+        run: echo "::notice title='Tag'::${{env.RELEASE_TAG}}"
 
     outputs:
-      image_digest: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
+        image_digest: ${{ env.RELEASE_TAG }}
 
   
   # deploy:
