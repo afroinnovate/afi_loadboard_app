@@ -2,25 +2,17 @@ name: deploy dev
 
 on:
   push:
-    tags:
-      - 'stage-v*'  # Only run for tags with the prefix "stage-v"
     branches:
       - develop
-      - bugfix/*
   workflow_dispatch:
-    inputs:
-      env:
-        description: 'Environment (dev/test/prod/...)'
-        required: true
-        default: 'dev'
-
+    
 env:
   REPOSITORY: tangotew/afi-load-board-app
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && contains(github.ref, 'bugfix/')) || github.event_name == 'workflow_dispatch' 
+    if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -28,34 +20,30 @@ jobs:
         token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
     - name: Extract tag based on environment from manifest.yaml
-      # if: github.ref == 'refs/heads/main'
-      if: github.event_name == 'workflow_dispatch'
+      if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
       run: |
-        ENV=${{ github.event.inputs.env || 'prod' }}
-        TAG=$(grep -A1 "${ENV}:" manifest.yaml | grep 'version:' | awk '{print $2}')
+        TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
         echo "TAG=${TAG}" >> $GITHUB_ENV
         echo $TAG
         echo "${{env.RELEASE_TAG}}"
     
-
     - name: Use SHA for tag if not main
-      if: github.ref == 'refs/heads/main'
-      run: echo "RELEASE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+      if: github.ref == 'refs/heads/develop'
+      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
       
     - name: Set Git Config
       run: |
         git config --global --replace-all user.email 'GitHub Action'
         git config --global --replace-all user.name 'actions@github.com'
     
-    - name: Create Git Tag
-      # if: github.ref == 'refs/heads/main'
+    - name: Push Git Tag
       if: github.event_name == 'workflow_dispatch'
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
 
-    - name: Create GitHub Release
+    - name: Create PreRelease
       if: github.event_name == 'workflow_dispatch'
       run: |
         curl -X POST \
@@ -70,55 +58,51 @@ jobs:
             "prerelease": true
           }'
     
-    
     outputs:
       TAG: "${{env.RELEASE_TAG}}"
 
-  # build_and_push:
-  #   needs: [prepare]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v3
+  build_and_push:
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-  #   - name: Determine tag for image
-  #     run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+    - name: Determine tag for image
+      run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
 
-    # - name: Login to DockerHub
-    #   uses: docker/login-action@v1
-    #   with:
-    #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-    #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Display tag
+      run: echo "tag ${{env.RELEASE_TAG}}"
 
-    # - name: Set Docker Hub credentials
-    #   run: |
-    #     echo "${{ secrets.DOCKER_USERNAME }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-    #   env:
-    #     DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-    #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Set Docker Hub credentials
+      run: |
+        echo "${{ secrets.DOCKER_USERNAME }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
-    # - name: Check if Docker image exists
-    #   id: check-image
-    #   run: |
-    #     DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
-    #     IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
-    #     if [ $IMAGE_CHECK -eq 200 ]; then
-    #       echo "Image already exists on Docker Hub"
-    #       echo "image_exists=true" >> $GITHUB_OUTPUT
-    #     else
-    #       echo "Image does not exist on Docker Hub"
-    #       echo "image_exists=false" >> $GITHUB_OUTPUT
-    #     fi
+    - name: Check if Docker image exists
+      id: check-image
+      run: |
+        DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
+        IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
+        if [ $IMAGE_CHECK -eq 200 ]; then
+          echo "Image already exists on Docker Hub"
+          echo "image_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "Image does not exist on Docker Hub"
+          echo "image_exists=false" >> $GITHUB_OUTPUT
+        fi
     
-    # - name: Build and push Docker image
-    #   if: steps.check-image.outputs.image_exists == 'false'
-    #   run: |
-    #     DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
-    #     docker build -t $DOCKER_IMAGE .
-    #     docker push $DOCKER_IMAGE
+    - name: Build and push Docker image
+      if: steps.check-image.outputs.image_exists == 'false'
+      run: |
+        DOCKER_IMAGE="${{env.REPOSITORY}}:${{ env.RELEASE_TAG }}"
+        docker build -t $DOCKER_IMAGE .
+        docker push $DOCKER_IMAGE
     
-    # - name: Display tag
-    #   run: echo "::notice title='Tag'::${{env.RELEASE_TAG}}"
+    - name: Display tag
+      run: echo "::notice title='Tag'::${{env.RELEASE_TAG}}"
   
    
     # - name: Build and push
@@ -128,8 +112,8 @@ jobs:
     #     push: true
     #     tags: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
 
-    # outputs:
-    #   image_digest: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
+    outputs:
+      image_digest: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
 
   
   # deploy:
