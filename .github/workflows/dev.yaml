@@ -10,202 +10,194 @@ env:
   REPOSITORY: 'tangotew/afi-load-board-app'
 
 jobs:
-  check_tag:
+  prepare:
     runs-on: ubuntu-latest
-
+    if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
-    # Step to install doctl
-    - name: Install doctl
+    - name: Extract tag based on environment from manifest.yaml
+      if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
       run: |
-        curl -OL https://github.com/digitalocean/doctl/releases/download/v1.64.0/doctl-1.64.0-linux-amd64.tar.gz
-        tar xf doctl-1.64.0-linux-amd64.tar.gz
-        sudo mv doctl /usr/local/bin
-
-    # Step to authenticate doctl
-    - name: Authenticate doctl
-      run: doctl auth init -t "dop_v1_35a02ce410540b69ebdbc7641f2ffe57904f7df5566776125a859c77cc619cec"
-      # run: doctl auth init --access-token ${{ secrets.DIGITALOCEAN_API_TOKEN }}
-
-    # Step to list account information
-    - name: List Account Information
-      run: doctl account get
-  # prepare:
-  #   runs-on: ubuntu-latest
-  #   if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v3
-  #     with:
-  #       token: ${{ secrets.ORG_GITHUB_TOKEN }}
-
-  #   - name: Extract tag based on environment from manifest.yaml
-  #     if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
-  #     run: |
-  #       TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
-  #       echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
-  #       echo "TAG=$TAG" >> $GITHUB_ENV
+        TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
+        echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
+        echo "TAG=$TAG" >> $GITHUB_ENV
     
-  #   - name: Use SHA for tag if not main
-  #     if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
-  #     run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
+    - name: Use SHA for tag if not main
+      if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
+      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
       
-  #   - name: Set Git Config
-  #     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
-  #     run: |
-  #       git config --global --replace-all user.email 'GitHub Action'
-  #       git config --global --replace-all user.name 'actions@github.com'
+    - name: Set Git Config
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      run: |
+        git config --global --replace-all user.email 'GitHub Action'
+        git config --global --replace-all user.name 'actions@github.com'
     
-  #   - name: Check if Git tag exists
-  #     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
-  #     id: check_tag
-  #     run: |
-  #       TAG_NAME=${{ env.TAG }}
-  #       TAG_EXISTS=$(git ls-remote --tags origin refs/tags/$TAG_NAME)
-  #       if [[ -z "$TAG_EXISTS" ]]; then
-  #         echo "Tag does not exist"
-  #         echo "tag-exists=false"  >> "$GITHUB_OUTPUT"
-  #       else
-  #         echo "Tag exists"
-  #         echo "tag-exists=true" >> "$GITHUB_OUTPUT"
-  #       fi
-  #     continue-on-error: true
+    - name: Check if Git tag exists
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      id: check_tag
+      run: |
+        TAG_NAME=${{ env.TAG }}
+        TAG_EXISTS=$(git ls-remote --tags origin refs/tags/$TAG_NAME)
+        if [[ -z "$TAG_EXISTS" ]]; then
+          echo "Tag does not exist"
+          echo "tag-exists=false"  >> "$GITHUB_OUTPUT"
+        else
+          echo "Tag exists"
+          echo "tag-exists=true" >> "$GITHUB_OUTPUT"
+        fi
+      continue-on-error: true
 
-  #   - name: Debug tag-exists
-  #     run: |
-  #       echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
+    - name: Debug tag-exists
+      run: |
+        echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
 
-  #   - name: Push Git Tag
-  #     if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
-  #     run: |
-  #       git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
-  #       git push --no-verify origin refs/tags/${{ env.TAG }}
+    - name: Push Git Tag
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+      run: |
+        git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
+        git push --no-verify origin refs/tags/${{ env.TAG }}
 
-  #   - name: Create PreRelease
-  #     if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
-  #     run: |
-  #       curl -X POST \
-  #         -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
-  #         -H "Accept: application/vnd.github.v3+json" \
-  #         https://api.github.com/repos/${{ github.repository }}/releases \
-  #         -d '{
-  #           "tag_name": "'${{ env.TAG }}'",
-  #           "name": "Prerelease '${{ env.TAG }}'",
-  #           "body": "Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline",
-  #           "draft": false,
-  #           "prerelease": true
-  #         }'
-  #   outputs:
-  #     TAG: "${{env.RELEASE_TAG}}"
+    - name: Create PreRelease
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+      run: |
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/releases \
+          -d '{
+            "tag_name": "'${{ env.TAG }}'",
+            "name": "Prerelease '${{ env.TAG }}'",
+            "body": "Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline",
+            "draft": false,
+            "prerelease": true
+          }'
+    outputs:
+      TAG: "${{env.RELEASE_TAG}}"
+      TAG_EXISTS: "${{ steps.check_tag.outputs.tag-exists }}"
 
-  # build_and_push:
-  #   needs: [prepare]
-  #   if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+  build_and_push:
+    needs: [prepare]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: Determine tag for image
-  #       run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+      - name: Determine tag for image
+        run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
 
-  #     - name: Display tag
-  #       run: echo "tag=${{env.RELEASE_TAG}}"
+      - name: Display tag
+        run: echo "tag=${{env.RELEASE_TAG}}"
 
-  #     - name: Login to DockerHub
-  #       uses: docker/login-action@v1
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-  #     # - name: Build and push Docker image
-  #     #   run: |
-  #     #     DOCKER_IMAGE=${{ env.RELEASE_TAG }}
-  #     #     docker build -t $DOCKER_IMAGE .
-  #     #     docker push $DOCKER_IMAGE
+      - name: Try to pull Docker image
+        id: docker_pull
+        continue-on-error: true # Continue even if the pull fails
+        run: |
+          docker pull ${{env.RELEASE_TAG}} && echo "PULL_SUCCEEDED=true" >> $GITHUB_ENV || echo "PULL_SUCCEEDED=false" >> $GITHUB_ENV
+
+      - name: Build and push Docker image
+        if: env.PULL_SUCCEEDED == 'false'
+        run: |
+          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+          docker build -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
       
-  #     - name: Display tag in the Summary
-  #       run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
+      - name: Display tag in the Summary
+        run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
 
-  #   outputs:
-  #       image_digest: ${{ env.RELEASE_TAG }}
+    outputs:
+        image_digest: ${{ env.RELEASE_TAG }}
 
-  # deploy:
-  #   needs: build_and_push
-  #   if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout files
-  #       uses: actions/checkout@v3
+  deploy:
+    needs: build_and_push
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v3
 
-  #     - name: Get Tag
-  #       run: |
-  #         echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
-  #         echo "Retrieved the docker image tag: ${{ env.RELEASE_TAG }}"
+      - name: Get Tag
+        run: |
+          echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
+          echo "Retrieved the docker image tag: ${{ env.RELEASE_TAG }}"
 
-  #     # Step to check if doctl is already installed
-  #     - name: Check if doctl is installed
-  #       run: |
-  #         echo "checking if doctl is installed"
-  #         if command -v doctl &> /dev/null; then
-  #           echo "doctl is already installed"
-  #           doctl version
-  #         else
-  #           echo "doctl is not installed"
-  #         fi
+      # Step to check if doctl is already installed
+      - name: Check if doctl is installed
+        run: |
+          echo "checking if doctl is installed"
+          if command -v doctl &> /dev/null; then
+            echo "doctl is already installed"
+            doctl version
+          else
+            echo "doctl is not installed"
+          fi
 
-  #      # Step to install doctl
-  #     - name: Install doctl
-  #       run: |
-  #         curl -OL https://github.com/digitalocean/doctl/releases/download/v1.64.0/doctl-1.64.0-linux-amd64.tar.gz
-  #         tar xf doctl-1.64.0-linux-amd64.tar.gz
-  #         sudo mv doctl /usr/local/bin
+      # Step to install doctl
+      - name: Install doctl
+        run: |
+          if ! command -v doctl &> /dev/null; then
+            curl -s https://api.github.com/repos/digitalocean/doctl/releases/latest \
+            | grep "browser_download_url.*linux-amd64.tar.gz" \
+            | cut -d '"' -f 4 \
+            | wget -qi -
+            tar xf doctl-*-linux-amd64.tar.gz
+            sudo mv doctl /usr/local/bin
+            doctl version
+          fi
 
-  #     # Step to authenticate doctl
-  #     - name: Authenticate doctl
-  #       run: |
-  #         echo "authenticating doctl"
-  #         doctl auth init --access-token ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+      # Step to authenticate doctl
+      - name: Authenticate doctl
+        run: |
+          echo "authenticating doctl"
+          doctl auth init --access-token ${{ secrets.DIGITALOCEAN_API_TOKEN }}
 
-  #     # Step to check if a Droplet with the name 'afi-load-board' already exists
-  #     - name: Check for existing Droplet
-  #       run: |
-  #         EXISTING_DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | awk '/afi-load-board/ {print $1}')
-  #         if [ -n "$EXISTING_DROPLET_ID" ]; then
-  #           echo "Droplet with name afi-load-board already exists with ID: $EXISTING_DROPLET_ID"
-  #           echo "DROPLET_ID=$EXISTING_DROPLET_ID" >> $GITHUB_ENV
-  #         else
-  #           echo "No existing Droplet with name afi-load-board found."
-  #         fi
+      # Step to check if a Droplet with the name 'afi-load-board' already exists
+      - name: Check for existing Droplet
+        run: |
+          EXISTING_DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | awk '/afi-load-board/ {print $1}')
+          if [ -n "$EXISTING_DROPLET_ID" ]; then
+            echo "Droplet with name afi-load-board already exists with ID: $EXISTING_DROPLET_ID"
+            echo "DROPLET_ID=$EXISTING_DROPLET_ID" >> $GITHUB_ENV
+          else
+            echo "No existing Droplet with name afi-load-board found."
+          fi
 
-  #     # Provision a new Droplet only if it does not exist
-  #     - name: Create a Droplet
-  #       if: env.DROPLET_ID == ''
-  #       run: |
-  #         DROPLET_ID=$(doctl compute droplet create afi-load-board --size s-1vcpu-1gb --image ubuntu-20-04-x64  --region sfo3 --format ID --no-header --tag-name "afi-loadboard-app"  --wait --enable-monitoring)
-  #         echo "Droplet ID: $DROPLET_ID"
-  #         echo "DROPLET_ID=$DROPLET_ID" >> $GITHUB_ENV
+      # Provision a new Droplet only if it does not exist
+      - name: Create a Droplet
+        if: env.DROPLET_ID == ''
+        run: |
+          DROPLET_ID=$(doctl compute droplet create afi-load-board --size s-1vcpu-1gb --image ubuntu-20-04-x64  --region sfo3 --format ID --no-header --tag-name "afi-loadboard-app"  --wait --enable-monitoring)
+          echo "Droplet ID: $DROPLET_ID"
+          echo "DROPLET_ID=$DROPLET_ID" >> $GITHUB_ENV
 
-  #     # Get the Droplet IP
-  #     - name: Get Droplet IP
-  #       run: |
-  #         DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
-  #         echo "Droplet IP: $DROPLET_IP"
-  #         echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
+      # Get the Droplet IP
+      - name: Get Droplet IP
+        run: |
+          DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
+          echo "Droplet IP: $DROPLET_IP"
+          echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
 
-  #       # Step to create Docker network if it doesn't exist
-  #     - name: Create Docker Network on Droplet
-  #       run: |
-  #         ssh -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker network create afi-loadbaord-network || true"
+        # Step to create Docker network if it doesn't exist
+      - name: Create Docker Network on Droplet
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker network create afi-loadbaord-network || true"
           
-  #     - name: Deploy to Droplet
-  #       run: |
-  #         ssh-keyscan ${{env.DROPLET_IP}} >> ~/.ssh/known_hosts
-  #         ssh -o StrictHostKeyChecking=no root@${{env.DROPLET_IP}} "apt update && apt install -y docker.io"
-  #         ssh -o StrictHostKeyChecking=no root@${{env.DROPLET_IP}} "docker pull ${{ env.RELEASE_TAG }}"
-  #         ssh -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker run -d -p 80:300 --network afi-loadbaord-network ${{ env.RELEASE_TAG }}"
+      - name: Deploy to Droplet
+        run: |
+          ssh-keyscan ${{env.DROPLET_IP}} >> ~/.ssh/known_hosts
+          ssh -o StrictHostKeyChecking=no root@${{env.DROPLET_IP}} "apt update && apt install -y docker.io"
+          ssh -o StrictHostKeyChecking=no root@${{env.DROPLET_IP}} "docker pull ${{ env.RELEASE_TAG }}"
+          ssh -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker run -d -p 80:300 --network afi-loadbaord-network ${{ env.RELEASE_TAG }}"
       
      
       
