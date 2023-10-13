@@ -102,19 +102,25 @@ jobs:
         id: check-image
         run: |
           DOCKER_IMAGE_TAG=${{ env.RELEASE_TAG }}
-          echo DOCKER_IMAGE=$(docker pull tangotew/afi-load-board-app:stage-v0.0.1)
-          echo "image = $DOCKER_IMAGE"
-          IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
-          echo "image check = $IMAGE_CHECK"
-          if [ $IMAGE_CHECK -eq 200 ]; then
+          echo "Checking for image: tangotew/afi-load-board-app:${DOCKER_IMAGE_TAG}"
+          
+          # Try to pull the image and check the HTTP status code
+          IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/tangotew/afi-load-board-app/tags/${DOCKER_IMAGE_TAG}")
+          
+          echo "Image check HTTP code: $IMAGE_CHECK"
+
+          if [ "$IMAGE_CHECK" -eq "200" ]; then
             echo "Image already exists on Docker Hub"
             echo "image_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "Image does not exist on Docker Hub"
-            echo "image_exists=false" >> "$GITHUB_OUTPUT"
+             echo "image_exists=false" >> "$GITHUB_OUTPUT"
           fi
-      
-      
+
+      - name: Debug tag-exists
+        run: |
+          echo "Tag Exists: ${{ steps.check-image.outputs.image_exists }}"
+
       - name: Build and push Docker image
         if: steps.check-image.outputs.image_exists == 'false'
         run: |
