@@ -2,78 +2,114 @@ name: deploy dev
 
 on:
   push:
-    tags:
-      - 'stage-v*'  # Only run for tags with the prefix "stage-v"
     branches:
       - develop
   workflow_dispatch:
-    inputs:
-      env:
-        description: 'Environment (dev/test/prod/...)'
-        required: true
-        default: 'dev'
-
+    
 env:
-  REPOSITORY: tangotew/afi-load-board-app
+  REPOSITORY: 'tangotew/afi-load-board-app'
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'develop') || github.event_name == 'workflow_dispatch' 
+    if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
     - name: Extract tag based on environment from manifest.yaml
+      if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
       run: |
-        TAG=$(grep -A1 "${{ github.event.inputs.env }}:" manifest.yaml | grep 'version:' | awk '{print $2}')
-        echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
+        TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
+        echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
+        echo "TAG=${TAG}" >> $GITHUB_ENV
+    
+    - name: Use SHA for tag if not main
+      if: github.event_name == 'workflow_dispatch'
+      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
+      
+    - name: Set Git Config
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      run: |
+        git config --global --replace-all user.email 'GitHub Action'
+        git config --global --replace-all user.name 'actions@github.com'
+    
+    - name: Push Git Tag
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      run: |
+        git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
+        git push --no-verify origin refs/tags/${{ env.TAG }}
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        release_name: Release ${{ env.RELEASE_TAG }}
-        draft: false
-        prerelease: true
-        body: |
-            Changes in this Release
-            - Added Automation for docker build and push
-            - Added autodeployment pipeline 
-        repo: ${{ github.repository }}
+    - name: Create PreRelease
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      run: |
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/releases \
+          -d '{
+            "tag_name": "'${{ env.TAG }}'",
+            "name": "Prerelease '${{ env.TAG }}'",
+            "body": "Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline",
+            "draft": false,
+            "prerelease": true
+          }'
+    
+    outputs:
+      TAG: "${{env.RELEASE_TAG}}"
 
   build_and_push:
     needs: [prepare]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Determine tag for image
-      run: echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Determine tag for image
+        run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Display tag
+        run: echo "tag=${{env.RELEASE_TAG}}"
 
-    - name: Build and push
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        push: true
-        tags: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Check if Docker image exists
+        id: check-image
+        run: |
+          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+          IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
+          if [ $IMAGE_CHECK -eq 200 ]; then
+            echo "Image already exists on Docker Hub"
+            echo "image_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image does not exist on Docker Hub"
+            echo "image_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Build and push Docker image
+        if: steps.check-image.outputs.image_exists == 'false'
+        run: |
+          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+          docker build -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
+      
+      - name: Display tag in the Summary
+        run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
 
     outputs:
-      image_digest: ${{ env.REPOSITORY }}:${{ env.RELEASE_TAG }}
+        image_digest: ${{ env.RELEASE_TAG }}
 
   
   deploy:
     needs: build_and_push
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
@@ -85,7 +121,7 @@ jobs:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
 
       - name: Provision Droplet and deploy container
         run: |
