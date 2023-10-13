@@ -62,7 +62,7 @@ jobs:
 
   build_and_push:
     needs: [prepare]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -83,8 +83,11 @@ jobs:
       - name: Check if Docker image exists
         id: check-image
         run: |
-          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+          DOCKER_IMAGE_TAG=${{ env.RELEASE_TAG }}
+          echo DOCKER_IMAGE=$(docker pull tangotew/afi-load-board-app:stage-v0.0.1)
+          echo "image = $DOCKER_IMAGE"
           IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags/${{ env.RELEASE_TAG }}")
+          echo "image check = $IMAGE_CHECK"
           if [ $IMAGE_CHECK -eq 200 ]; then
             echo "Image already exists on Docker Hub"
             echo "image_exists=true" >> $GITHUB_OUTPUT
@@ -92,6 +95,7 @@ jobs:
             echo "Image does not exist on Docker Hub"
             echo "image_exists=false" >> $GITHUB_OUTPUT
           fi
+      
       
       - name: Build and push Docker image
         if: steps.check-image.outputs.image_exists == 'false'
