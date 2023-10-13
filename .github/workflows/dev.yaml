@@ -102,7 +102,7 @@ jobs:
         id: check-image
         run: |
           DOCKER_IMAGE_TAG=${{ env.RELEASE_TAG }}
-          echo "Checking for image: tangotew/afi-load-board-app:${DOCKER_IMAGE_TAG}"
+          echo "Checking for image: ${DOCKER_IMAGE_TAG}"
           
           # Try to pull the image and check the HTTP status code
           IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/tangotew/afi-load-board-app/tags/${DOCKER_IMAGE_TAG}")
