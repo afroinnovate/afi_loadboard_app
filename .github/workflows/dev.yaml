@@ -24,7 +24,7 @@ jobs:
       run: |
         TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
-        echo "TAG=${TAG}" >> $GITHUB_ENV
+        echo "TAG=$TAG" >> $GITHUB_ENV
     
     - name: Use SHA for tag if not main
       if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/develop'
@@ -50,7 +50,7 @@ jobs:
         fi
 
     - name: Push Git Tag
-      if: ${{ steps.check_tag.outputs.tag-exists == "false" }} && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      if: ${{ steps.check_tag.outputs.tag-exists }} == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
