@@ -10,156 +10,177 @@ env:
   REPOSITORY: 'tangotew/afi-load-board-app'
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.ORG_GITHUB_TOKEN }}
-
-    - name: Extract tag based on environment from manifest.yaml
-      if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
-      run: |
-        TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
-        echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
-        echo "TAG=$TAG" >> $GITHUB_ENV
-    
-    - name: Use SHA for tag if not main
-      if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/develop'
-      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
-      
-    - name: Set Git Config
-      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
-      run: |
-        git config --global --replace-all user.email 'GitHub Action'
-        git config --global --replace-all user.name 'actions@github.com'
-    
-    - name: Check if Git tag exists
-      id: check_tag
-      run: |
-        TAG_NAME=${{ env.TAG }}
-        TAG_EXISTS=$(git ls-remote --tags origin refs/tags/$TAG_NAME)
-        if [[ -z "$TAG_EXISTS" ]]; then
-          echo "Tag does not exist"
-          echo "tag-exists=false"  >> "$GITHUB_OUTPUT"
-        else
-          echo "Tag exists"
-          echo "tag-exists=true" >> "$GITHUB_OUTPUT"
-        fi
-      continue-on-error: true
-
-    - name: Debug tag-exists
-      run: |
-        echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
-
-    - name: Push Git Tag
-      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
-      run: |
-        git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
-        git push --no-verify origin refs/tags/${{ env.TAG }}
-
-    - name: Create PreRelease
-      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
-      run: |
-        curl -X POST \
-          -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/releases \
-          -d '{
-            "tag_name": "'${{ env.TAG }}'",
-            "name": "Prerelease '${{ env.TAG }}'",
-            "body": "Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline",
-            "draft": false,
-            "prerelease": true
-          }'
-    
-    outputs:
-      TAG: "${{env.RELEASE_TAG}}"
-
-  build_and_push:
-    needs: [prepare]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+  try-doctl:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      - name: Determine tag for image
-        run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
-
-      - name: Display tag
-        run: echo "tag=${{env.RELEASE_TAG}}"
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Check if Docker image exists
-        id: check-image
+      # Step to install doctl
+      - name: Install doctl
         run: |
-          DOCKER_IMAGE_TAG=${{ env.RELEASE_TAG }}
-          echo "Checking for image: ${DOCKER_IMAGE_TAG}"
-          
-          # Try to pull the image and check the HTTP status code
-          IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/tangotew/afi-load-board-app/tags/${DOCKER_IMAGE_TAG}")
-          
-          echo "Image check HTTP code: $IMAGE_CHECK"
+          curl -OL https://github.com/digitalocean/doctl/releases/download/v1.64.0/doctl-1.64.0-linux-amd64.tar.gz
+          tar xf doctl-1.64.0-linux-amd64.tar.gz
+          sudo mv doctl /usr/local/bin
 
-          if [ "$IMAGE_CHECK" -eq "200" ]; then
-            echo "Image already exists on Docker Hub"
-            echo "image_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Image does not exist on Docker Hub"
-             echo "image_exists=false" >> "$GITHUB_OUTPUT"
-          fi
+      # Step to authenticate doctl
+      - name: Authenticate doctl
+        run: doctl auth init --access-token ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
 
-      - name: Debug tag-exists
-        run: |
-          echo "Tag Exists: ${{ steps.check-image.outputs.image_exists }}"
+      # Step to list account information
+      - name: List Account Information
+        run: doctl account get
 
-      - name: Build and push Docker image
-        if: steps.check-image.outputs.image_exists == 'false'
-        run: |
-          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
-          docker build -t $DOCKER_IMAGE .
-          docker push $DOCKER_IMAGE
+  # prepare:
+  #   runs-on: ubuntu-latest
+  #   if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v3
+  #     with:
+  #       token: ${{ secrets.ORG_GITHUB_TOKEN }}
+
+  #   - name: Extract tag based on environment from manifest.yaml
+  #     if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
+  #     run: |
+  #       TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
+  #       echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
+  #       echo "TAG=$TAG" >> $GITHUB_ENV
+    
+  #   - name: Use SHA for tag if not main
+  #     if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/develop'
+  #     run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
       
-      - name: Display tag in the Summary
-        run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
+  #   - name: Set Git Config
+  #     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+  #     run: |
+  #       git config --global --replace-all user.email 'GitHub Action'
+  #       git config --global --replace-all user.name 'actions@github.com'
+    
+  #   - name: Check if Git tag exists
+  #     id: check_tag
+  #     run: |
+  #       TAG_NAME=${{ env.TAG }}
+  #       TAG_EXISTS=$(git ls-remote --tags origin refs/tags/$TAG_NAME)
+  #       if [[ -z "$TAG_EXISTS" ]]; then
+  #         echo "Tag does not exist"
+  #         echo "tag-exists=false"  >> "$GITHUB_OUTPUT"
+  #       else
+  #         echo "Tag exists"
+  #         echo "tag-exists=true" >> "$GITHUB_OUTPUT"
+  #       fi
+  #     continue-on-error: true
 
-    outputs:
-        image_digest: ${{ env.RELEASE_TAG }}
+  #   - name: Debug tag-exists
+  #     run: |
+  #       echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
+
+  #   - name: Push Git Tag
+  #     if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+  #     run: |
+  #       git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
+  #       git push --no-verify origin refs/tags/${{ env.TAG }}
+
+  #   - name: Create PreRelease
+  #     if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+  #     run: |
+  #       curl -X POST \
+  #         -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
+  #         -H "Accept: application/vnd.github.v3+json" \
+  #         https://api.github.com/repos/${{ github.repository }}/releases \
+  #         -d '{
+  #           "tag_name": "'${{ env.TAG }}'",
+  #           "name": "Prerelease '${{ env.TAG }}'",
+  #           "body": "Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline",
+  #           "draft": false,
+  #           "prerelease": true
+  #         }'
+    
+  #   outputs:
+  #     TAG: "${{env.RELEASE_TAG}}"
+
+  # build_and_push:
+  #   needs: [prepare]
+  #   if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+
+  #     - name: Determine tag for image
+  #       run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+
+  #     - name: Display tag
+  #       run: echo "tag=${{env.RELEASE_TAG}}"
+
+  #     - name: Login to DockerHub
+  #       uses: docker/login-action@v1
+  #       with:
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+
+  #     - name: Check if Docker image exists
+  #       id: check-image
+  #       run: |
+  #         DOCKER_IMAGE_TAG=${{ env.RELEASE_TAG }}
+  #         echo "Checking for image: ${DOCKER_IMAGE_TAG}"
+          
+  #         # Try to pull the image and check the HTTP status code
+  #         IMAGE_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/tangotew/afi-load-board-app/tags/${DOCKER_IMAGE_TAG}")
+          
+  #         echo "Image check HTTP code: $IMAGE_CHECK"
+
+  #         if [ "$IMAGE_CHECK" -eq "200" ]; then
+  #           echo "Image already exists on Docker Hub"
+  #           echo "image_exists=true" >> "$GITHUB_OUTPUT"
+  #         else
+  #           echo "Image does not exist on Docker Hub"
+  #            echo "image_exists=false" >> "$GITHUB_OUTPUT"
+  #         fi
+
+  #     - name: Debug tag-exists
+  #       run: |
+  #         echo "Tag Exists: ${{ steps.check-image.outputs.image_exists }}"
+
+  #     - name: Build and push Docker image
+  #       if: steps.check-image.outputs.image_exists == 'false'
+  #       run: |
+  #         DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+  #         docker build -t $DOCKER_IMAGE .
+  #         docker push $DOCKER_IMAGE
+      
+  #     - name: Display tag in the Summary
+  #       run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
+
+  #   outputs:
+  #       image_digest: ${{ env.RELEASE_TAG }}
 
   
-  deploy:
-    needs: build_and_push
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout files
-        uses: actions/checkout@v3
+  # deploy:
+  #   needs: build_and_push
+  #   if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout files
+  #       uses: actions/checkout@v3
 
-      - name: Get Tag
-        run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
+  #     - name: Get Tag
+  #       run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.ORG_GITHUB_TOKEN }}
+  #     - name: Install doctl
+  #       uses: digitalocean/action-doctl@v2
+  #       with:
+  #         token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
-      - name: Provision Droplet and deploy container
-        run: |
-          doctl compute droplet create afi-load-board-app \
-            --tag-names ${{ env.RELEASE_TAG }} \
-            --region sfo3 \
-            --size s-1vcpu-1gb \
-            --image docker-20-04 \
-            --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }} \
-            --wait \
-            --enable-monitoring
+  #     - name: Provision Droplet and deploy container
+  #       run: |
+  #         doctl compute droplet create afi-load-board-app \
+  #           --tag-names ${{ env.RELEASE_TAG }} \
+  #           --region sfo3 \
+  #           --size s-1vcpu-1gb \
+  #           --image docker-20-04 \
+  #           --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }} \
+  #           --wait \
+  #           --enable-monitoring
      
           
