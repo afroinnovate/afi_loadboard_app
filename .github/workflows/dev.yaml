@@ -27,7 +27,7 @@ jobs:
         echo "TAG=${TAG}" >> $GITHUB_ENV
     
     - name: Use SHA for tag if not main
-      if: github.event_name == 'workflow_dispatch'
+      if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/develop'
       run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
       
     - name: Set Git Config
@@ -121,7 +121,7 @@ jobs:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
+          token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
       - name: Provision Droplet and deploy container
         run: |
