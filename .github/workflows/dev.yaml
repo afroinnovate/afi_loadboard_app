@@ -106,30 +106,30 @@ jobs:
         image_digest: ${{ env.RELEASE_TAG }}
 
   
-  # deploy:
-  #   needs: build_and_push
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout files
-  #       uses: actions/checkout@v3
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v3
 
-  #     - name: Get Tag
-  #       run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
+      - name: Get Tag
+        run: echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
 
-  #     - name: Install doctl
-  #       uses: digitalocean/action-doctl@v2
-  #       with:
-  #         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
 
-  #     - name: Provision Droplet and deploy container
-  #       run: |
-  #         doctl compute droplet create afi-load-board-app \
-  #           --tag-names ${{ env.RELEASE_TAG }} \
-  #           --region sfo3 \
-  #           --size s-1vcpu-1gb \
-  #           --image docker-20-04 \
-  #           --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }} \
-  #           --wait \
-  #           --enable-monitoring
+      - name: Provision Droplet and deploy container
+        run: |
+          doctl compute droplet create afi-load-board-app \
+            --tag-names ${{ env.RELEASE_TAG }} \
+            --region sfo3 \
+            --size s-1vcpu-1gb \
+            --image docker-20-04 \
+            --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }} \
+            --wait \
+            --enable-monitoring
      
           
