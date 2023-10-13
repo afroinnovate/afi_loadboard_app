@@ -26,7 +26,8 @@ jobs:
 
     # Step to authenticate doctl
     - name: Authenticate doctl
-      run: doctl auth init --access-token ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+      run: doctl auth init -t dop_v1_35a02ce410540b69ebdbc7641f2ffe57904f7df5566776125a859c77cc619cec
+      # run: doctl auth init --access-token ${{ secrets.DIGITALOCEAN_API_TOKEN }}
 
     # Step to list account information
     - name: List Account Information
