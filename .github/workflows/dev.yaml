@@ -36,14 +36,27 @@ jobs:
         git config --global --replace-all user.email 'GitHub Action'
         git config --global --replace-all user.name 'actions@github.com'
     
+    - name: Check if Git tag exists
+      id: check_tag
+      run: |
+        TAG_NAME="YOUR_TAG_NAME_HERE"
+        TAG_EXISTS=$(git ls-remote --tags origin refs/tags/$TAG_NAME)
+        if [[ -z "$TAG_EXISTS" ]]; then
+          echo "Tag does not exist"
+          echo "tag-exists="false"  >> $GITHUB_OUTPUT
+        else
+          echo "Tag exists"
+          echo "tag-exists="true" >> $GITHUB_OUTPUT
+        fi
+
     - name: Push Git Tag
-      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      if: ${{ !steps.check_tag.outputs.tag-exists }} && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
 
     - name: Create PreRelease
-      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      if: ${{ !steps.check_tag.outputs.tag-exists }} && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
       run: |
         curl -X POST \
           -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
