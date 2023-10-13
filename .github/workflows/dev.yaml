@@ -98,11 +98,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
-        run: |
-          DOCKER_IMAGE=${{ env.RELEASE_TAG }}
-          docker build -t $DOCKER_IMAGE .
-          docker push $DOCKER_IMAGE
+      # - name: Build and push Docker image
+      #   run: |
+      #     DOCKER_IMAGE=${{ env.RELEASE_TAG }}
+      #     docker build -t $DOCKER_IMAGE .
+      #     docker push $DOCKER_IMAGE
       
       - name: Display tag in the Summary
         run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
@@ -134,19 +134,12 @@ jobs:
             echo "doctl is not installed"
           fi
 
-      # Step to install doctl if it's not installed
+       # Step to install doctl
       - name: Install doctl
         run: |
-          echo "installing doctl"
-          if ! command -v doctl &> /dev/null; then
-            curl -s https://api.github.com/repos/digitalocean/doctl/releases/latest \
-            | grep "browser_download_url.*linux-amd64.tar.gz" \
-            | cut -d '"' -f 4 \
-            | wget -qi -
-            tar xf doctl-*-linux-amd64.tar.gz
-            sudo mv doctl /usr/local/bin
-            doctl version
-          fi
+          curl -OL https://github.com/digitalocean/doctl/releases/download/v1.64.0/doctl-1.64.0-linux-amd64.tar.gz
+          tar xf doctl-1.64.0-linux-amd64.tar.gz
+          sudo mv doctl /usr/local/bin
 
       # Step to authenticate doctl
       - name: Authenticate doctl
