@@ -190,7 +190,8 @@ jobs:
         # Step to create Docker network if it doesn't exist
       - name: Create Docker Network on Droplet
         run: |
-          ssh -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker network create afi-loadbaord-network || true"
+          chmod 600 ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
+          ssh -v -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker network create afi-loadbaord-network || true"
           
       - name: Deploy to Droplet
         run: |
