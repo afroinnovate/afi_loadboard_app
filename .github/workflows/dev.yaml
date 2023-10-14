@@ -172,35 +172,39 @@ jobs:
             echo "No existing Droplet with name afi-load-board found."
           fi
 
-      # Provision a new Droplet only if it does not exist
       - name: Create a Droplet
         if: env.DROPLET_ID == ''
+        env:
+          DROPLET_SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: |
-          DROPLET_ID=$(doctl compute droplet create afi-load-board --size s-1vcpu-1gb --image ubuntu-20-04-x64  --region sfo3 --format ID --no-header --tag-name "afi-loadboard-app"  --wait --enable-monitoring)
+          echo "$DROPLET_SSH_KEY" > droplet_ssh_key
+          chmod 600 droplet_ssh_key
+
+          SSH_FINGERPRINT=$(ssh-keygen -E md5 -lf droplet_ssh_key | awk '{print $2}' | sed 's/^MD5://')
+          doctl compute ssh-key import github-action-key --public-key "$DROPLET_SSH_KEY"
+
+          DROPLET_ID=$(doctl compute droplet create afi-load-board --size s-1vcpu-1gb --image ubuntu-20-04-x64 --region sfo3 --ssh-keys $SSH_FINGERPRINT --format ID --no-header --wait)
           echo "Droplet ID: $DROPLET_ID"
           echo "DROPLET_ID=$DROPLET_ID" >> $GITHUB_ENV
 
-      # Get the Droplet IP
-      - name: Get Droplet IP
-        run: |
-          DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
-          echo "Droplet IP: $DROPLET_IP"
-          echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
+        - name: Get Droplet IP
+          run: |
+            DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
+            echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
 
-        # Step to create Docker network if it doesn't exist
-      - name: Create Docker Network on Droplet
-        run: |
-          chmod 600 ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
-          ssh -v -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker network create afi-loadbaord-network || true"
-          
-      - name: Deploy to Droplet
-        run: |
-          ssh-keyscan ${{env.DROPLET_IP}} >> ~/.ssh/known_hosts
-          ssh -o StrictHostKeyChecking=no root@${{env.DROPLET_IP}} "apt update && apt install -y docker.io"
-          ssh -o StrictHostKeyChecking=no root@${{env.DROPLET_IP}} "docker pull ${{ env.RELEASE_TAG }}"
-          ssh -o StrictHostKeyChecking=no root@${{ env.DROPLET_IP }} "docker run -d -p 80:300 --network afi-loadbaord-network ${{ env.RELEASE_TAG }}"
-      
-     
-      
-     
-          
+        - name: Create Docker Network on Droplet
+          run: |
+            ssh -o StrictHostKeyChecking=no root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
+
+        - name: Deploy to Droplet
+          run: |
+            ssh-keyscan $DROPLET_IP >> ~/.ssh/known_hosts
+            ssh root@$DROPLET_IP "apt update && apt install -y docker.io"
+            ssh root@$DROPLET_IP "docker pull $RELEASE_TAG"
+            ssh root@$DROPLET_IP "docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG"
+
+            
+            
+            
+                
