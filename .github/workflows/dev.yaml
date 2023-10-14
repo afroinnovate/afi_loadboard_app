@@ -123,11 +123,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Display Tag
-        run: echo "${{needs.prepare.outputs.TAG}}"
+        run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
         
-
   deploy:
-    needs: build_and_push
+    needs: [build_and_push]
     if: github.event_name != 'workflow_dispatch' && github.ref != 'refs/heads/fix-deployment'
     runs-on: ubuntu-latest
     steps:
