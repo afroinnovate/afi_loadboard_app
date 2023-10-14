@@ -126,6 +126,9 @@ jobs:
       - name: Checkout files
         uses: actions/checkout@v3
 
+      - name: Display Tag
+        run: echo "${{needs.build_and_push.outputs.image_digest}}"
+        
       - name: Get Tag
         run: |
           echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
@@ -230,11 +233,17 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
           # Run commands on the remote server
-          echo "deplying image $RELEASE_TAG in the droplet vm"
+          echo "Deploying image $RELEASE_TAG in the Droplet VM"
           ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+            echo "RELEASE_TAG is: $RELEASE_TAG"
+            if [ -z "$RELEASE_TAG" ]; then
+              echo "RELEASE_TAG is not set. Exiting."
+              exit 1
+            fi
             docker pull $RELEASE_TAG
             docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG
           EOF
+
 
             
             
