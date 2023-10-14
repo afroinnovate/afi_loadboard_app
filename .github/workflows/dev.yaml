@@ -120,11 +120,12 @@ jobs:
 
   checkout_tag:
     needs: [prepare, build_and_push]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fix-deployment'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Display Tag
-        run: echo "${{needs.build_and_push.outputs.image_digest}}"
+        run: echo "${{needs.prepare.outputs.TAG}}"
+        
 
   deploy:
     needs: build_and_push
