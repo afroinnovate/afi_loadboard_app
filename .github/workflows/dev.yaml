@@ -188,21 +188,21 @@ jobs:
           echo "Droplet ID: $DROPLET_ID"
           echo "DROPLET_ID=$DROPLET_ID" >> $GITHUB_ENV
 
-        - name: Get Droplet IP
-          run: |
-            DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
-            echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
+      - name: Get Droplet IP
+        run: |
+          DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
+          echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
 
-        - name: Create Docker Network on Droplet
-          run: |
-            ssh -o StrictHostKeyChecking=no root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
+      - name: Create Docker Network on Droplet
+        run: |
+          ssh -o StrictHostKeyChecking=no root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
 
-        - name: Deploy to Droplet
-          run: |
-            ssh-keyscan $DROPLET_IP >> ~/.ssh/known_hosts
-            ssh root@$DROPLET_IP "apt update && apt install -y docker.io"
-            ssh root@$DROPLET_IP "docker pull $RELEASE_TAG"
-            ssh root@$DROPLET_IP "docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG"
+      - name: Deploy to Droplet
+        run: |
+          ssh-keyscan $DROPLET_IP >> ~/.ssh/known_hosts
+          ssh root@$DROPLET_IP "apt update && apt install -y docker.io"
+          ssh root@$DROPLET_IP "docker pull $RELEASE_TAG"
+          ssh root@$DROPLET_IP "docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG"
 
             
             
