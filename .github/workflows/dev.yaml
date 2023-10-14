@@ -201,18 +201,38 @@ jobs:
           DROPLET_SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
+          echo "SSH_PRIVATE_KEY=$DROPLET_SSH_PRIVATE_KEY" >> $GITHUB_ENV
           chmod 600 droplet_private_ssh_key 
+
+      - name: Check if Docker Network Exists on Droplet
+        run: |
+          EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
+          echo "EXISTING_NETWORK=$EXISTING_NETWORK" >> $GITHUB_ENV
 
       - name: Create Docker Network on Droplet
         run: |
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
+          if [ -z "$EXISTING_NETWORK" ]; then
+            ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network"
+          else
+            echo "Docker network afi-loadbaord-network already exists. Skipping creation."
+          fi
+
+      # - name: Create Docker Network on Droplet
+      #   run: |
+      #     echo "creating docker network on droplet"
+      #     ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
 
       - name: Deploy to Droplet
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh-keyscan $DROPLET_IP >> ~/.ssh/known_hosts
-          ssh root@$DROPLET_IP "apt update && apt install -y docker.io"
-          ssh root@$DROPLET_IP "docker pull $RELEASE_TAG"
-          ssh root@$DROPLET_IP "docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG"
+          # Run commands on the remote server
+          echo "deplying image $RELEASE_TAG in the droplet vm"
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+            sudo apt update && sudo apt install -y docker.io
+            docker pull $RELEASE_TAG
+            docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG
+          EOF
 
             
             
