@@ -116,11 +116,19 @@ jobs:
         run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
 
     outputs:
-        image_digest: ${{ env.RELEASE_TAG }}
+      image_digest: ${{ env.RELEASE_TAG }}
+
+  checkout_tag:
+    needs: [prepare, build_and_push]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fix-deployment'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Tag
+        run: echo "${{needs.build_and_push.outputs.image_digest}}"
 
   deploy:
     needs: build_and_push
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fix-deployment'
+    if: github.event_name != 'workflow_dispatch' && github.ref != 'refs/heads/fix-deployment'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
@@ -128,7 +136,7 @@ jobs:
 
       - name: Display Tag
         run: echo "${{needs.build_and_push.outputs.image_digest}}"
-        
+
       - name: Get Tag
         run: |
           echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
