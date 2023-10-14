@@ -172,6 +172,12 @@ jobs:
             echo "No existing Droplet with name afi-load-board found."
           fi
 
+
+      # - name: Get SSH Key Fingerprint
+      #   run: |
+      #     SSH_FINGERPRINT=$(doctl compute ssh-key list --format FingerPrint --no-header)
+      #     echo "SSH_FINGERPRINT=$SSH_FINGERPRINT" >> $GITHUB_ENV
+
       - name: Create a Droplet
         if: env.DROPLET_ID == ''
         env:
@@ -180,9 +186,6 @@ jobs:
         run: |
           echo "$DROPLET_SSH_KEY" > droplet_ssh_key
           chmod 600 droplet_ssh_key
-
-          SSH_FINGERPRINT=$(ssh-keygen -E md5 -lf droplet_ssh_key | awk '{print $2}' | sed 's/^MD5://')
-          doctl compute ssh-key import github-action-key --public-key "$DROPLET_SSH_KEY"
 
           DROPLET_ID=$(doctl compute droplet create afi-load-board --size s-1vcpu-1gb --image ubuntu-20-04-x64 --region sfo3 --ssh-keys $SSH_FINGERPRINT --format ID --no-header --wait)
           echo "Droplet ID: $DROPLET_ID"
