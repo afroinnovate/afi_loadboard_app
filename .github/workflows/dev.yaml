@@ -203,6 +203,10 @@ jobs:
           echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
           chmod 600 droplet_private_ssh_key 
 
+      - name: Install Docker on Droplet
+        run: |
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
+
       - name: Check if Docker Network Exists on Droplet
         run: |
           EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
@@ -228,7 +232,6 @@ jobs:
           # Run commands on the remote server
           echo "deplying image $RELEASE_TAG in the droplet vm"
           ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
-            sudo apt update && sudo apt install -y docker.io
             docker pull $RELEASE_TAG
             docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG
           EOF
