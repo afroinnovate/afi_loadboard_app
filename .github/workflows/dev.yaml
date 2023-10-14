@@ -196,9 +196,16 @@ jobs:
           DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
           echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
 
+      - name: Setup SSH key for Droplet
+        env:
+          DROPLET_SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
+          chmod 600 droplet_private_ssh_key 
+
       - name: Create Docker Network on Droplet
         run: |
-          ssh -o StrictHostKeyChecking=no root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
 
       - name: Deploy to Droplet
         run: |
