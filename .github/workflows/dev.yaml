@@ -201,7 +201,6 @@ jobs:
           DROPLET_SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
-          echo "SSH_PRIVATE_KEY=$DROPLET_SSH_PRIVATE_KEY" >> $GITHUB_ENV
           chmod 600 droplet_private_ssh_key 
 
       - name: Check if Docker Network Exists on Droplet
