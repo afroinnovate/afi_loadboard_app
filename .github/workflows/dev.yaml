@@ -116,20 +116,40 @@ jobs:
         run: echo "::notice title=Pushing tag::${{env.RELEASE_TAG}}"
 
     outputs:
-        image_digest: ${{ env.RELEASE_TAG }}
+      image_digest: ${{ env.RELEASE_TAG }}
 
+  checkout_tag:
+    needs: [prepare, build_and_push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Tag
+        run: |
+          if [-z "${{needs.prepare.outputs.TAG}}" ]; then
+            echo "Release doesn't exist"
+            exit 1
+          else
+            echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+          fi
+    outputs:
+      release_tag: ${{ env.RELEASE_TAG}}
+        
   deploy:
-    needs: build_and_push
+    needs: [checkout_tag, prepare]
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
         uses: actions/checkout@v3
 
-      - name: Get Tag
+      - name: Display and set Tag
         run: |
-          echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
-          echo "Retrieved the docker image tag: ${{ env.RELEASE_TAG }}"
+          if [-z "${{needs.checkout_tag.outputs.release_tag}}" ]; then
+            echo "Release doesn't exist"
+            exit 1
+          else
+            echo "RELEASE_TAG=${{needs.checkout_tag.outputs.release_tag}}" >> $GITHUB_ENV
+            echo "Retrieved the docker image tag: ${{ env.RELEASE_TAG }}"
+          fi
 
       # Step to check if doctl is already installed
       - name: Check if doctl is installed
@@ -172,17 +192,19 @@ jobs:
             echo "No existing Droplet with name afi-load-board found."
           fi
 
+      - name: Get SSH Key Fingerprint
+        run: |
+          SSH_FINGERPRINT=$(doctl compute ssh-key list --format FingerPrint --no-header)
+          echo "SSH_FINGERPRINT=$SSH_FINGERPRINT" >> $GITHUB_ENV
+
       - name: Create a Droplet
         if: env.DROPLET_ID == ''
         env:
-          DROPLET_SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          DROPLET_SSH_KEY: ${{ env.SSH_FINGERPRINT }}
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: |
           echo "$DROPLET_SSH_KEY" > droplet_ssh_key
           chmod 600 droplet_ssh_key
-
-          SSH_FINGERPRINT=$(ssh-keygen -E md5 -lf droplet_ssh_key | awk '{print $2}' | sed 's/^MD5://')
-          doctl compute ssh-key import github-action-key --public-key "$DROPLET_SSH_KEY"
 
           DROPLET_ID=$(doctl compute droplet create afi-load-board --size s-1vcpu-1gb --image ubuntu-20-04-x64 --region sfo3 --ssh-keys $SSH_FINGERPRINT --format ID --no-header --wait)
           echo "Droplet ID: $DROPLET_ID"
@@ -193,16 +215,82 @@ jobs:
           DROPLET_IP=$(doctl compute droplet get $DROPLET_ID --format PublicIPv4 --no-header)
           echo "DROPLET_IP=$DROPLET_IP" >> $GITHUB_ENV
 
-      - name: Create Docker Network on Droplet
+      - name: Setup SSH key for Droplet
+        env:
+          DROPLET_SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          ssh -o StrictHostKeyChecking=no root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
+          echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
+          chmod 600 droplet_private_ssh_key 
+
+      # New step to check if Docker is installed
+      - name: Check if Docker is Installed
+        id: check_docker
+        run: |
+          DOCKER_INSTALLED=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "command -v docker || echo 'not installed'")
+          if [ "$DOCKER_INSTALLED" == "not installed" ]; then
+            echo "Docker is not installed."
+            echo "DOCKER_INSTALLED=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Docker is installed."
+            echo "DOCKER_INSTALLED=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Docker on Droplet
+        if: "${{ steps.check_docker.outputs.DOCKER_INSTALLED == 'false' }}"
+        run: |
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
+
+      - name: Check if Docker Network Exists on Droplet
+        id: check_network
+        run: |
+          # Check if Docker Network exists
+          EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
+          if [ -z "$EXISTING_NETWORK" ]; then
+            echo "Network not found."
+            echo "NETWORK_FOUND=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Network found."
+            echo "NETWORK_FOUND=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Docker Network on Droplet
+        if: "${{ steps.check_network.outputs.NETWORK_FOUND == 'false' }}"
+        run: |
+          if [ -z "$EXISTING_NETWORK" ]; then
+            ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network"
+          else
+            echo "Docker network afi-loadbaord-network already exists. Skipping creation."
+          fi
+
+      - name: Docker Login on Droplet
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          # Log into Docker Hub
+          echo "Logging into Docker Hub in droplet VM"
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
 
       - name: Deploy to Droplet
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          ssh-keyscan $DROPLET_IP >> ~/.ssh/known_hosts
-          ssh root@$DROPLET_IP "apt update && apt install -y docker.io"
-          ssh root@$DROPLET_IP "docker pull $RELEASE_TAG"
-          ssh root@$DROPLET_IP "docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG"
+          # Run commands on the remote server
+          echo "Deploying image $RELEASE_TAG in the Droplet VM"
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+            echo "RELEASE_TAG is: $RELEASE_TAG"
+            if [ -z "$RELEASE_TAG" ]; then
+              echo "RELEASE_TAG is not set. Exiting."
+              exit 1
+            fi
+
+            docker pull $RELEASE_TAG
+            # docker run -d -p 80:3000 $RELEASE_TAG use this one if the neworking is causing issues
+            docker run -d -p 80:3000 --network afi-loadbaord-network $RELEASE_TAG
+          EOF
+
 
             
             
