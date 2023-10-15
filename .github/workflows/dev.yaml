@@ -124,12 +124,12 @@ jobs:
     steps:
       - name: Display Tag
         run: |
-        if [-z "${{needs.prepare.outputs.TAG}}" ]; then
-          echo "Release doesn't exist"
-          exit 1
-        else
-           echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
-        fi
+          if [-z "${{needs.prepare.outputs.TAG}}" ]; then
+            echo "Release doesn't exist"
+            exit 1
+          else
+            echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+          fi
     outputs:
       release_tag: ${{ env.RELEASE_TAG}}
         
