@@ -123,23 +123,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Display Tag
-        run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+        run: |
+        if [-z "${{needs.prepare.outputs.TAG}}" ]; then
+          echo "Release doesn't exist"
+          exit 1
+        else
+           echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
+        fi
+    outputs:
+      release_tag: ${{ env.RELEASE_TAG}}
         
   deploy:
-    needs: [build_and_push]
+    needs: [checkout_tag, prepare]
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fix-deployment'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
         uses: actions/checkout@v3
 
-      - name: Display Tag
-        run: echo "${{needs.build_and_push.outputs.image_digest}}"
-
-      - name: Get Tag
+      - name: Display and set Tag
         run: |
-          echo "RELEASE_TAG=${{ needs.build_and_push.outputs.image_digest }}" >> $GITHUB_ENV
-          echo "Retrieved the docker image tag: ${{ env.RELEASE_TAG }}"
+          if [-z "${{needs.checkout_tag.outputs.release_tag}}" ]; then
+            echo "Release doesn't exist"
+            exit 1
+          else
+            echo "RELEASE_TAG=${{needs.checkout_tag.outputs.release_tag}}" >> $GITHUB_ENV
+            echo "Retrieved the docker image tag: ${{ env.RELEASE_TAG }}"
+          fi
 
       # Step to check if doctl is already installed
       - name: Check if doctl is installed
@@ -213,7 +223,21 @@ jobs:
           echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
           chmod 600 droplet_private_ssh_key 
 
+      # New step to check if Docker is installed
+      - name: Check if Docker is Installed
+        id: check_docker
+        run: |
+          DOCKER_INSTALLED=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "command -v docker || echo 'not installed'")
+          if [ "$DOCKER_INSTALLED" == "not installed" ]; then
+            echo "Docker is not installed."
+            echo "DOCKER_INSTALLED=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Docker is installed."
+            echo "DOCKER_INSTALLED=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install Docker on Droplet
+        if: "${{ steps.check_docker.outputs.DOCKER_INSTALLED == 'false' }}"
         run: |
           ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
 
