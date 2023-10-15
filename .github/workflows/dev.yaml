@@ -287,7 +287,8 @@ jobs:
             fi
 
             docker pull $RELEASE_TAG
-            docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG
+            # docker run -d -p 80:3000 $RELEASE_TAG use this one if the neworking is causing issues
+            docker run -d -p 80:3000 --network afi-loadbaord-network $RELEASE_TAG
           EOF
 
 
