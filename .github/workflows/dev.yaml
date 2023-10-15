@@ -192,7 +192,6 @@ jobs:
             echo "No existing Droplet with name afi-load-board found."
           fi
 
-
       - name: Get SSH Key Fingerprint
         run: |
           SSH_FINGERPRINT=$(doctl compute ssh-key list --format FingerPrint --no-header)
@@ -242,11 +241,20 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
 
       - name: Check if Docker Network Exists on Droplet
+        id: check_network
         run: |
+          # Check if Docker Network exists
           EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
-          echo "EXISTING_NETWORK=$EXISTING_NETWORK" >> $GITHUB_ENV
+          if [ -z "$EXISTING_NETWORK" ]; then
+            echo "Network not found."
+            echo "NETWORK_FOUND=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Network found."
+            echo "NETWORK_FOUND=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create Docker Network on Droplet
+        if: "${{ steps.check_network.outputs.NETWORK_FOUND == 'false' }}"
         run: |
           if [ -z "$EXISTING_NETWORK" ]; then
             ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network"
@@ -254,14 +262,20 @@ jobs:
             echo "Docker network afi-loadbaord-network already exists. Skipping creation."
           fi
 
-      # - name: Create Docker Network on Droplet
-      #   run: |
-      #     echo "creating docker network on droplet"
-      #     ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network || true"
+      - name: Docker Login on Droplet
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          # Log into Docker Hub
+          echo "Logging into Docker Hub in droplet VM"
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
 
       - name: Deploy to Droplet
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           # Run commands on the remote server
           echo "Deploying image $RELEASE_TAG in the Droplet VM"
@@ -271,6 +285,7 @@ jobs:
               echo "RELEASE_TAG is not set. Exiting."
               exit 1
             fi
+
             docker pull $RELEASE_TAG
             docker run -d -p 80:300 --network afi-loadbaord-network $RELEASE_TAG
           EOF
