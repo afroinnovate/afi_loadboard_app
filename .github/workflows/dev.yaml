@@ -288,6 +288,7 @@ jobs:
               echo "running_container=false" >> "$GITHUB_OUTPUT"
             fi
           EOF
+        continue-on-error: true
 
       - name: Check if image with same tag exists and remove it
         if: "${{ steps.check_container.outputs.running_container == 'true' }}"
@@ -303,6 +304,7 @@ jobs:
               echo "No existing image with tag $RELEASE_TAG found."
             fi
           EOF
+        continue-on-error: true
 
       - name: Deploy to Droplet
         env:
