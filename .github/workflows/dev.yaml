@@ -271,6 +271,39 @@ jobs:
           echo "Logging into Docker Hub in droplet VM"
           ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
 
+      - name: Check if container with same image tag is running and remove it
+        id: check_container
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+            CONTAINER_ID=\$(docker ps --filter ancestor=$RELEASE_TAG -q)
+            if [ ! -z "$CONTAINER_ID" ]; then
+              echo "Stopping and removing running container with image tag $RELEASE_TAG"
+              docker stop $CONTAINER_ID
+              docker rm $CONTAINER_ID
+              echo "running_container=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "No running container with image tag $RELEASE_TAG found."
+              echo "running_container=false" >> "$GITHUB_OUTPUT"
+            fi
+          EOF
+
+      - name: Check if image with same tag exists and remove it
+        if: "${{ steps.check_container.outputs.running_container == 'true' }}"
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+            IMAGE_ID=\$(docker images -q $RELEASE_TAG)
+            if [ ! -z "$IMAGE_ID" ]; then
+              echo "Removing existing image with tag $RELEASE_TAG"
+              docker rmi -f $IMAGE_ID
+            else
+              echo "No existing image with tag $RELEASE_TAG found."
+            fi
+          EOF
+
       - name: Deploy to Droplet
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
