@@ -1,5 +1,5 @@
 # Use a specific Node.js version for consistent behavior
-FROM node:20
+FROM node:18
 
 # Set working directory in Docker
 WORKDIR /app
