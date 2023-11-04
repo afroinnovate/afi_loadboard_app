@@ -10,6 +10,7 @@ Welcome to the AfroInnovate loadboard Landing Page App built using React. This r
 - [License](#license)
 
 ## Dependencies
+
 Go to react readme here
 This app is built using the React framework and has the following main dependencies:
 
@@ -18,7 +19,6 @@ This app is built using the React framework and has the following main dependenc
 - `react-dom`: React library for DOM rendering
 - `react-router-dom`: For routing and navigation
 
-
 You can check out `package.json` for a full list of dependencies.
 
 ## Getting Started
@@ -26,16 +26,25 @@ You can check out `package.json` for a full list of dependencies.
 To run this project locally:
 
 1. Clone the repository:
-`git clone https://github.com/afroinnovate/afi-loadboard-app.git`
+   `git clone https://github.com/afroinnovate/afi-loadboard-app.git`
 
 2. Change directory into the cloned repository:
-`cd afi-loadboard-app`
+
+```sh
+cd afi-loadboard-app
+```
 
 3. Install the dependencies:
-`npm install`
+
+```sh
+npm install
+```
 
 4. Run the development server:
-`npm start`
+
+```sh
+npm run dev
+```
 
 ## Running with Docker Compose
 
@@ -51,6 +60,7 @@ Using Docker Compose is a convenient way to run multi-container applications. Wi
 2. Build and start the service:
    ```shell
    docker-compose up --build
+   ```
 
 After the services start, you can access the app in your browser at http://localhost:3000.
 
@@ -58,8 +68,7 @@ After the services start, you can access the app in your browser at http://local
 
 To stop the services, simply run:
 
-```docker-compose down```
-
+`docker-compose down`
 
 This will start the development server, and you can view the app in your browser at `http://localhost:3000`.
 
@@ -69,22 +78,16 @@ We appreciate all contributions! If you'd like to contribute, please follow thes
 
 1. Fork the repository.
 2. Clone your forked repository:
-`git clone https://github.com/afroinnovate/afi-loadboard-app.git`
+   `git clone https://github.com/afroinnovate/afi-loadboard-app.git`
 
-4. Change directory into the cloned repository:
-`cd afi-loadboard-app`
+3. Change directory into the cloned repository:
+   `cd afi-loadboard-app`
 
-6. Create a new branch off the `develop` branch:
-`git checkout -b feature/my-new-feature develop`
+4. Create a new branch off the `develop` branch:
+   `git checkout -b feature/my-new-feature develop`
 
 5. Make your changes and commit them.
-   
-7. Push the changes to your forked repository on GitHub.
-   
-9. Create a Pull Request targeting the `develop` branch of the original repository.
+6. Push the changes to your forked repository on GitHub.
+7. Create a Pull Request targeting the `develop` branch of the original repository.
 
 Once your Pull Request is approved and merged, you can safely delete your branch.
-
-
-
-

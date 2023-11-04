@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy package.json and package-lock.json to leverage Docker cache
 # This way, npm install only runs if these files change
-COPY ./app/package*.json ./
+COPY ./package*.json ./
 
 # Install all dependencies
 RUN npm install
