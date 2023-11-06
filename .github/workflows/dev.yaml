@@ -15,21 +15,21 @@ jobs:
     if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
+    - name: Use SHA for tag if not main
+      if: (github.event_name == 'push' && github.ref != 'refs/heads/develop') || github.event_name == 'workflow_dispatch'
+      run: echo "RELEASE_TAG=${{ env.REPOSITORY }}:$(echo ${{ github.sha }} | cut -c 1-6)" >> $GITHUB_ENV
+      
     - name: Extract tag based on environment from manifest.yaml
-      if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
+      if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
       run: |
         TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
         echo "TAG=$TAG" >> $GITHUB_ENV
     
-    - name: Use SHA for tag if not main
-      if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
-      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
-      
     - name: Set Git Config
       if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
       run: |
@@ -37,7 +37,7 @@ jobs:
         git config --global --replace-all user.name 'actions@github.com'
     
     - name: Check if Git tag exists
-      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
       id: check_tag
       run: |
         TAG_NAME=${{ env.TAG }}
@@ -55,14 +55,14 @@ jobs:
       run: |
         echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
 
-    - name: Push Git Tag
-      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+    - name: Push Git Tag if main
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}" #allow the tag to get overriden
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
 
     - name: Create PreRelease
-      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}"
       run: |
         curl -X POST \
           -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
@@ -81,11 +81,11 @@ jobs:
 
   build_and_push:
     needs: [prepare]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Determine tag for image
         run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
@@ -109,7 +109,7 @@ jobs:
         if: env.PULL_SUCCEEDED == 'false'
         run: |
           DOCKER_IMAGE=${{ env.RELEASE_TAG }}
-          docker build -t $DOCKER_IMAGE .
+          docker build -t $DOCKER_IMAGE -f dockerfile.dev .
           docker push $DOCKER_IMAGE
       
       - name: Display tag in the Summary
@@ -135,11 +135,11 @@ jobs:
         
   deploy:
     needs: [checkout_tag, prepare]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Display and set Tag
         run: |
@@ -276,19 +276,21 @@ jobs:
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
-            CONTAINER_ID=\$(docker ps --filter ancestor=$RELEASE_TAG -q)
-            if [ ! -z "$CONTAINER_ID" ]; then
-              echo "Stopping and removing running container with image tag $RELEASE_TAG"
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << 'EOF'
+            # Find the container ID of the currently running container on port 80 and stop it
+            CONTAINER_ID=$(docker ps --filter "publish=80" -q)
+            if [ -n "$CONTAINER_ID" ]; then
+              echo "Stopping and removing running container bound to port 80"
               docker stop $CONTAINER_ID
-              docker rm $CONTAINER_ID
+              docker container rm $CONTAINER_ID
               echo "running_container=true" >> "$GITHUB_OUTPUT"
             else
-              echo "No running container with image tag $RELEASE_TAG found."
+              echo "No running container on port 80 found."
               echo "running_container=false" >> "$GITHUB_OUTPUT"
             fi
           EOF
         continue-on-error: true
+        
 
       - name: Check if image with same tag exists and remove it
         if: "${{ steps.check_container.outputs.running_container == 'true' }}"
@@ -322,7 +324,6 @@ jobs:
             fi
 
             docker pull $RELEASE_TAG
-            # docker run -d -p 80:3000 $RELEASE_TAG use this one if the neworking is causing issues
             docker run -d -p 80:3000 --network afi-loadbaord-network $RELEASE_TAG
           EOF
 
