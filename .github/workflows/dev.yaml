@@ -218,16 +218,16 @@ jobs:
 
       - name: Setup SSH key for Droplet
         env:
-          DROPLET_SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DROPLET_SSH_PRIVATE_KEY: droplet_ssh_key
         run: |
-          echo "$DROPLET_SSH_PRIVATE_KEY" > ${{ secrets.DROPLET_SSH_KEY }}
-          chmod 600 ${{ secrets.DROPLET_SSH_KEY }} 
+          echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
+          chmod 600 droplet_private_ssh_key
 
       # New step to check if Docker is installed
       - name: Check if Docker is Installed
         id: check_docker
         run: |
-          DOCKER_INSTALLED=$(ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "command -v docker || echo 'not installed'")
+          DOCKER_INSTALLED=$(ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP "command -v docker || echo 'not installed'")
           if [ "$DOCKER_INSTALLED" == "not installed" ]; then
             echo "Docker is not installed."
             echo "DOCKER_INSTALLED=false" >> "$GITHUB_OUTPUT"
@@ -239,13 +239,13 @@ jobs:
       - name: Install Docker on Droplet
         if: "${{ steps.check_docker.outputs.DOCKER_INSTALLED == 'false' }}"
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
+          ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
 
       - name: Check if Docker Network Exists on Droplet
         id: check_network
         run: |
           # Check if Docker Network exists
-          EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
+          EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
           if [ -z "$EXISTING_NETWORK" ]; then
             echo "Network not found."
             echo "NETWORK_FOUND=false" >> "$GITHUB_OUTPUT"
@@ -258,7 +258,7 @@ jobs:
         if: "${{ steps.check_network.outputs.NETWORK_FOUND == 'false' }}"
         run: |
           if [ -z "$EXISTING_NETWORK" ]; then
-            ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "docker network create afi-loadbaord-network"
+            ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network"
           else
             echo "Docker network afi-loadbaord-network already exists. Skipping creation."
           fi
@@ -270,14 +270,14 @@ jobs:
         run: |
           # Log into Docker Hub
           echo "Logging into Docker Hub in droplet VM"
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
+          ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
 
       - name: Check if container with same image tag is running and remove it
         id: check_container
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP << EOF
+          ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP << EOF
             # Find the container ID of the currently running container on port 80 and stop it
             CONTAINER_ID=$(docker ps --filter "publish=80")
             if [ -n "$CONTAINER_ID" ]; then
@@ -297,7 +297,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP << EOF
+          ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP << EOF
             IMAGE_ID=\$(docker images -q $RELEASE_TAG)
             if [ ! -z "$IMAGE_ID" ]; then
               echo "Removing existing image with tag $RELEASE_TAG"
@@ -316,7 +316,7 @@ jobs:
         run: |
           # Run commands on the remote server
           echo "Deploying image $RELEASE_TAG in the Droplet VM"
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP << EOF
+          ssh -o StrictHostKeyChecking=no -i droplet_ssh_key root@$DROPLET_IP << EOF
             echo "RELEASE_TAG is: $RELEASE_TAG"
             if [ -z "$RELEASE_TAG" ]; then
               echo "RELEASE_TAG is not set. Exiting."
