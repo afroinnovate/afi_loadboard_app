@@ -31,7 +31,7 @@ jobs:
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
         echo "TAG=$TAG" >> $GITHUB_ENV
     
-        - name: Set Git Config
+    - name: Set Git Config
       if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
       run: |
         git config --global --replace-all user.email 'GitHub Action'
