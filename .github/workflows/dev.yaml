@@ -277,20 +277,21 @@ jobs:
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << 'EOF'
             # Find the container ID of the currently running container on port 80 and stop it
-            CONTAINER_ID=$(docker ps --filter "publish=80")
+            CONTAINER_ID=$(docker ps --filter "publish=80" -q)
             if [ -n "$CONTAINER_ID" ]; then
-              echo "Stopping and removing running container with image tag $RELEASE_TAG"
+              echo "Stopping and removing running container bound to port 80"
               docker stop $CONTAINER_ID
               docker container rm $CONTAINER_ID
               echo "running_container=true" >> "$GITHUB_OUTPUT"
             else
-              echo "No running container with image tag $RELEASE_TAG found."
+              echo "No running container on port 80 found."
               echo "running_container=false" >> "$GITHUB_OUTPUT"
             fi
           EOF
         continue-on-error: true
+        
 
       - name: Check if image with same tag exists and remove it
         if: "${{ steps.check_container.outputs.running_container == 'true' }}"
@@ -323,6 +324,9 @@ jobs:
               exit 1
             fi
 
+            #stop any container running on port 80.
+            docker stop \$(docker ps --filter "publish=80" -q)
+            docker ps -a
             docker pull $RELEASE_TAG
             docker run -d -p 80:3000 --network afi-loadbaord-network $RELEASE_TAG
           EOF
