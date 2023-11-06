@@ -15,20 +15,20 @@ jobs:
     if: (github.event_name == 'push' && contains(github.ref, 'develop')) || github.event_name == 'workflow_dispatch' 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         token: ${{ secrets.ORG_GITHUB_TOKEN }}
+ 
+    - name: Use SHA for tag if not main
+      if: (github.event_name == 'push' && github.ref != 'refs/heads/develop') || github.event_name == 'workflow_dispatch'
+      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
 
     - name: Extract tag based on environment from manifest.yaml
-      if: github.ref == 'refs/heads/develop' && github.event_name == 'workflow_dispatch'
+      if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
       run: |
         TAG=$(grep -A1 "dev:" manifest.yaml | grep 'version:' | awk '{print $2}')
         echo "RELEASE_TAG=${{env.REPOSITORY}}:${TAG}" >> $GITHUB_ENV
         echo "TAG=$TAG" >> $GITHUB_ENV
-    
-    - name: Use SHA for tag if not main
-      if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
-      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
       
     - name: Set Git Config
       if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
@@ -56,13 +56,13 @@ jobs:
         echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
 
     - name: Push Git Tag
-      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+      #  if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}" #allow the tag to get overriden
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
 
     - name: Create PreRelease
-      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}"
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}"
       run: |
         curl -X POST \
           -H "Authorization: token ${{ secrets.ORG_GITHUB_TOKEN }}" \
@@ -81,11 +81,11 @@ jobs:
 
   build_and_push:
     needs: [prepare]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Determine tag for image
         run: echo "RELEASE_TAG=${{needs.prepare.outputs.TAG}}" >> $GITHUB_ENV
@@ -135,7 +135,7 @@ jobs:
         
   deploy:
     needs: [checkout_tag, prepare]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
@@ -219,14 +219,14 @@ jobs:
         env:
           DROPLET_SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          echo "$DROPLET_SSH_PRIVATE_KEY" > droplet_private_ssh_key
-          chmod 600 droplet_private_ssh_key 
+          echo "$DROPLET_SSH_PRIVATE_KEY" > ${{ secrets.DROPLET_SSH_KEY }}
+          chmod 600 ${{ secrets.DROPLET_SSH_KEY }} 
 
       # New step to check if Docker is installed
       - name: Check if Docker is Installed
         id: check_docker
         run: |
-          DOCKER_INSTALLED=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "command -v docker || echo 'not installed'")
+          DOCKER_INSTALLED=$(ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "command -v docker || echo 'not installed'")
           if [ "$DOCKER_INSTALLED" == "not installed" ]; then
             echo "Docker is not installed."
             echo "DOCKER_INSTALLED=false" >> "$GITHUB_OUTPUT"
@@ -238,13 +238,13 @@ jobs:
       - name: Install Docker on Droplet
         if: "${{ steps.check_docker.outputs.DOCKER_INSTALLED == 'false' }}"
         run: |
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "sudo apt update && apt install -y docker.io"
 
       - name: Check if Docker Network Exists on Droplet
         id: check_network
         run: |
           # Check if Docker Network exists
-          EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
+          EXISTING_NETWORK=$(ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "docker network ls --filter name=afi-loadbaord-network -q")
           if [ -z "$EXISTING_NETWORK" ]; then
             echo "Network not found."
             echo "NETWORK_FOUND=false" >> "$GITHUB_OUTPUT"
@@ -257,7 +257,7 @@ jobs:
         if: "${{ steps.check_network.outputs.NETWORK_FOUND == 'false' }}"
         run: |
           if [ -z "$EXISTING_NETWORK" ]; then
-            ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "docker network create afi-loadbaord-network"
+            ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "docker network create afi-loadbaord-network"
           else
             echo "Docker network afi-loadbaord-network already exists. Skipping creation."
           fi
@@ -269,19 +269,20 @@ jobs:
         run: |
           # Log into Docker Hub
           echo "Logging into Docker Hub in droplet VM"
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP "echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
 
       - name: Check if container with same image tag is running and remove it
         id: check_container
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
-            CONTAINER_ID=\$(docker ps --filter ancestor=$RELEASE_TAG -q)
-            if [ ! -z "$CONTAINER_ID" ]; then
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP << EOF
+            # Find the container ID of the currently running container on port 80 and stop it
+            CONTAINER_ID=$(docker ps --filter "publish=80")
+            if [ -n "$CONTAINER_ID" ]; then
               echo "Stopping and removing running container with image tag $RELEASE_TAG"
               docker stop $CONTAINER_ID
-              docker rm $CONTAINER_ID
+              docker container rm $CONTAINER_ID
               echo "running_container=true" >> "$GITHUB_OUTPUT"
             else
               echo "No running container with image tag $RELEASE_TAG found."
@@ -295,7 +296,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP << EOF
             IMAGE_ID=\$(docker images -q $RELEASE_TAG)
             if [ ! -z "$IMAGE_ID" ]; then
               echo "Removing existing image with tag $RELEASE_TAG"
@@ -314,7 +315,7 @@ jobs:
         run: |
           # Run commands on the remote server
           echo "Deploying image $RELEASE_TAG in the Droplet VM"
-          ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << EOF
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.DROPLET_SSH_KEY }} root@$DROPLET_IP << EOF
             echo "RELEASE_TAG is: $RELEASE_TAG"
             if [ -z "$RELEASE_TAG" ]; then
               echo "RELEASE_TAG is not set. Exiting."
@@ -322,7 +323,6 @@ jobs:
             fi
 
             docker pull $RELEASE_TAG
-            # docker run -d -p 80:3000 $RELEASE_TAG use this one if the neworking is causing issues
             docker run -d -p 80:3000 --network afi-loadbaord-network $RELEASE_TAG
           EOF
 
