@@ -37,7 +37,7 @@ jobs:
         git config --global --replace-all user.name 'actions@github.com'
     
     - name: Check if Git tag exists
-      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
       id: check_tag
       run: |
         TAG_NAME=${{ env.TAG }}
