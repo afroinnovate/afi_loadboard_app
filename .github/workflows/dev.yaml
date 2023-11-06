@@ -21,7 +21,8 @@ jobs:
  
     - name: Use SHA for tag if not main
       if: (github.event_name == 'push' && github.ref != 'refs/heads/develop') || github.event_name == 'workflow_dispatch'
-      run: echo "RELEASE_TAG=${{ env.REPOSITORY}}:${{ github.sha }}" >> $GITHUB_ENV
+      run: echo "RELEASE_TAG=${{ env.REPOSITORY }}:$(echo ${{ github.sha }} | cut -c 1-6)" >> $GITHUB_ENV
+      
 
     - name: Extract tag based on environment from manifest.yaml
       if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
@@ -55,8 +56,8 @@ jobs:
       run: |
         echo "Tag Exists: ${{ steps.check_tag.outputs.tag-exists }}"
 
-    - name: Push Git Tag
-      #  if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}" #allow the tag to get overriden
+    - name: Push Git Tag if main
+      if: "${{ steps.check_tag.outputs.tag-exists == 'false' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}" #allow the tag to get overriden
       run: |
         git tag -a ${{ env.TAG }} -m "Release ${{ env.TAG }}"
         git push --no-verify origin refs/tags/${{ env.TAG }}
