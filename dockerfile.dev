@@ -6,16 +6,16 @@ WORKDIR /app
 
 # Copy package.json and package-lock.json to leverage Docker cache
 # This way, npm install only runs if these files change
-COPY ./package*.json ./
+COPY package*.json ./
 
 # Install all dependencies
 RUN npm install
 
 # Copy the rest of the application code
-COPY ./app .
+COPY . .
 
 # Specify port
 EXPOSE 3000
 
 # Start the app
-CMD [ "npm", "start" ]
+CMD [ "npm", "run", "dev" ]
