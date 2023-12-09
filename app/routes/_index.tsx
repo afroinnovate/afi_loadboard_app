@@ -1,5 +1,5 @@
-import type { MetaFunction } from '@remix-run/node';
-import { Link } from '@remix-run/react';
+import type { LinksFunction, MetaFunction } from '@remix-run/node';
+import { Link, Outlet } from '@remix-run/react';
 
 export const meta: MetaFunction = () => {
   return [{
@@ -7,7 +7,6 @@ export const meta: MetaFunction = () => {
     description: 'Welcome to AfroInnovate LoadBoard App'
   }];
 };
-
 
 export default function Index() {
   // Define CSS for the main benefit boxes and additional benefit boxes
@@ -143,92 +142,77 @@ export default function Index() {
   
   
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.8', backgroundColor: '#f5f5f5', padding: '2rem' }}>
-      <nav style={headerStyle}>
-        <Link to="/" style={navLinkStyle}>AFI Load Board</Link>
+    <div className="font-sans leading-10 bg-gray-100 p-8">
+      <nav className="header">
+        <Link to="/" className="nav-link">AFI Load Board</Link>
         <div>
-          <Link to="/features" style={navLinkStyle}>Features</Link>
-          <Link to="/how-it-works" style={navLinkStyle}>How It Works</Link>
-          <Link to="/pricing" style={navLinkStyle}>Pricing</Link>
-          <Link to="/contact" style={navLinkStyle}>Contact</Link>
-          <Link to="/sign-up" style={{ ...navLinkStyle, backgroundColor: '#ffa500', color: 'white', borderRadius: '5px' }}>Sign Up</Link>
+          <Link to="/features" className="nav-link">Features</Link>
+          <Link to="/how-it-works" className="nav-link">How It Works</Link>
+          <Link to="/pricing" className="nav-link">Pricing</Link>
+          <Link to="/contact" className="nav-link">Contact</Link>
+          <Link to="/signup" className="nav-link sign-up-button">Sign Up</Link>
         </div>
       </nav>
-      <header style={{ backgroundColor: '#fff', padding: '2rem', textAlign: 'center', marginBottom: '2rem', marginTop: '2rem' }}>
-        <h1 style={{ margin: '0 0 1rem 0', fontSize: '2.5rem', color: '#333' }}>Welcome to the Load Board</h1>
-        <p style={{ margin: '0 0 2rem 0', color: '#666' }}>Your One-Stop Solution for Freight Transportation</p>
-        <Link to="/get-started" style={primaryActionStyle}>Get Started</Link>
+        {/* ... rest of your nav component ... */}
+      <header className="page-header">
+        <h1 className="title">Welcome to the Load Board</h1>
+        <p className="description">Your One-Stop Solution for Freight Transportation</p>
+        <Link to="/get-started" className="primary-action">Get Started</Link>
       </header>
 
-      <main style={{ backgroundColor: '#fff', padding: '2rem' }}>
+      <body className='main-section'>
         {/* Main benefits row */}
-        <h2 style={sectionTitleStyle}>
+        <h2 className='section-title'>
           Wherever You Roll, We're Your Road: Partner with Us for Profitable Journeys  
         </h2>
 
-        <div style={carrierBenefitSectionStyle}>
-          <Link to="/find-loads" style={mainBenefitStyle} onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+        <div className='benefit-section'>
+          <Link to="/find-loads" className='main-benefit' onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
             <h2>Unlock Your Earning Potential</h2>
             <p>Gain access to premium loads tailored to your route preferences and boost your profits with our smart match technology.</p>
-            <p style={secondaryActionStyle}>Explore Opportunities</p>
+            <p className='secondary-action'>Explore Opportunities</p>
           </Link>
 
-          <Link to="/post-loads" style={mainBenefitStyle} onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+          <Link to="/post-loads" className='main-benefit' onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
             <h2>Effortless Load Listing</h2>
             <p>Connect with top carriers instantly. Listing is simple, fast, and effective, ensuring your loads are moved without delay.</p>
-            <p style={secondaryActionStyle}>List Your Loads Now</p>
+            <p className='secondary-action'>List Your Loads Now</p>
           </Link>
 
-          <Link to="/real-time-bidding" style={mainBenefitStyle} onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+          <Link to="/real-time-bidding" className='main-benefit' onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
             <h2>Competitive Bidding Platform</h2>
             <p>Enter the bidding arena and secure the best rates. Our real-time platform puts you in control of pricing.</p>
-            <p style={secondaryActionStyle}>Engage Bidders</p>
+            <p className='secondary-action'>Engage Bidders</p>
           </Link>
         </div>
 
         {/* Additional benefits for shipper*/}
-        <h2 style={sectionTitleStyle}>
+        <h2 className='section-title'>
            From Local Startups to Global Giants: Your Cargo, Delivered with Precision and Care
         </h2>
         <div style={shipperBenefitSectionStyle}>
-          <Link to="/view-bids" style={mainBenefitStyle} onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+          <Link to="/view-bids" className='main-benefit' onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
             <h2>Carrier Connections at a Click</h2>
             <p>Find dependable carriers instantly. Our streamlined system brings you a network of professionals with just one click.</p>
-            <p style={secondaryActionStyle}>View Carrier Bids</p>
+            <p className='secondary-action'>View Carrier Bids</p>
           </Link>
 
-          <Link to="/post-loads" style={mainBenefitStyle} onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+          <Link to="/post-loads" className='main-benefit' onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
             <h2>Seamless Load Posting</h2>
             <p>Get your loads on the road with ease. Our intuitive interface simplifies the posting process to save you time and hassle.</p>
-            <p style={secondaryActionStyle}>Post Loads Effortlessly</p>
+            <p className='secondary-action'>Post Loads Effortlessly</p>
           </Link>
 
-          <Link to="/manage-loads" style={mainBenefitStyle} onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+          <Link to="/manage-loads" className='main-benefit' onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
             <h2>Streamline Your Operations</h2>
             <p>Take charge of your load management with our comprehensive dashboard. Organize, track, and update your shipments on the fly.</p>
-            <p style={secondaryActionStyle}>Manage Loads Smartly</p>
+            <p className='secondary-action'>Manage Loads Smartly</p>
           </Link>
         </div>
-
-        {/* Additional benefits row */}
-        {/* <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <div style={additionalBenefitStyle}><p>Efficiency</p></div>
-        <div style={additionalBenefitStyle}><p>Effectiveness</p></div>
-        <div style={additionalBenefitStyle}><p>Security</p></div>
-        <div style={additionalBenefitStyle}><p>Traceability</p></div>
-        <div style={additionalBenefitStyle}><p>Transparency</p></div>
-        <div style={additionalBenefitStyle}><p>Reliability</p></div>
-        <div style={additionalBenefitStyle}><p>Cost Savings</p></div>
-        <div style={additionalBenefitStyle}><p>In-App Communication</p></div>
-        <div style={additionalBenefitStyle}><p>Data-Driven Insights</p></div>
-        <div style={additionalBenefitStyle}><p>User-Friendly Experience</p></div>
-      </div> */}
-
-      </main>
-      <footer style={footerStyle}>
+      </body>
+      <footer className="footer">
         <p>© 2023 AfroInnovate LoadBoard. All rights reserved.</p>
       </footer>
     </div>
-    
   );
 }
