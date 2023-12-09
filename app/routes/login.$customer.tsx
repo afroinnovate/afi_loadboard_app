@@ -5,8 +5,8 @@ import customStyles from "../styles/global.css";
 export const meta: MetaFunction = () => {
   return [
     {
-      title: "Loadboard | Sign Up",
-      description: "Sign up for a new account",
+      title: "Loadboard | Sign In",
+      description: "Sign into an existing account",
     },
   ];
 };

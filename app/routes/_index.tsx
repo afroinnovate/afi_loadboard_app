@@ -8,14 +8,14 @@ export const links: LinksFunction = () => [
 
 export const meta: MetaFunction = () => {
   return [{
-    title: 'LoadBoard APP',
+    title: 'Loadboard | Home',
     description: 'Welcome to AfroInnovate LoadBoard App'
   }];
 };
 
 export default function Index() {
   return (
-    <div className="font-san">
+    <div className="font-serif">
         {/* ... rest of your nav component ... */}
       <header className="page-header bg-blue-500">
         <h1 className="title">Welcome to the Load Board</h1>
@@ -26,7 +26,8 @@ export default function Index() {
       <body className='main-section'>
         {/* Main benefits row */}
         <h2 className='section-title'>
-          Wherever You Roll, We're Your Road: Partner with Us for Profitable Journeys  
+          {/* Wherever You Roll, We're Your Road: Partner with Us for Profitable Journeys   */}
+          Shipper's Benefits
         </h2>
 
         <div className='benefit-section'>
@@ -51,7 +52,8 @@ export default function Index() {
 
         {/* Additional benefits for shipper*/}
         <h2 className='section-title'>
-          Local Startups to Global Giants: Your Cargo, Delivered with Precision and Care
+          {/* Local Startups to Global Giants: Your Cargo, Delivered with Precision and Care */}
+          Carrier's Benefits
         </h2>
         <div className='benefit-section'>
           <Link to="/login/carrier/" className='main-benefit' >
