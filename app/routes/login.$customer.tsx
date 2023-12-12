@@ -1,6 +1,9 @@
-import { useNavigation, Form, Link, useParams } from "@remix-run/react";
-import type { MetaFunction, LinksFunction } from "@remix-run/node";
+import { useNavigation, Form, Link, useParams, useFetcher, useActionData } from "@remix-run/react";
+import { type MetaFunction, type LinksFunction, type ActionFunction, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
+import invariant from "tiny-invariant";
+import { SignIn } from "~/api/services/auth";
+import type { loginRequest } from '../api/models/loginRequest';
 
 export const meta: MetaFunction = () => {
   return [
@@ -15,6 +18,18 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
+export const action:ActionFunction = async ({ request, params }) => {
+  invariant(params.customer, "Missing customer parameter");
+  const body = await request.formData();
+  
+  const userRequest: loginRequest = {
+    email: body.get("email") as string,
+    password: body.get("password") as string,
+  }
+
+  await SignIn(userRequest);
+  return redirect(`/login/${params.customer}`);
+}
 export default function Login() {
   const { customer } = useParams()
   const navigation = useNavigation();

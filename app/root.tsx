@@ -10,6 +10,7 @@ import {
   Link,
 } from "@remix-run/react";
 import rootStyle from './tailwindcss.css';
+import { ErrorBoundary } from "./components/error";
 
 export const links: LinksFunction = () => [
   ...(rootStyle ? [{ rel: "stylesheet", href: rootStyle }, ] : []),

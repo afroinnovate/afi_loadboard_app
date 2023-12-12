@@ -1,7 +1,7 @@
-import { useNavigation, Form, Link, useParams} from "@remix-run/react";
+import { useNavigation, Form, Link, useParams, useActionData} from "@remix-run/react";
 import { type MetaFunction, type LinksFunction, type ActionFunction, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
-import { User } from "~/api/models/user";
+import type { User } from "~/api/models/user";
 import { Register } from "~/api/services/auth";
 
 export const meta: MetaFunction = () => {
@@ -33,11 +33,14 @@ export const action: ActionFunction = async ({request, params }) => {
   return redirect(`/login/${params.customer}`)
 }
 
-export default function Signup() {
+export default function SignUp() {
   const { customer } = useParams()
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`
+
+  const response = useActionData()
+  console.log('response -->', response)
   return (
     <>
       <div className="text-center mt-2 sm:mx-auto sm:w-full sm:max-w-xl">
@@ -223,7 +226,5 @@ export default function Signup() {
     </>
   );
 }
-function invariant(customer: string | undefined, arg1: string) {
-  throw new Error("Function not implemented.");
-}
+
 
