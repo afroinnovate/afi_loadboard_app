@@ -17,7 +17,7 @@ export default function Index() {
   return (
     <div className="font-serif">
         {/* ... rest of your nav component ... */}
-      <header className="page-header bg-blue-500">
+      <header className="page-header">
         <h1 className="title">Welcome to the Load Board</h1>
         <p className="description">Your One-Stop Solution for Freight Transportation</p>
         <Link to="/signup/carrier" className="primary-action hover:bg-blue-700">Get Started</Link>

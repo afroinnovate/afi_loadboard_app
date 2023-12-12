@@ -1,0 +1,21 @@
+{
+    "Users" : [
+        {   "id" : 1,
+            "email" : "test3@gmail.com",
+            "password" : "test3"
+        },
+        {
+            "id" : 2,
+            "email" : "test4@gmail.com",
+            "password" : "test4"
+        }
+    ],
+    "loginResponse" : [
+        {
+            "tokenType": "Bearer",
+            "accessToken": "AASDFADFASLSKDFLASDJF;ASADSJFDLFKJSAFKDJ;ADKFAF;LKIUGWEURAWASDKVAJNLKFADSFDFAKLF;A;",
+            "expiresIn": 3600,
+            "refreshToken": "AASDFADFASLSKDFLASDJF;ASasdfadfdsaADSJFDLFKJSAFKDJ;ADKFAF;LKIUGWEURAWASDKVAJNLKFADSFDFAKLF;A;"
+        }
+    ]
+}

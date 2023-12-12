@@ -39,7 +39,7 @@ export default function Login() {
       </div>
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-lg rounded-xlg sm:px-10">
-          <Form method="post" className="mb-0 space-y-6">
+          <Form reloadDocument method="post" className="mb-0 space-y-6">
             <div>
               <label
                 htmlFor="phoneNumber"

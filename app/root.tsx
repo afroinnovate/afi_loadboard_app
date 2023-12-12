@@ -33,7 +33,7 @@ export default function App() {
               <Link to="/how-it-works" className="nav-link">How It Works</Link>
               <Link to="/pricing" className="nav-link">Pricing</Link>
               <Link to="/contact" className="nav-link">Contact</Link>
-              <Link to="/signup/carrier" className="nav-link sign-up-button">Sign Up</Link>
+              <Link to="/signup/carrier" className="nav-link sign-up-button hover:bg-blue-700 hover:shadow-2xl hover:scale-50">Sign Up</Link>
             </div>
           </nav>
         </div>

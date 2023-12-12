@@ -1,6 +1,8 @@
-import { useNavigation, Form, Link, useParams } from "@remix-run/react";
-import type { MetaFunction, LinksFunction } from "@remix-run/node";
+import { useNavigation, Form, Link, useParams} from "@remix-run/react";
+import { type MetaFunction, type LinksFunction, type ActionFunction, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
+import { User } from "~/api/models/user";
+import { Register } from "~/api/services/auth";
 
 export const meta: MetaFunction = () => {
   return [
@@ -15,11 +17,27 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
+export const action: ActionFunction = async ({request, params }) => {
+  // invariant(params.customer, "Missing customer parameter");
+  const body = await request.formData();
+  console.log('body -->', Object.fromEntries(body))
+
+  const user: User = {
+    id: 0,
+    email: body.get("email") as string,
+    password: body.get("password") as string,
+  }
+
+  await Register(user)
+
+  return redirect(`/login/${params.customer}`)
+}
+
 export default function Signup() {
   const { customer } = useParams()
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-
+  const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`
   return (
     <>
       <div className="text-center mt-2 sm:mx-auto sm:w-full sm:max-w-xl">
@@ -37,7 +55,32 @@ export default function Signup() {
       </div>
       <div className="mt-2 sm:mx-auto sm:w-full sm:max-w-lg">
         <div className="bg-white py-8 px-6 shadow-lg rounded-xlg sm:px-10">
-          <Form method="post" className="mb-0 space-y-6">
+          <Form reloadDocument method="post" className="mb-0 space-y-6">
+            <fieldset>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input 
+                type="email"
+                name="email" 
+                className={inputStyle}
+                required />
+            </fieldset>
+            <fieldset>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input type="password" 
+                name="password" 
+                id="password" className={inputStyle} 
+                required/>
+            </fieldset>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-orange-400 focus:outline-1 focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
+            >
+              {isSubmitting ? "Signing Up..." : "Create Account"}
+            </button>
+
+          </Form>
+          {/* <Form reloadDocument method="post" className="mb-0 space-y-6">
             <div className="grid grid-cols-4 gap-12">
               <div className="col-span-2 col-start-0 col-end-1">
                 <label
@@ -174,9 +217,13 @@ export default function Signup() {
             >
               {isSubmitting ? "Signing Up..." : "Create Account"}
             </button>
-          </Form>
+          </Form> */}
         </div>
       </div>
     </>
   );
 }
+function invariant(customer: string | undefined, arg1: string) {
+  throw new Error("Function not implemented.");
+}
+
