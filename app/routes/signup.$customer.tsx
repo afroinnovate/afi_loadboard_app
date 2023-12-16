@@ -77,7 +77,7 @@ export default function Signup() {
       </div>
       <div className="mt-2 sm:mx-auto sm:w-full sm:max-w-lg">
         {/* Error message */}
-        actionData?.errorMessage && <p className="text-red-500 text-xs italic">{actionData.errorMessage}</p>}
+        {/* actionData?.errorMessage && <p className="text-red-500 text-xs italic">{actionData.errorMessage}</p> */}
         <div className="bg-white py-8 px-6 shadow-lg rounded-xlg sm:px-10">
           <Form reloadDocument method="post" className="mb-0 space-y-6">
             <fieldset>
