@@ -1,6 +1,7 @@
-import type { LinksFunction, MetaFunction } from '@remix-run/node';
+import type { LinksFunction, LoaderFunction, MetaFunction } from '@remix-run/node';
 import { Link } from 'react-router-dom';
 import styles from '../styles/global.css';
+import { authenticator } from '~/api/services/auth.server';
 
 export const links: LinksFunction = () => [
   ...(styles ? [{ rel: "stylesheet", href: styles }] : []),
@@ -31,13 +32,13 @@ export default function Index() {
         </h2>
 
         <div className='benefit-section'>
-          <Link to="/login/shipper" className='main-benefit' >
+          <Link to="/login/shipper/" className='main-benefit' >
             <h2>Unlock Your Earning Potential</h2>
             <p>Gain access to premium loads tailored to your route preferences and boost your profits with our smart match technology.</p>
             <p className='secondary-action'>Explore Opportunities</p>
           </Link>
 
-          <Link to="/login/shipper" className='main-benefit' >
+          <Link to="/login/shipper/" className='main-benefit' >
             <h2>Effortless Load Listing</h2>
             <p>Connect with top carriers instantly. Listing is simple, fast, and effective, ensuring your loads are moved without delay.</p>
             <p className='secondary-action'>List Your Loads Now</p>

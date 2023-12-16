@@ -7,7 +7,6 @@ export interface User {
     email: string;
     // username: string;
     password: string;
-    id: number;
     // verifyPassword: string;
     // phone: string;
 }

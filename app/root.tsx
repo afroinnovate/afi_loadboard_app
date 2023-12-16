@@ -1,5 +1,5 @@
 
-import type { LinksFunction } from "@remix-run/node";
+import type { ActionFunction, LinksFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -10,10 +10,15 @@ import {
   Link,
 } from "@remix-run/react";
 import rootStyle from './tailwindcss.css';
+// import { authenticator } from "./api/services/auth.server";
 
 export const links: LinksFunction = () => [
   ...(rootStyle ? [{ rel: "stylesheet", href: rootStyle }, ] : []),
 ];
+
+// export const action: ActionFunction = async ({ request }) => {
+//   await authenticator.logout(request, { redirectTo: "/login" });
+// };
 
 export default function App() {
   return (

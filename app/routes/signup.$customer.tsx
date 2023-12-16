@@ -1,8 +1,14 @@
-import { useNavigation, Form, Link, useParams} from "@remix-run/react";
-import { type MetaFunction, type LinksFunction, type ActionFunction, redirect } from "@remix-run/node";
+import { useNavigation, Form, Link, useParams, useActionData } from "@remix-run/react";
+import {
+  type MetaFunction,
+  type LinksFunction,
+  type ActionFunction,
+  redirect,
+} from "@remix-run/node";
 import customStyles from "../styles/global.css";
-import { User } from "~/api/models/user";
-import { Register } from "~/api/services/auth";
+import type { User } from "~/api/models/user";
+import { Register } from "~/api/services/auth.server";
+import invariant from "tiny-invariant";
 
 export const meta: MetaFunction = () => {
   return [
@@ -17,59 +23,100 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-export const action: ActionFunction = async ({request, params }) => {
-  // invariant(params.customer, "Missing customer parameter");
+export const action: ActionFunction = async ({ request, params }) => {
+  invariant(params.customer, "Missing customer parameter");
+
   const body = await request.formData();
-  console.log('body -->', Object.fromEntries(body))
+  const email = body.get("email");
+  const password = body.get("password");
+  const confirmPassword = body.get("confirmPassword");
 
   const user: User = {
-    id: 0,
     email: body.get("email") as string,
     password: body.get("password") as string,
-  }
+  };
 
-  await Register(user)
+  // Server-side validation for email and password
+  invariant(typeof email === "string" && email.length > 0, "Email is required");
+  invariant(typeof password === "string" && password.length >= 6, "Password must be at least 6 characters long");
+  invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/), "Password must contain a special character");
+  invariant(typeof confirmPassword === "string" && confirmPassword === password, "Passwords must match");
 
-  return redirect(`/login/${params.customer}`)
-}
+  const response  = await Register(user);
+  console.log('registration response -->', response);
+  
+  return redirect(`/login/${params.customer}`);
+};
 
 export default function Signup() {
-  const { customer } = useParams()
+  const { customer } = useParams();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`
+  const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`;
+  const actionData = useActionData();
+
   return (
     <>
       <div className="text-center mt-2 sm:mx-auto sm:w-full sm:max-w-xl">
         <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
-          <div className="font-mono text-center text-3xl text-black-600">Register as {customer?.toLocaleUpperCase()}</div>
-         Create Account
+          <div className="font-mono text-center text-3xl text-black-600">
+            Register as {customer?.toLocaleUpperCase()}
+          </div>
+          Create Account
           {/* Create your account */}
         </h1>
         <p className="text-center text-bold text-black">
-          Already registered? {" "}
-          <Link to={`/login/${customer}`} className="font-medium text-blue-600 hover:text-blue-500">
+          Already registered?{" "}
+          <Link
+            to={`/login/${customer}`}
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
             Sign in
           </Link>
         </p>
       </div>
       <div className="mt-2 sm:mx-auto sm:w-full sm:max-w-lg">
+        {/* Error message */}
+        actionData?.errorMessage && <p className="text-red-500 text-xs italic">{actionData.errorMessage}</p>}
         <div className="bg-white py-8 px-6 shadow-lg rounded-xlg sm:px-10">
           <Form reloadDocument method="post" className="mb-0 space-y-6">
             <fieldset>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input 
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
                 type="email"
-                name="email" 
+                name="email"
                 className={inputStyle}
-                required />
+                required
+              />
             </fieldset>
             <fieldset>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input type="password" 
-                name="password" 
-                id="password" className={inputStyle} 
-                required/>
+              <label className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                id="password"
+                className={inputStyle}
+                required
+              />
+            </fieldset>
+            <fieldset className="space-y-2">
+             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+              {actionData?.fieldErrors?.confirmPassword && (
+                <p className="text-red-500 text-xs italic">{actionData.fieldErrors.confirmPassword}</p>
+              )}
             </fieldset>
             <button
               type="submit"
@@ -78,7 +125,6 @@ export default function Signup() {
             >
               {isSubmitting ? "Signing Up..." : "Create Account"}
             </button>
-
           </Form>
           {/* <Form reloadDocument method="post" className="mb-0 space-y-6">
             <div className="grid grid-cols-4 gap-12">
@@ -223,7 +269,3 @@ export default function Signup() {
     </>
   );
 }
-function invariant(customer: string | undefined, arg1: string) {
-  throw new Error("Function not implemented.");
-}
-

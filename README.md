@@ -39,7 +39,12 @@ cd afi-loadboard-app
 ```sh
 npm install
 ```
+   Before you run the app make sure you create .env file and add the contents as below
+   ```
+      SECRET_KEY_DEV=afroinnovate_dev_key
+      SECRET_KEY_PROD=afroinnovate_prod_key
 
+   ```
 4. Run the development server:
 
 ```sh
