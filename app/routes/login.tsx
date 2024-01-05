@@ -1,10 +1,10 @@
-import { useNavigation, Form, Link, useParams, useLoaderData } from "@remix-run/react";
+import { useNavigation, Form, Link, useLoaderData } from "@remix-run/react";
 import type { MetaFunction, LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "~/api/services/auth.server";
 import { getSession } from "~/api/services/session";
-import invariant from "tiny-invariant";
+// import invariant from "tiny-invariant";
 
 export const meta: MetaFunction = () => {
   return [
@@ -20,10 +20,10 @@ export const links: LinksFunction = () => [
 ];
 
 export const loader: LoaderFunction = async ({ request, params }) => {  
-  invariant(params.customer, "Missing customer parameter can either be shipper, carrier, admin or support");
+  // invariant(params.customer, "Missing customer parameter can either be shipper, carrier, admin or support");
   const dashboard = params.customer === "shipper" ? `loadboard` : "carrier";
   await authenticator.isAuthenticated(request, { 
-    successRedirect: `/dashboard/${dashboard}/1`,
+    successRedirect: `/dashboard/`,
   });
 
   // if not check the session
@@ -34,11 +34,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 }
 
 export const action: ActionFunction = async ({request, params }) => {
-  invariant(params.customer, "Missing customer parameter can either be shipper, carrier, admin or support");
-  const dashboard = params.customer === "shipper" ? `loadboard` : "carrier";
+  // invariant(params.customer, "Missing customer parameter can either be shipper, carrier, admin or support");
+  // const dashboard = params.customer === "shipper" ? `loadboard` : "carrier";
   const response = authenticator.authenticate("user-pass", request, {
-    successRedirect: `/dashboard/${dashboard}/1`,
-    failureRedirect: `/login/${params.customer}`,
+    successRedirect: `/dashboard/`,
+    failureRedirect: `/login/`,
     context: {params},
     throwOnError: true,
   });
@@ -46,7 +46,6 @@ export const action: ActionFunction = async ({request, params }) => {
 }
 
 export default function Login() {
-  const { customer } = useParams()
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const loadData = useLoaderData();
@@ -56,13 +55,13 @@ export default function Login() {
     <>
       <div className="text-center mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <h1 className="text-center text-3xl font-extrabold text-gray-900 py-6">
-        <div className="font-mono  m-2 text-center text-3xl text-black-600">Welcome to {customer} Dashboard</div>
+        <div className="font-mono  m-2 text-center text-3xl text-black-600">Login into loadboard  Dashboard</div>
           Sign In
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
           Haven't registered yet?{" "}
           <Link
-            to={`/signup/${customer}`}
+            to={`/signup/`}
             className="font-medium text-blue-600 hover:text-blue-500"
           >
             Create an account

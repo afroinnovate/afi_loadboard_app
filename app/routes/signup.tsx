@@ -24,7 +24,7 @@ export const links: LinksFunction = () => [
 ];
 
 export const action: ActionFunction = async ({ request, params }) => {
-  invariant(params.customer, "Missing customer parameter");
+  // invariant(params.customer, "Missing customer parameter");
 
   const body = await request.formData();
   const email = body.get("email");
@@ -45,11 +45,10 @@ export const action: ActionFunction = async ({ request, params }) => {
   const response  = await Register(user);
   console.log('registration response -->', response);
   
-  return redirect(`/login/${params.customer}`);
+  return redirect(`/login/`);
 };
 
 export default function Signup() {
-  const { customer } = useParams();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`;
@@ -60,15 +59,13 @@ export default function Signup() {
       <div className="text-center mt-2 sm:mx-auto sm:w-full sm:max-w-xl">
         <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
           <div className="font-mono text-center text-3xl text-black-600">
-            Register as {customer?.toLocaleUpperCase()}
+            Register for a new account
           </div>
-          Create Account
-          {/* Create your account */}
         </h1>
         <p className="text-center text-bold text-black">
           Already registered?{" "}
           <Link
-            to={`/login/${customer}`}
+            to={`/login/`}
             className="font-medium text-blue-600 hover:text-blue-500"
           >
             Sign in
@@ -118,13 +115,50 @@ export default function Signup() {
                 <p className="text-red-500 text-xs italic">{actionData.fieldErrors.confirmPassword}</p>
               )}
             </fieldset>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-orange-400 focus:outline-1 focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
-            >
-              {isSubmitting ? "Signing Up..." : "Create Account"}
-            </button>
+            <div className=" col-span-4 col-start-0 col-end-4 flex items-center">
+            <input
+              id="terms-and-privacy"
+              name="terms-and-privacy"
+              type="checkbox"
+              required
+              className="h-4 w-4 border-gray-300 rounded text-blue-700 focus:ring-orange-700"
+              onChange={() => {
+                const submitButton = document.getElementById('submit-button');
+                const isChecked = document.getElementById('terms-and-privacy').checked;
+                submitButton.disabled = !isChecked;
+                if (isChecked) {
+                  submitButton.classList.remove('bg-gray-400', 'text-gray-700', 'cursor-not-allowed');
+                } else {
+                  submitButton.classList.add('bg-gray-400', 'text-gray-700', 'cursor-not-allowed');
+                }
+              }}
+            />
+
+                <label
+                  htmlFor="terms"
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  I agree to the{" "}
+                  <Link to="/terms"
+                    className="font-medium text-blue-600 hover:text-blue-500"
+                  >Terms </Link>
+                  and
+                  <Link to="/terms"
+                    className="font-medium text-blue-600 hover:text-blue-500"> Privacy Policy</Link>
+                </label>
+              </div>
+              <button
+                type="submit"
+                id="submit-button"
+                disabled
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-orange-400 focus:outline-1 focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 ${
+                  isSubmitting ? "" : "bg-gray-400 text-gray-700 cursor-not-allowed"
+                }`}
+              >
+                {isSubmitting ? "Signing Up..." : "Create Account"}
+              </button>
+
+
           </Form>
           {/* <Form reloadDocument method="post" className="mb-0 space-y-6">
             <div className="grid grid-cols-4 gap-12">
