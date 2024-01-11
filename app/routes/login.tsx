@@ -1,10 +1,10 @@
-import { useNavigation, Form, Link, useLoaderData, useActionData } from "@remix-run/react";
+import { useNavigation, Form, Link, useLoaderData } from "@remix-run/react";
 import type { MetaFunction, LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "~/api/services/auth.server";
 import { commitSession, getSession } from "~/api/services/session";
-import { LoginResponse } from "~/api/models/loginResponse";
+import type { LoginResponse } from "~/api/models/loginResponse";
 // import invariant from "tiny-invariant";
 
 export const meta: MetaFunction = () => {
@@ -134,7 +134,5 @@ export default function Login() {
     </>
   );
 }
-function isOnboarded(user: LoginResponse) {
-  throw new Error("Function not implemented.");
-}
+
 

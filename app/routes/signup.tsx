@@ -1,4 +1,4 @@
-import { useNavigation, Form, Link, useParams, useActionData } from "@remix-run/react";
+import { useNavigation, Form, Link, useActionData } from "@remix-run/react";
 import {
   type MetaFunction,
   type LinksFunction,
@@ -49,7 +49,7 @@ export const action: ActionFunction = async ({ request, params }) => {
     const response  = await Register(user);
     console.log('registration response -->', response);
     
-    return redirect(`/login/`);
+    return redirect(`/registration/`);
   } catch (error:any) {
     switch (error.message) {
       case "Invariant failed: Password must be at least 6 characters long":

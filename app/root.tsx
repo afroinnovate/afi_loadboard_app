@@ -34,10 +34,6 @@ export default function App() {
           <nav className="header">
             <Link to="/" className="nav-link">AFI Load Board</Link>
             <div>
-              <Link to="/features" className="nav-link">Features</Link>
-              <Link to="/how-it-works" className="nav-link">How It Works</Link>
-              <Link to="/pricing" className="nav-link">Pricing</Link>
-              <Link to="/contact" className="nav-link">Contact</Link>
               <Link to="/signup/" className="nav-link sign-up-button hover:bg-blue-700 hover:shadow-2xl hover:scale-50">Sign Up</Link>
             </div>
           </nav>
@@ -58,9 +54,21 @@ export default function App() {
         <Scripts />
         <LiveReload />
       </body>
-      <footer className="footer">
-        <p>© 2023 AfroInnovate LoadBoard. All rights reserved.</p>
-      </footer>
+      <footer className="footer bg-gray-400">
+        <div className="flex justify-center items-center">
+          <nav className="flex space-x-4 mt-0">
+            <Link to="/features" className="footer-link underline hover:text-blue-600">Features</Link>
+            <Link to="/how-it-works" className="footer-link underline hover:text-blue-600">How It Works</Link>
+            <Link to="/pricing" className="footer-link underline hover:text-blue-600">Pricing</Link>
+            <Link to="/contact" className="footer-link underline hover:text-blue-600">Contacts</Link>
+          </nav>
+        </div>
+        <p className="text-center mt-6">
+          © 2023 AfroInnovate LoadBoard. All rights reserved.
+        </p>
+</footer>
+
+
     </html>
   );
 }
