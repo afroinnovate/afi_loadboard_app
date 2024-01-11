@@ -1,4 +1,4 @@
-import { Form, Link, useParams } from "@remix-run/react";
+import { Form, Link, useLoaderData, useParams } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
@@ -25,9 +25,12 @@ export const links: LinksFunction = () => [
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
-  await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/carrier",
+  let user = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login/",
   });
+  if (user) {
+    return json(user.user);
+  }
   // if not check the session
   const session = await getSession(request.headers.get("Cookie"));
 
@@ -37,13 +40,13 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const action: ActionFunction = async ({ request, params }) => {
   await authenticator.logout(request, {
-    redirectTo: "/login/carrier",
+    redirectTo: "/login/",
   });
 };
 
 export default function CarrierDashboard() {
-  const { user } = useParams();
-  console.log("user -->", user);
+  const loaderData = useLoaderData();
+  
   return (
     <>
       <div className="flex justify-end sm:mx-auto sm:w-full sm:max-w-lg">

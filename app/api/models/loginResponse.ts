@@ -1,7 +1,8 @@
 
 export type LoginResponse =  {
     tokenType: string;
-    accessToken: string;
     expiresIn: number;
     refreshToken: string;
+    token: string;
+    user: object
 }

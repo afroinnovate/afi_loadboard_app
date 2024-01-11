@@ -31,21 +31,48 @@ export const action: ActionFunction = async ({ request, params }) => {
   const password = body.get("password");
   const confirmPassword = body.get("confirmPassword");
 
-  const user: User = {
-    email: body.get("email") as string,
-    password: body.get("password") as string,
-  };
+  var errorMessage = "";
 
-  // Server-side validation for email and password
-  invariant(typeof email === "string" && email.length > 0, "Email is required");
-  invariant(typeof password === "string" && password.length >= 6, "Password must be at least 6 characters long");
-  invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/), "Password must contain a special character");
-  invariant(typeof confirmPassword === "string" && confirmPassword === password, "Passwords must match");
+  try {
+    const user: User = {
+      email: body.get("email") as string,
+      password: body.get("password") as string,
+    };
 
-  const response  = await Register(user);
-  console.log('registration response -->', response);
-  
-  return redirect(`/login/`);
+    // Server-side validation for email and password
+    invariant(typeof email === "string" && email.length > 6, "Enter a valid email address");
+    invariant(typeof password === "string" && password.length >= 6, "Password must be at least 6 characters long");
+    invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/), "Password must contain a special character");
+    invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
+    invariant(typeof confirmPassword === "string" && confirmPassword === password, "Passwords must match");
+
+    const response  = await Register(user);
+    console.log('registration response -->', response);
+    
+    return redirect(`/login/`);
+  } catch (error:any) {
+    switch (error.message) {
+      case "Invariant failed: Password must be at least 6 characters long":
+        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        break;
+      case "Invariant failed: Password must contain a special character":
+        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        break;
+      case "Invariant failed: Passwords must match":
+        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        break;
+      case "Invariant failed: Enter a valid email address":
+        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        break;
+      case "Invariant failed: Password must contain at least one uppercase letter":
+        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        break;
+      default:
+        errorMessage = "Oopse! Something went wrong. Please try again." ;
+        break;
+    }
+    return errorMessage;
+  }
 };
 
 export default function Signup() {
@@ -53,7 +80,7 @@ export default function Signup() {
   const isSubmitting = navigation.state === "submitting";
   const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`;
   const actionData = useActionData();
-
+  console.log('actionData -->', actionData);
   return (
     <>
       <div className="text-center mt-2 sm:mx-auto sm:w-full sm:max-w-xl">
@@ -77,7 +104,11 @@ export default function Signup() {
         {/* actionData?.errorMessage && <p className="text-red-500 text-xs italic">{actionData.errorMessage}</p> */}
         <div className="bg-white py-8 px-6 shadow-lg rounded-xlg sm:px-10">
           <Form reloadDocument method="post" className="mb-0 space-y-6">
-            <fieldset>
+            {actionData?(
+                <p className="text-red-500 text-xs italic">{actionData}</p>
+              ): ""
+            }
+            <fieldset> 
               <label className="block text-sm font-medium text-gray-700">
                 Email
               </label>
@@ -111,9 +142,6 @@ export default function Signup() {
                 required
                 className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
-              {actionData?.fieldErrors?.confirmPassword && (
-                <p className="text-red-500 text-xs italic">{actionData.fieldErrors.confirmPassword}</p>
-              )}
             </fieldset>
             <div className=" col-span-4 col-start-0 col-end-4 flex items-center">
             <input
