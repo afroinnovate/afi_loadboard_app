@@ -6,7 +6,6 @@ const secretKeyProduction = process.env.SECRET_KEY_PROD || 'productionSecret';
 
 // Choose the secret based on the environment
 const secretKey = process.env.NODE_ENV === "production" ? secretKeyProduction : secretKeyDevelopment;
-console.log(secretKey);
 
 // export the whole sessionStorage object
 export const sessionStorage = createCookieSessionStorage({
