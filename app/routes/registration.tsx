@@ -25,7 +25,7 @@ export default function RegistrationResult() {
           Thank you for registering! To complete your profile, please check your email and follow the instructions provided.
         </p>
         <p className="mt-4 text-sm text-gray-600">
-          If you haven't received the email, you can request a new one or contact support.
+          If you haven't received the email, try to check your spam, use another email or contact support.
         </p>
        
       <div className="mt-1">

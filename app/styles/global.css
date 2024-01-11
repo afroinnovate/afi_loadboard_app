@@ -1,180 +1,186 @@
 .header {
-    background-color: #004225;
-    color: white;
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-  }
-  
-  .nav-link {
-    color: white;
-    text-decoration: none;
-    padding: 10px 15px;
-    font-size: 1rem;
-    font-weight: bold;
-  }
+  background-color: #004225;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  font-weight: bold;
+}
 
 .page-header {
-    background-color: #fff;
-    padding: 2rem;
-    text-align: center;
-    margin-bottom: 1rem;
-    margin-top: 3rem;
-  }
-  
-  .title {
-    margin: 0 0 1rem 0;
-    font-size: 2rem;
-    color: #333;
-  }
-  
-  .description {
-    margin: 0 0 2rem 0;
-    color: #666;
-  }
-  
-  .sign-up-button {
-    background-color: #ffa500;
-    color: white;
-    border-radius: 5px;
-  }
-
-  .main-content {
-    background-color: #fff;
-    padding: 2rem;
-  }
-
-  @keyframes slideInFromRight {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  /* Section titles */
-.section-title {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: 'center';
-    font-size: 2rem;
-    font-weight: bold;
-    color: #333;
-    padding: 1rem;
-    margin: 0 auto;
-    width: 100%;
-    background-color: #f8f8f8;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    animation: slideInFromRight 1s ease forwards;
+  background-color: #fff;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  margin-top: 3rem;
 }
-  
-  /* Styles for benefit sections */
-  .benefit-section {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Main benefit cards */
-  .benefit-card {
-    padding: 1rem;
-    border-radius: 6px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    margin: 2rem;
-    background-color: #ffffff;
-    color: #333;
-    flex-basis: calc(33.333% - 2rem);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    cursor: pointer;
-    text-decoration: none;
-    transition: transform 0.3s ease;
-  }
-  
-  .main-benefit {
-    padding: 1rem;
-    border-radius: 6px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    margin: 2rem;
-    background-color: #ffffff;
-    color: #333;
-    flex-basis: calc(33.333% - 2rem);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    transition: transform 0.3s ease;
-    text-decoration: none;
-    cursor: pointer;
-    height: 100%;
-    transition: transform 0.3s ease;
-  }
-  
-  .main-benefit:hover {
-    transform: scale(1.05); /* Scales the benefit card on hover */
-  }
-  
-  .primary-action {
-    text-decoration: none;
-    background-color: #ffa500;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: bold;
-  }
-  
-  .secondary-action {
-    text-decoration: none;
-    color: #0000EE;
-    background-color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: normal;
-    margin: 0 8px;
-  }
-  
-  .footer {
-    background-color: #fff;
-    padding: 1rem;
-    text-align: center;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-  }
 
-  /* Additional styles for the transparent black backdrop */
+.title {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  color: #333;
+}
+
+.description {
+  margin: 0 0 2rem 0;
+  color: #666;
+}
+
+.sign-up-button {
+  background-color: #ffa500;
+  color: white;
+  border-radius: 5px;
+}
+
+.main-content {
+  background-color: #fff;
+  padding: 2rem;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Section titles */
+.section-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: "center";
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  padding: 1rem;
+  margin: 0 auto;
+  width: 100%;
+  background-color: #f8f8f8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  animation: slideInFromRight 1s ease forwards;
+}
+
+/* Styles for benefit sections */
+.benefit-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Main benefit cards */
+.benefit-card {
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  margin: 2rem;
+  background-color: #ffffff;
+  color: #333;
+  flex-basis: calc(33.333% - 2rem);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+}
+
+.main-benefit {
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  margin: 2rem;
+  background-color: #ffffff;
+  color: #333;
+  flex-basis: calc(33.333% - 2rem);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+  text-decoration: none;
+  cursor: pointer;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.main-benefit:hover {
+  transform: scale(1.05); /* Scales the benefit card on hover */
+}
+
+.primary-action {
+  text-decoration: none;
+  background-color: #ffa500;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.secondary-action {
+  text-decoration: none;
+  color: #0000ee;
+  background-color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: normal;
+  margin: 0 8px;
+}
+
+.footer {
+  background-color: #fff;
+  padding: 1rem;
+  text-align: center;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+/* Additional styles for the transparent black backdrop */
 .fixed.inset-0.bg-black.bg-opacity-50 {
   z-index: 10;
 }
 
 /* Enhanced shadow for the form */
 .shadow-2xl {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
 /* Styles for the checkboxes and radio buttons */
-input[type="checkbox"], input[type="radio"] {
+input[type="checkbox"],
+input[type="radio"] {
   margin-right: 8px;
+}
+
+.required-asterisk {
+  color: red;
 }

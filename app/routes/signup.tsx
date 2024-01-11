@@ -23,7 +23,7 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-export const action: ActionFunction = async ({ request, params }) => {
+export const action: ActionFunction = async ({ request }) => {
   // invariant(params.customer, "Missing customer parameter");
 
   const body = await request.formData();
@@ -40,34 +40,48 @@ export const action: ActionFunction = async ({ request, params }) => {
     };
 
     // Server-side validation for email and password
-    invariant(typeof email === "string" && email.length > 6, "Enter a valid email address");
-    invariant(typeof password === "string" && password.length >= 6, "Password must be at least 6 characters long");
-    invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/), "Password must contain a special character");
-    invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
-    invariant(typeof confirmPassword === "string" && confirmPassword === password, "Passwords must match");
+    invariant(
+      typeof email === "string" && email.length > 6,
+      "Enter a valid email address"
+    );
+    invariant(
+      typeof password === "string" && password.length >= 6,
+      "Password must be at least 6 characters long"
+    );
+    invariant(
+      password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/),
+      "Password must contain a special character"
+    );
+    invariant(
+      /[A-Z]/.test(password),
+      "Password must contain at least one uppercase letter"
+    );
+    invariant(
+      typeof confirmPassword === "string" && confirmPassword === password,
+      "Passwords must match"
+    );
 
     await Register(user);
     return redirect(`/registration/`);
-    
-  } catch (error:any) {
+  } catch (error: any) {
     switch (error.message) {
       case "Invariant failed: Password must be at least 6 characters long":
-        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       case "Invariant failed: Password must contain a special character":
-        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       case "Invariant failed: Passwords must match":
-        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       case "Invariant failed: Enter a valid email address":
-        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       case "Invariant failed: Password must contain at least one uppercase letter":
-        errorMessage = error.message.replace("Invariant failed: ", "") ;
+        errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       default:
-        errorMessage = "Oopse! Something went wrong. Please try again." ;
+        errorMessage = "Oopse! Something went wrong. Please try again.";
         break;
     }
     return errorMessage;
@@ -82,34 +96,37 @@ export default function Signup() {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10" style={{ maxWidth: '600px' }}>
+      <div
+        className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10"
+        style={{ maxWidth: "600px" }}
+      >
         <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
           Register for a new account
         </h1>
         <p className="text-center text-bold text-black pb-2">
           Already registered?{" "}
-          <Link to={`/login/`} className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in
+          <Link
+            to={`/login/`}
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
+            Sign in
           </Link>
         </p>
-       
-        {actionData && <p className="text-red-500 text-xs italic p-2">{actionData}</p>}
+
+        {actionData && (
+          <p className="text-red-500 text-xs italic p-2">{actionData}</p>
+        )}
 
         <Form reloadDocument method="post" className="mb-0 space-y-6">
-          <fieldset> 
+          <fieldset>
             <label className="block text-sm font-medium text-gray-700">
-              Email
+            <span className="text-red-500">*</span> Email
             </label>
-            <input
-              type="email"
-              name="email"
-              className={inputStyle}
-              required
-            />
+            <input type="email" name="email" className={inputStyle} required />
           </fieldset>
           <fieldset>
             <label className="block text-sm font-medium text-gray-700">
-              Password
+            <span className="text-red-500">*</span> Password
             </label>
             <input
               type="password"
@@ -120,8 +137,11 @@ export default function Signup() {
             />
           </fieldset>
           <fieldset className="space-y-2">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm Password
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700"
+            >
+              <span className="text-red-500">*</span> Confirm Password
             </label>
             <input
               id="confirmPassword"
@@ -139,28 +159,42 @@ export default function Signup() {
               required
               className="h-4 w-4 border-gray-300 rounded text-blue-700 focus:ring-orange-700"
               onChange={() => {
-                const submitButton = document.getElementById('submit-button');
-                const isChecked = document.getElementById('terms-and-privacy').checked;
+                const submitButton = document.getElementById("submit-button");
+                const isChecked =
+                  document.getElementById("terms-and-privacy").checked;
                 submitButton.disabled = !isChecked;
                 if (isChecked) {
-                  submitButton.classList.remove('bg-gray-400', 'text-gray-700', 'cursor-not-allowed');
+                  submitButton.classList.remove(
+                    "bg-gray-400",
+                    "text-gray-700",
+                    "cursor-not-allowed"
+                  );
                 } else {
-                  submitButton.classList.add('bg-gray-400', 'text-gray-700', 'cursor-not-allowed');
+                  submitButton.classList.add(
+                    "bg-gray-400",
+                    "text-gray-700",
+                    "cursor-not-allowed"
+                  );
                 }
               }}
             />
 
-            <label
-              htmlFor="terms"
-              className="ml-2 block text-sm text-gray-900"
-            >
+            <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
               I agree to the{" "}
-              <Link to="/terms"
+              <Link
+                to="/terms"
                 className="font-medium text-blue-600 hover:text-blue-500"
-              >Terms </Link>
+              >
+                Terms{" "}
+              </Link>
               and
-              <Link to="/terms"
-                className="font-medium text-blue-600 hover:text-blue-500"> Privacy Policy</Link>
+              <Link
+                to="/terms"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
+                {" "}
+                Privacy Policy
+              </Link>
             </label>
           </div>
           <button

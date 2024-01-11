@@ -5,6 +5,7 @@ import { Authenticator } from "remix-auth";
 import { commitSession, sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
+import { CompleteProfileRequest } from "../models/profileCompletionRequest";
 
 const baseUrl = 'http://api.auth.afroinnovate.com:8080/auth';
 
@@ -72,6 +73,29 @@ export async function Register(user: User) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(user)
+        });
+
+       // Check if the response is not ok (e.g., 400 or 500 status codes)
+       if (!response.ok) {
+            // console.log(response.status, response.statusText);
+            throw new Error(`${response.status}: ${response.statusText}`);
+        }
+        
+        return response;
+    }catch(error){
+        // console.error(`Error during registration: ${error}`);
+        throw error; // Rethrow the error to be handled by the caller
+    }
+}
+
+export async function CompleteProfile(profile: CompleteProfileRequest) {
+    try {
+        const response = await fetch(baseUrl+"/completeprofile", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(profile)
         });
 
        // Check if the response is not ok (e.g., 400 or 500 status codes)
