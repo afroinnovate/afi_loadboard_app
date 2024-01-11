@@ -1,5 +1,5 @@
 
-import type { LinksFunction } from "@remix-run/node";
+import type { ActionFunction, LinksFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -10,10 +10,15 @@ import {
   Link,
 } from "@remix-run/react";
 import rootStyle from './tailwindcss.css';
+// import { authenticator } from "./api/services/auth.server";
 
 export const links: LinksFunction = () => [
   ...(rootStyle ? [{ rel: "stylesheet", href: rootStyle }, ] : []),
 ];
+
+// export const action: ActionFunction = async ({ request }) => {
+//   await authenticator.logout(request, { redirectTo: "/login" });
+// };
 
 export default function App() {
   return (
@@ -33,7 +38,7 @@ export default function App() {
               <Link to="/how-it-works" className="nav-link">How It Works</Link>
               <Link to="/pricing" className="nav-link">Pricing</Link>
               <Link to="/contact" className="nav-link">Contact</Link>
-              <Link to="/signup/carrier" className="nav-link sign-up-button">Sign Up</Link>
+              <Link to="/signup/" className="nav-link sign-up-button hover:bg-blue-700 hover:shadow-2xl hover:scale-50">Sign Up</Link>
             </div>
           </nav>
         </div>
