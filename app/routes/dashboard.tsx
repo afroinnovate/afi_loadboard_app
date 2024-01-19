@@ -26,8 +26,9 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
   let user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
+    failureRedirect: "/dashboard/",
   });
+  console.log("logging user", user);
   if (user) {
     return json(user.user);
   }
@@ -35,6 +36,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
 
   const error = session.get("_auth_error");
+  console.log("logging error", error);
   return json<any>({ error });
 };
 
