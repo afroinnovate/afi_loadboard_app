@@ -2,7 +2,7 @@
 import type { User } from "../models/user";
 import invariant from 'tiny-invariant';
 import { Authenticator } from "remix-auth";
-import { commitSession, sessionStorage } from "./session";
+import { sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import { CompleteProfileRequest } from "../models/profileCompletionRequest";
