@@ -109,7 +109,7 @@ jobs:
         if: env.PULL_SUCCEEDED == 'false'
         run: |
           DOCKER_IMAGE=${{ env.RELEASE_TAG }}
-          docker build -t $DOCKER_IMAGE -f dockerfile.dev .
+          docker build --no-cache -t $DOCKER_IMAGE -f dockerfile.dev .
           docker push $DOCKER_IMAGE
       
       - name: Display tag in the Summary
@@ -313,6 +313,8 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_PASSWORD }}
+          SECRET_KEY_DEV: ${{ secrets.SECRET_KEY_DEV }}
+          SECRET_KEY_PROD: ${{ secrets.SECRET_KEY_PROD }}
         run: |
           # Run commands on the remote server
           echo "Deploying image $RELEASE_TAG in the Droplet VM"
@@ -324,7 +326,8 @@ jobs:
             fi
 
             docker pull $RELEASE_TAG
-            docker run -d -p 80:3000 --network afi-loadbaord-network $RELEASE_TAG
+            docker run -d -e "SECRET_KEY_DEV=$SECRET_KEY_DEV" -e "SECRET_KEY_PROD=$SECRET_KEY_PROD" -p 3000:3000 $RELEASE_TAG
+            
           EOF
 
 

@@ -64,8 +64,10 @@ export default function Login() {
   let loaderMessage = ''
   if(loaderData.message == '401: Unauthorized') {
     loaderMessage = "Invalid username or password"
+  }else {
+    loaderMessage = "Something went wrong. Please try again later."
   }
-
+ 
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">

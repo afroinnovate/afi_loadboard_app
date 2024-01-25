@@ -1,4 +1,4 @@
-import { Form, Link, useLoaderData, useParams } from "@remix-run/react";
+import { Form, Link, useLoaderData } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
@@ -28,6 +28,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   let user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login/",
   });
+  console.log("I came to the dashboard page");
   if (user) {
     return json(user.user);
   }
@@ -35,6 +36,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
 
   const error = session.get("_auth_error");
+  console.log("logging error", error);
   return json<any>({ error });
 };
 
@@ -44,9 +46,9 @@ export const action: ActionFunction = async ({ request, params }) => {
   });
 };
 
-export default function CarrierDashboard() {
+export default function Dashboard() {
   const loaderData = useLoaderData();
-  
+  console.log("dashboard logging loader data", loaderData);
   return (
     <>
       <div className="flex justify-end sm:mx-auto sm:w-full sm:max-w-lg">
