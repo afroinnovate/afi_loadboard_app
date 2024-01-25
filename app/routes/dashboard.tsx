@@ -26,7 +26,7 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
   let user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/dashboard/",
+    failureRedirect: "/login/",
   });
   console.log("logging user", user);
   if (user) {
@@ -48,7 +48,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 
 export default function CarrierDashboard() {
   const loaderData = useLoaderData();
-  
+  console.log("dashboard logging loader data", loaderData);
   return (
     <>
       <div className="flex justify-end sm:mx-auto sm:w-full sm:max-w-lg">
