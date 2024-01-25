@@ -7,7 +7,7 @@ import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import { CompleteProfileRequest } from "../models/profileCompletionRequest";
 
-const baseUrl = 'http://api.auth.afroinnovate.com:8080/auth';
+const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 
 export let authenticator = new Authenticator<LoginResponse >(sessionStorage, {
     sessionKey: "_auth_data",
