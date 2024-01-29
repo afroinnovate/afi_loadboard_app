@@ -64,6 +64,8 @@ export default function App() {
           </div> */}
           <div className="">
             <Outlet />
+            <ScrollRestoration />
+            <Scripts />
           </div>
           {/* <div className="col-span-1 col-start-4 col-end-5 fill-slate-600 bg-gray-100">
             <span />

@@ -6,10 +6,11 @@ import type {
   LoaderFunction,
 } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import customStyles from "../../styles/global.css";
+import customStyles from "../styles/global.css";
 import { authenticator } from "~/api/services/auth.server";
 import { getSession } from "~/api/services/session";
 import Sidebar from "~/components/sidebar";
+import Overview from '~/components/overview';
 
 export const meta: MetaFunction = () => {
   return [
@@ -27,7 +28,7 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
   let user = await authenticator.isAuthenticated(request, {
-    successRedirect: "/dashboard/",
+    failureRedirect: "/login/",
   });
   console.log("I came to the dashboard page");
   if (user) {
@@ -45,6 +46,9 @@ export default function Dashboard() {
   const loaderData = useLoaderData();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
+  const location = useLocation();
+  
+  const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
   
   console.log("dashboard logging loader data", loaderData);
   return (
@@ -56,13 +60,24 @@ export default function Dashboard() {
             &#9776;
           </button>
           <NavLink
-            to="/dashboard"
+            to="/dashboard/"
+            end
             className={({ isActive }) =>
               "text-black font-semibold " + (isActive ? "border-b-2 border-blue-400" : "text-gray-400 hover:text-black")
             }
           >
             Home
-        </NavLink>
+          </NavLink>
+
+          <NavLink
+            to="/dashboard/loads/view/"
+            className={() =>
+              "text-black font-semibold " + (isLoadOperationsActive ? "border-b-2 border-blue-400" : "text-gray-500 hover:text-black")
+            }
+          >
+            Load Operations
+          </NavLink>
+
         </div>
         <Link to="/dashboard/help" className="text-gray-500 hover:text-black px-4 py-2 rounded hover:border-b-2 hover:border-blue-400">
           Help
@@ -71,12 +86,9 @@ export default function Dashboard() {
       <div className="flex">
         {sidebarOpen && <Sidebar />}
         <main className='flex-1 justify-center content-center p-5 shadow-lg'>
-          <h1 className="text-3xl font-bold underline">
-            Carrier Dashboard
-          </h1>
-          <p className="text-xl font-bold">
-            Welcome to the carrier dashboard
-          </p>
+          { location.pathname === '/dashboard/' && (
+            <Overview />
+          )}
           <Outlet />
         </main>
       </div>

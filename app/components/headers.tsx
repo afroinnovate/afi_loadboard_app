@@ -30,12 +30,12 @@ export default function Header({ user }) {
   }
 
   return (
-    <header className="sticky top-0 bg-white shadow-md z-50">
+    <header className="sticky top-0 bg-green-800 shadow-md z-20">
       <nav className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="text-blue-600 text-lg font-semibold hover:text-blue-200">
+        <Link to="/" className="text-white text-lg font-semibold hover:text-blue-200 hover:font-bold">
           AFI Load Board
         </Link>
-        <div className="text-black hover:font-bold hover:italic hover:text-blue-700">
+        <div className="hover:font-bold hover:italic hover:text-white text-slate-100">
           {navigationLink}
         </div>
       </nav>
