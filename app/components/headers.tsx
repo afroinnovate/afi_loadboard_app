@@ -7,25 +7,28 @@ export default function Header({ user }) {
   let navigationLink;
 
   // Determine the navigation link based on the user's authentication status and current location
-  if (user || location.pathname.startsWith('/dashboard')) {
+  if (user || location.pathname.startsWith('/dashboard/')) {
     navigationLink = (
-      <Form action="/logout" method="post">
+      <Form action="/logout/" method="post">
         <button type="submit" className= "px-3 py-2 rounded">
           Logout
         </button>
       </Form>
     );
-  } else if (location.pathname === '/signup') {
+  } else if (location.pathname === '/signup/') {
     navigationLink = (
-      <Link to="/login" >Login</Link>
+      <Link className="hover:font-bold hover:italic hover:text-white text-slate-100" to="/login/" >Login</Link>
     );
-  } else if (location.pathname === '/login') {
+  } else if (location.pathname === '/login/') {
     navigationLink = (
-      <Link to="/signup">Sign Up</Link>
+      <Link className="hover:font-bold hover:italic hover:text-white text-slate-100" to="/signup/">Sign Up</Link>
     );
   } else {
     navigationLink = (
-      <Link to="/signup">Sign Up</Link>
+      <div className="flex space-x-4">
+        <Link className="hover:font-bold hover:italic hover:text-white text-slate-100" to="/login/" >Login</Link>
+        <Link className="hover:font-bold hover:italic hover:text-white text-slate-100" to="/signup/">Sign Up</Link>
+      </div>
     );
   }
 
@@ -35,7 +38,7 @@ export default function Header({ user }) {
         <Link to="/" className="text-white text-lg font-semibold hover:text-blue-200 hover:font-bold">
           AFI Load Board
         </Link>
-        <div className="hover:font-bold hover:italic hover:text-white text-slate-100">
+        <div >
           {navigationLink}
         </div>
       </nav>

@@ -5,7 +5,7 @@ import { Authenticator } from "remix-auth";
 import { sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
-import { CompleteProfileRequest } from "../models/profileCompletionRequest";
+import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 
 const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 // const baseUrl = 'http://localhost:8080/auth';
@@ -42,7 +42,7 @@ authenticator.use(
 
 export async function Login(email: string, password: string) {
     try {
-        const response = await fetch(baseUrl + "/login", {
+        const response = await fetch(baseUrl + "/login/", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
