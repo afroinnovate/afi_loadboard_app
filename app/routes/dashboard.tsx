@@ -1,14 +1,16 @@
-import { Form, Link, useLoaderData } from "@remix-run/react";
+import { useState } from 'react';
+import { Link, Outlet, useLoaderData, useLocation, NavLink } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
-  ActionFunction,
   LoaderFunction,
 } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "~/api/services/auth.server";
 import { getSession } from "~/api/services/session";
+import Sidebar from "~/components/sidebar";
+import Overview from '~/components/overview';
 
 export const meta: MetaFunction = () => {
   return [
@@ -40,45 +42,56 @@ export const loader: LoaderFunction = async ({ request }) => {
   return json<any>({ error });
 };
 
-export const action: ActionFunction = async ({ request, params }) => {
-  await authenticator.logout(request, {
-    redirectTo: "/login/",
-  });
-};
-
 export default function Dashboard() {
   const loaderData = useLoaderData();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
+  const location = useLocation();
+  
+  const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
+  
   console.log("dashboard logging loader data", loaderData);
   return (
-    <>
-      <div className="flex justify-end sm:mx-auto sm:w-full sm:max-w-lg">
-        <Form reloadDocument method="post" className="mb-0 space-y-6">
-          <button
-            type="submit"
-            className="text-white bg-blue-700 hover:bg-orange-400 p-3 rounded-md text-center transform hover:scale-110 transition duration-150 ease-in-out"
-          >
-            Logout
+    <div>
+      <header className="flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
+        <div className="flex items-center space-x-4">
+          <button onClick={toggleSidebar} className="text-black hover:text-black mr-4 text-4xl">
+            {/* Replace with an appropriate icon or text */}
+            &#9776;
           </button>
-        </Form>
-      </div>
-      <div className="text-center mt-2 sm:mx-auto sm:w-full sm:max-w-xl">
-        <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
-          <div className="font-mono text-center text-3xl text-black-600">
-            {" "}
-            Carrier Dashboard
-          </div>
-          Manage Your Loads with Ease.
-        </h1>
-        <p className="text-center text-bold text-black">
-          Login as shipper instead?{" "}
-          <Link
-            to={`/login/shipper`}
-            className="font-medium text-blue-600 hover:text-blue-500"
+          <NavLink
+            to="/dashboard/"
+            end
+            className={({ isActive }) =>
+              "text-black font-semibold " + (isActive ? "border-b-2 border-blue-400" : "text-gray-400 hover:text-black")
+            }
           >
-            Sign in
-          </Link>
-        </p>
+            Home
+          </NavLink>
+
+          <NavLink
+            to="/dashboard/loads/view/"
+            className={() =>
+              "text-black font-semibold " + (isLoadOperationsActive ? "border-b-2 border-blue-400" : "text-gray-500 hover:text-black")
+            }
+          >
+            Load Operations
+          </NavLink>
+
+        </div>
+        <Link to="/dashboard/help" className="text-gray-500 hover:text-black px-4 py-2 rounded hover:border-b-2 hover:border-blue-400">
+          Help
+        </Link>
+      </header>
+      <div className="flex">
+        {sidebarOpen && <Sidebar />}
+        <main className='flex-1 justify-center content-center p-5 shadow-lg'>
+          { location.pathname === '/dashboard/' && (
+            <Overview />
+          )}
+          <Outlet />
+        </main>
       </div>
-    </>
+    </div>
   );
 }

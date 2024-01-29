@@ -1,7 +1,6 @@
-import type { LinksFunction, LoaderFunction, MetaFunction } from '@remix-run/node';
+import type { LinksFunction, MetaFunction } from '@remix-run/node';
 import { Link } from 'react-router-dom';
 import styles from '../styles/global.css';
-import { authenticator } from '~/api/services/auth.server';
 
 export const links: LinksFunction = () => [
   ...(styles ? [{ rel: "stylesheet", href: styles }] : []),
