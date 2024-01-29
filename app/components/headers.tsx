@@ -1,5 +1,6 @@
 // app/components/Header.tsx
 import { Form, Link, useLocation } from "@remix-run/react";
+import React from "react";
 
 export default function Header({ user }) {
   const location = useLocation();
@@ -10,7 +11,7 @@ export default function Header({ user }) {
   if (user || location.pathname.startsWith('/dashboard/')) {
     navigationLink = (
       <Form action="/logout/" method="post">
-        <button type="submit" className= "px-3 py-2 rounded">
+        <button type="submit" className= "px-3 py-2 rounded hover:font-bold hover:italic hover:text-white text-slate-100">
           Logout
         </button>
       </Form>
