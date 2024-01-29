@@ -1,7 +1,6 @@
-import type { LinksFunction, LoaderFunction, MetaFunction } from '@remix-run/node';
+import type { LinksFunction, MetaFunction } from '@remix-run/node';
 import { Link } from 'react-router-dom';
 import styles from '../styles/global.css';
-import { authenticator } from '~/api/services/auth.server';
 
 export const links: LinksFunction = () => [
   ...(styles ? [{ rel: "stylesheet", href: styles }] : []),
@@ -21,7 +20,7 @@ export default function Index() {
       <header className="page-header">
         <h1 className="title">Welcome to the Load Board</h1>
         <p className="description">Your One-Stop Solution for Freight Transportation</p>
-        <Link to="/login/" className="primary-action hover:bg-blue-700">Get Started</Link>
+        <Link to="/dashboard/" className="primary-action hover:bg-blue-700">Get Started</Link>
       </header>
 
       <body className='main-section'>
