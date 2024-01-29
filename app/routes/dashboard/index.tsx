@@ -1,8 +1,8 @@
-import { Form, Link, Outlet, useLoaderData } from "@remix-run/react";
+import { useState } from 'react';
+import { Link, Outlet, useLoaderData, useLocation, NavLink } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
-  ActionFunction,
   LoaderFunction,
 } from "@remix-run/node";
 import { json } from "@remix-run/node";
@@ -43,19 +43,43 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Dashboard() {
   const loaderData = useLoaderData();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
+  
   console.log("dashboard logging loader data", loaderData);
   return (
-    <div className="flex flex-col sm:flex-row">
-      <Sidebar />
-      <main className="flex-1">
-        <h1 className="text-3xl font-bold underline">
-          Carrier Dashboard
-        </h1>
-        <p className="text-xl font-bold">
-           Welcome to the carrier dashboard
-        </p>
-        <Outlet />
-      </main>
+    <div>
+      <header className="flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
+        <div className="flex items-center space-x-4">
+          <button onClick={toggleSidebar} className="text-black hover:text-black mr-4 text-4xl">
+            {/* Replace with an appropriate icon or text */}
+            &#9776;
+          </button>
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              "text-black font-semibold " + (isActive ? "border-b-2 border-blue-400" : "text-gray-400 hover:text-black")
+            }
+          >
+            Home
+        </NavLink>
+        </div>
+        <Link to="/dashboard/help" className="text-gray-500 hover:text-black px-4 py-2 rounded hover:border-b-2 hover:border-blue-400">
+          Help
+        </Link>
+      </header>
+      <div className="flex">
+        {sidebarOpen && <Sidebar />}
+        <main className='flex-1 justify-center content-center p-5 shadow-lg'>
+          <h1 className="text-3xl font-bold underline">
+            Carrier Dashboard
+          </h1>
+          <p className="text-xl font-bold">
+            Welcome to the carrier dashboard
+          </p>
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

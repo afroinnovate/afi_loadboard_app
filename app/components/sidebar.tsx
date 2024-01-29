@@ -1,27 +1,32 @@
-// app/components/Sidebar.tsx
-import { Link } from "@remix-run/react";
+import { NavLink } from "@remix-run/react";
 
 const sidebarLinks = [
-  { name: 'View Loads', to: '/dashboard/loads/view' },
-  { name: 'Add Loads', to: '/dashboard/loads/add' },
-  { name: 'Bids', to: '/dashboard/loads/bids' },
+  { name: 'Overview', to: '/dashboard'},
+  { name: 'View Loads', to: '/dashboard/viewloads' },
+  { name: 'Add Loads', to: '/dashboard/addloads' },
+  { name: 'Bids', to: '/dashboard/bidsloads' },
   // ... other sub-task links
 ];
 
 export default function Sidebar() {
   return (
-    <aside className="w-64" aria-label="Sidebar">
-      <div className="overflow-y-auto py-4 px-3 bg-gray-50 rounded dark:bg-gray-800">
-        <ul className="space-y-2">
-          {sidebarLinks.map((link) => (
-            <li key={link.name}>
-              <Link to={link.to} className="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                {link.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+    <aside className="w-64 shadow-lg h-screen overflow-y-auto py-4 px-3 bg-gray-200 text-black rounded" aria-label="Sidebar">
+      <ul className="space-y-2 pl-4">
+        {sidebarLinks.map((link) => (
+          <li key={link.name}>
+            <NavLink
+              to={link.to}
+              className={({ isActive }) =>
+                isActive
+                  ? "flex items-center p-2 text-base font-normal text-black rounded-lg bg-gray-300"
+                  : "flex items-center p-2 text-base font-normal text-black rounded-lg hover:bg-gray-100 dark:hover:bg-gray-400"
+              }
+            >
+              {link.name}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
     </aside>
   );
 }

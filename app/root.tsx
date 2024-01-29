@@ -63,7 +63,6 @@ export default function App() {
             <span />
           </div> */}
           <div className="">
-            <ScrollRestoration />
             <Outlet />
           </div>
           {/* <div className="col-span-1 col-start-4 col-end-5 fill-slate-600 bg-gray-100">
@@ -73,7 +72,7 @@ export default function App() {
         <Scripts />
         <LiveReload />
       </body>
-      <footer className="footer bg-gray-400">
+      <footer className="footer bg-gray-400 shadow-inner">
         <div className="flex justify-center items-center">
           <nav className="flex space-x-4 mt-0">
             <Link to="/features" className="footer-link underline hover:text-blue-600">Features</Link>
