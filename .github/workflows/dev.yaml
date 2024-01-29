@@ -277,15 +277,15 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
           ssh -o StrictHostKeyChecking=no -i droplet_private_ssh_key root@$DROPLET_IP << 'EOF'
-            # Find the container ID of the currently running container on port 80 and stop it
-            CONTAINER_ID=$(docker ps --filter "publish=80" -q)
+            # Find the container ID of the currently running container on port 3000 and stop it
+            CONTAINER_ID=$(docker ps --filter "publish=3000" -q)
             if [ -n "$CONTAINER_ID" ]; then
-              echo "Stopping and removing running container bound to port 80"
+              echo "Stopping and removing running container bound to port 3000"
               docker stop $CONTAINER_ID
               docker container rm $CONTAINER_ID
               echo "running_container=true" >> "$GITHUB_OUTPUT"
             else
-              echo "No running container on port 80 found."
+              echo "No running container on port 3000 found."
               echo "running_container=false" >> "$GITHUB_OUTPUT"
             fi
           EOF
