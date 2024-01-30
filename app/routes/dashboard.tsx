@@ -28,7 +28,7 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
   let user = await authenticator.isAuthenticated(request, {
-    successRedirect: "/dashboard/",
+    failureRedirect: "/login/",
   });
   console.log("I came to the dashboard page");
   if (user) {
