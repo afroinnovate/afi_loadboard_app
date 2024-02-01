@@ -32,7 +32,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
   console.log("I came to the dashboard page");
   if (user) {
-    return json(user.user);
+    return json(user);
   }
   // if not check the session
   const session = await getSession(request.headers.get("Cookie"));
