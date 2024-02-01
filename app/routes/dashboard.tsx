@@ -49,26 +49,17 @@ export default function Dashboard() {
   const location = useLocation();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
-  const user = loaderData.user;
-  // const user: any = {
-  //   "id": "228e82ac-ed1a-47a6-8027-9a6fc0a0efb9",
-  //   "userName": "tangogatdet76@gmail.com",
-  //   "email": "tangogatdet76@gmail.com",
-  //   "firstName": "Tango",
-  //   "lastName": "Tew",
-  //   "roles": [
-  //       "OWNER_OPERATOR",
-  //       "owner_operator"
-  //   ]
-  // }
 
-  const roles = user.roles.map((role: string) => role.toLowerCase());
-
+  var roles: string[] = [""];
+  // console.log("dashboard logging loader data", loaderData.user);
+  
+  if (loaderData !== null) {
+    const user = loaderData.user;
+    roles = user.roles.map((role: string) => role.toLowerCase());
+  }
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
 
-
-  console.log("dashboard logging loader data", user);
   if (!hasAccess) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
