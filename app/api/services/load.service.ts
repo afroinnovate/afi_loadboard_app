@@ -1,5 +1,5 @@
 import type { LoadRequest } from "../models/loadRequest";
-import { LoadResponse } from "../models/loadResponse";
+import type { LoadResponse } from "../models/loadResponse";
 
 const baseUrl = "https://api.frieght.afroinnovate.com/";
 

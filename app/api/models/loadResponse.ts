@@ -8,7 +8,7 @@ type Load = {
     commodity: string;
     weight: number;
     offerAmount: number;
-    loadDetails: string;
+    loadDetails: string;    
     loadStatus: string;
 }
 

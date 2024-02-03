@@ -77,37 +77,43 @@ export const action: ActionFunction = async ({ request }) => {
       return redirect('/dashboard/loads/add');
     }
   }catch(error){
-    console.log("Error adding load", error);
-    return json(error);
+    console.log("action error: ", error)
+    return error;
   }
 };
 
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {  
-  var user: any = await authenticator.isAuthenticated(request, {
-    // failureRedirect: '/login/',
-    successRedirect: '/dashboard/',
-  });
-
-  user = loaderData.user;
-  if (!user) {
-    return redirect('/login/');
+  try {
+    var user: any = await authenticator.isAuthenticated(request, {
+      // failureRedirect: '/login/',
+      successRedirect: '/dashboard/',
+    });
+  
+    user = loaderData.user;
+    if (!user) {
+      return redirect('/login/');
+    }
+    // return the user info
+    return user;
+  }catch(error){
+    console.log("loader catch error: ", error);
+    return error
   }
-  // return the user info
-  return user;
+  
 }
 
 export default function AddLoad() {
-  const actionData = useActionData();
+  const actionData: any = useActionData();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   
-  const loader: LoginResponse = useLoaderData();
+  const loader: any = useLoaderData();
   console.log("load action data", loader);
   console.log("load action data", actionData);
 
   var roles: string[] = [""];
-  var user: LoginUser = { id: '', firstName: '', lastName: '', email: '', roles: [''] };
+  var user: LoginUser = { id: '',userName: '', firstName: '', lastName: '', email: '', roles: [''] };
 
   user = loaderData.user;
 
@@ -120,13 +126,23 @@ export default function AddLoad() {
 
   const [offerType, setOfferType] = useState('flat');
 
+  var error = ""
+  if ((actionData && actionData.errno) || (loader && loader.errno)  ){
+   if (actionData.errno === "ENOTFOUND"){
+        error = "Oopse!, you seem to have connectivity issue, please connect to a reliable internet."
+   }else {
+        error = "Oops!, Something Went wrong, please try again."
+    }
+  }
+
   if (!hasAccess) { 
     return <AccessDenied returnUrl = "/dashboard/"/>
   }else{
     return (
-      <div className="container mx-auto p-4 flex flex-col justify-center items-center min-m-screen">
-      <h1 className="text-2xl font-bold mb-4">Add Load</h1>
-      <Form method="post" className="w-full max-w-4xl">
+      <div className="container mx-auto p-4 flex flex-col justify-center items-center min-m-screen overflow-hidden">
+        <h1 className="text-2xl font-bold mb-4 text-green-500">Add Load</h1>
+        { error !== "" &&  <p className='flex justify-start text-red-500 text-sm itallic p-5 m-5'>{error}</p>}
+        <Form method="post" className="w-full max-w-4xl">
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title <span className='text-red-500'>*</span></label>

@@ -29,7 +29,7 @@ export const loader: LoaderFunction = async () => {
     const response: LoadResponse = await GetLoads(loaderData.token);
 
     if (response && typeof response === 'string') {
-      console.log("throwing error")
+      // console.log("throwing error")
       throw new Error(response);
     }
 
@@ -37,34 +37,40 @@ export const loader: LoaderFunction = async () => {
 
     return loads;
   }catch (error) {
-    console.error(error);
+    // console.error("view loader error ", error);
     return error;
   }
 };
 
 
 export default function ViewLoads() {
-  const loads = useLoaderData();
-  console.log("logging loads", loads);
+  const loaderData: any = useLoaderData();
+
+  var error = ""
+  if (loaderData && loaderData.errno){
+   if (loaderData.errno === "ENOTFOUND"){
+        error = "Oopse!, you seem to have connectivity issue, please connect to a reliable internet."
+   }else {
+        error = "Oops!, Something Went wrong, please try again."
+    }
+  }
 
   return (
-    <div>
-      <h1>View Loads</h1>
-      <table>
+    <div className="flex-auto container content-center justify-center items-center min-m-screen">
+      <h1 className="flex text-2xl font-bold mb-4 text-green-500 justify-center ">Load View</h1>
+      <table className='table pt-6 '>
         {/* Table headers */}
-        <thead>
-          <tr>
+        <thead className='table-header-group'>
+          <tr className='table-row p-10'>
             {/* Define your table headers here */}
           </tr>
         </thead>
-        <tbody>
-          {loads.map((load) => (
-            <tr key={load.id}>
-              {/* Render your load data in table rows */}
-            </tr>
-          ))}
+       
+        <tbody className='flex justify-center'>
+       
         </tbody>
       </table>
+      { error !== "" &&  <p className='flex justify-center text-red-500 text-sm itallic p-10'>{error}</p>}
     </div>
   );
 }
