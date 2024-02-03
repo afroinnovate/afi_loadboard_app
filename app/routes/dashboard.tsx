@@ -11,6 +11,7 @@ import { authenticator } from "../api/services/auth.server";
 import { getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from '../components/overview';
+import AccessDenied from '~/components/accessdenied';
 
 export const meta: MetaFunction = () => {
   return [
@@ -28,7 +29,8 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
   let user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
+    // failureRedirect: "/login/",
+    successRedirect: "/dashboard/",
   });
   console.log("I came to the dashboard page");
   if (user) {
@@ -43,45 +45,47 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export default function Dashboard() {
-  const loaderData: any  = useLoaderData();
+  // const loaderData: any  = useLoaderData();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
   const location = useLocation();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
 
+  const loaderData = {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJqdGkiOiJlMGI3MWVkYS0zYTIxLTRiNjgtYTY1ZC0wMTQxNzM1ZjZjOGYiLCJuYmYiOjE3MDY2MjM2NTIsImV4cCI6MTcwNjYyNzI1NywiaWF0IjoxNzA2NjIzNjU3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.cZy-ARWMkcy84xcOqQTKEz4gNA4-TouNHXhArMcf-oQ",
+    "isLockedOut": true,
+    "requiresTwoFactor": false,
+    "user": {
+        "id": "228e82ac-ed1a-47a6-8027-9a6fc0a0efb9",
+        "userName": "tangogatdet76@gmail.com",
+        "email": "tangogatdet76@gmail.com",
+        "firstName": "Tango",
+        "lastName": "Tew",
+        "roles": [
+            "support",
+            "owner_operator"
+        ]
+    }
+}
+  
   var roles: string[] = [""];
   // console.log("dashboard logging loader data", loaderData.user);
   
-  if (loaderData !== null) {
+  if (loaderData?.user?.roles) {
     const user = loaderData.user;
     roles = user.roles.map((role: string) => role.toLowerCase());
   }
+
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
-
+  // check if the user is authorized to access this page
   if (!hasAccess) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <div className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10 max-w-2xl">
-          <h1 className="text-center text-2xl font-extrabold text-red-700 py-4">
-            Access Denied!
-          </h1>
-          <p className="text-center text-gray-700 mb-4 italic">
-            You do not have access to carrier dashboard.
-          </p>
-          <div className="flex justify-center">
-            <Link to="/" className="primary-action">
-              Go Back Home 
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+   return <AccessDenied returnUrl = "/"/>
   }else {
     return (
       <>
-        <header className="flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
+        <header className="w-full flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
           <div className="flex items-center space-x-4">
             <button onClick={toggleSidebar} className="text-black hover:text-black mr-4 text-4xl">
               {/* Replace with an appropriate icon or text */}
@@ -112,11 +116,11 @@ export default function Dashboard() {
           </Link>
         </header>
         <div className="flex">
-          {sidebarOpen && <Sidebar />}
-          <main className='flex-1 justify-center content-center p-5 shadow-lg'>
-            { location.pathname === '/dashboard/' && (
-              <Overview />
-            )}
+          <div className="">
+            {sidebarOpen && <Sidebar />}
+          </div>
+          <main className='w-full flex justify-center content-center p-5 shadow-lg overscroll-y-auto'>
+            { location.pathname === '/dashboard/' && <Overview /> }
             <Outlet />
           </main>
         </div>

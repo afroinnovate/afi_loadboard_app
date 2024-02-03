@@ -8,7 +8,6 @@ import {
   Scripts,
   ScrollRestoration,
   Link,
-  useLoaderData,
 } from "@remix-run/react";
 import rootStyle from './tailwindcss.css';
 import Header from "./components/headers";
@@ -36,8 +35,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export default function App() {
-  const { user }  = useLoaderData();
-  console.log("loader: ", user);
+  const user = {}
   // const user  = request.user;
   return (
     <html lang="en">
@@ -47,8 +45,11 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body>
+      <header className="top-0 left-0 right-0 z-10 bg-gray-100 border-b-2 border-gray-200">
         <Header user={user} />
+      </header>
+      <body>
+       
         {/* <div className="h-12 w-screen bg-gray-400 font-serif leading-1 p-8 ">
           <nav className="header">
             <Link to="/" className="nav-link">AFI Load Board</Link>
