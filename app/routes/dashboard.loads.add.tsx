@@ -126,7 +126,7 @@ export default function AddLoad() {
   }
 
   if (!hasAccess) { 
-    return <AccessDenied returnUrl = "/dashboard/"/>
+    return <AccessDenied returnUrl = "/dashboard/" message="You do not have enough access to add a load"/>
   }else{
     return (
       <div className="container mx-auto p-4 flex flex-col justify-center items-center min-m-screen overflow-hidden">
