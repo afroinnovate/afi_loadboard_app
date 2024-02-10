@@ -8,9 +8,10 @@ import type {
 import { json } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
-import { getSession } from "../api/services/session";
+import { commitSession, getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from '../components/overview';
+import AccessDenied from '~/components/accessdenied';
 
 export const meta: MetaFunction = () => {
   return [
@@ -26,19 +27,23 @@ export const links: LinksFunction = () => [
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
   //check if the sessoon is already set
-  let user = await authenticator.isAuthenticated(request, {
+  let response: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login/",
   });
-  console.log("I came to the dashboard page");
-  if (user) {
-    return json(user);
+
+  if (response) {
+    // Store the token in the session
+    session.set("user", response);
+    return json(response, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
   }
-  // if not check the session
-  const session = await getSession(request.headers.get("Cookie"));
 
   const error = session.get("_auth_error");
-  console.log("logging error", error);
   return json<any>({ error });
 };
 
@@ -50,38 +55,42 @@ export default function Dashboard() {
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
 
+//   const loaderData = {
+//     "token": ".eyJzdWIiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJqdGkiOiI1OGY2NGM4YS1kZTk3LTQ0YzgtYjg2Ny0yMWQ3MGU0YjNmZTEiLCJuYmYiOjE3MDc1MTg0MTIsImV4cCI6MTcwNzUyMjAxNywiaWF0IjoxNzA3NTE4NDE3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.eiaWTZcljKZgttIMWcljSmugs2t73HWypEHRK6eMPG8",
+//     "isLockedOut": true,
+//     "requiresTwoFactor": false,
+//     "user": {
+//         "id": "asdfa-ed1a-47a6-8027-9a6fc0a0efb9",
+//         "userName": "smail.com",
+//         "email": "t@gmail.com",
+//         "firstName": "Test",
+//         "lastName": "Test",
+//         "roles": [
+//             "support",
+//             "owner_operator"
+//         ]
+//     }
+// }
+  
   var roles: string[] = [""];
   // console.log("dashboard logging loader data", loaderData.user);
   
-  if (loaderData !== null) {
+  if (loaderData?.user?.roles) {
     const user = loaderData.user;
     roles = user.roles.map((role: string) => role.toLowerCase());
   }
+
+  // Determine the active section based on the URL
+  const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
-
+  // check if the user is authorized to access this page
   if (!hasAccess) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <div className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10 max-w-2xl">
-          <h1 className="text-center text-2xl font-extrabold text-red-700 py-4">
-            Access Denied!
-          </h1>
-          <p className="text-center text-gray-700 mb-4 italic">
-            You do not have access to carrier dashboard.
-          </p>
-          <div className="flex justify-center">
-            <Link to="/" className="primary-action">
-              Go Back Home 
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+   return <AccessDenied returnUrl = "/"/>
   }else {
     return (
       <>
-        <header className="flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
+        <header className="w-full flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
           <div className="flex items-center space-x-4">
             <button onClick={toggleSidebar} className="text-black hover:text-black mr-4 text-4xl">
               {/* Replace with an appropriate icon or text */}
@@ -112,11 +121,11 @@ export default function Dashboard() {
           </Link>
         </header>
         <div className="flex">
-          {sidebarOpen && <Sidebar />}
-          <main className='flex-1 justify-center content-center p-5 shadow-lg'>
-            { location.pathname === '/dashboard/' && (
-              <Overview />
-            )}
+          <div className="">
+            {sidebarOpen && <Sidebar activeSection={activeSection} />}
+          </div>
+          <main className='w-full flex justify-center content-center p-5 shadow-lg'>
+            { location.pathname === '/dashboard/' && <Overview /> }
             <Outlet />
           </main>
         </div>

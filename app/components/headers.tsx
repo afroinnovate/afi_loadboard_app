@@ -1,6 +1,5 @@
 // app/components/Header.tsx
 import { Form, Link, useLocation } from "@remix-run/react";
-import React from "react";
 
 export default function Header({ user }) {
   const location = useLocation();
