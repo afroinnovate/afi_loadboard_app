@@ -31,7 +31,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   //check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login/",
-  });
+      });
 
   if (response) {
     // Store the token in the session
@@ -54,27 +54,9 @@ export default function Dashboard() {
   const location = useLocation();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
-
-//   const loaderData = {
-//     "token": ".eyJzdWIiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJqdGkiOiI1OGY2NGM4YS1kZTk3LTQ0YzgtYjg2Ny0yMWQ3MGU0YjNmZTEiLCJuYmYiOjE3MDc1MTg0MTIsImV4cCI6MTcwNzUyMjAxNywiaWF0IjoxNzA3NTE4NDE3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.eiaWTZcljKZgttIMWcljSmugs2t73HWypEHRK6eMPG8",
-//     "isLockedOut": true,
-//     "requiresTwoFactor": false,
-//     "user": {
-//         "id": "asdfa-ed1a-47a6-8027-9a6fc0a0efb9",
-//         "userName": "smail.com",
-//         "email": "t@gmail.com",
-//         "firstName": "Test",
-//         "lastName": "Test",
-//         "roles": [
-//             "support",
-//             "owner_operator"
-//         ]
-//     }
-// }
   
   var roles: string[] = [""];
-  // console.log("dashboard logging loader data", loaderData.user);
-  
+
   if (loaderData?.user?.roles) {
     const user = loaderData.user;
     roles = user.roles.map((role: string) => role.toLowerCase());
@@ -86,7 +68,7 @@ export default function Dashboard() {
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
   // check if the user is authorized to access this page
   if (!hasAccess) {
-   return <AccessDenied returnUrl = "/"/>
+   return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
   }else {
     return (
       <>
