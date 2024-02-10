@@ -1,5 +1,5 @@
 // app/routes/logout.tsx
-import type { ActionFunction } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { authenticator } from "~/api/services/auth.server";
 
 export const action: ActionFunction = async ({ request, params }) => {
@@ -7,3 +7,4 @@ export const action: ActionFunction = async ({ request, params }) => {
         redirectTo: "/login/",
     });
 };
+

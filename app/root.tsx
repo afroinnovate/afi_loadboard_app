@@ -8,35 +8,28 @@ import {
   Scripts,
   ScrollRestoration,
   Link,
+  useMatches
 } from "@remix-run/react";
 import rootStyle from './tailwindcss.css';
 import Header from "./components/headers";
-import { authenticator } from "./api/services/auth.server";
-import { getSession } from "./api/services/session";
-// import { authenticator } from "./api/services/auth.server";
 
 export const links: LinksFunction = () => [
   ...(rootStyle ? [{ rel: "stylesheet", href: rootStyle }, ] : []),
 ];
 
-export const loader: LoaderFunction = async ({ request }) => {
-  let user = await authenticator.isAuthenticated(request, {
-  });
-  console.log("user-data: ", user);
-  if (user) {
-    return json(user.user);
-  }
-  // if not check the session
-  const session = await getSession(request.headers.get("Cookie"));
-
-  const error = session.get("_auth_error");
-  console.log("logging error", error);
-  return json<any>({ error });
-};
-
 export default function App() {
-  const user = {}
-  // const user  = request.user;
+  let user: any = {};
+  const matches = useMatches();
+
+  // Find the parent route match containing the user and token
+  const parentMatch = matches.find(match => match.pathname === '/dashboard');
+  const parentData: any = parentMatch?.data;
+  user = parentData?.user;
+
+  if (!user) {
+    user={}
+  }
+  
   return (
     <html lang="en">
       <head>
@@ -46,31 +39,13 @@ export default function App() {
         <Links />
       </head>
       <header className="top-0 left-0 right-0 z-10 bg-gray-100 border-b-2 border-gray-200">
-        <Header user={user} />
+        <Header user={user.user} />
       </header>
       <body>
-       
-        {/* <div className="h-12 w-screen bg-gray-400 font-serif leading-1 p-8 ">
-          <nav className="header">
-            <Link to="/" className="nav-link">AFI Load Board</Link>
-            <div>
-              <Link to="/signup/" className="nav-link sign-up-button hover:bg-blue-700 hover:shadow-2xl hover:scale-50">Sign Up</Link>
-            </div>
-          </nav>
-        </div> */}
-        {/* Setup the Content Section into a grid of 3 columns */}
         <div className="">
-          {/* <div className="col-span-1 col-start-0 col-end-1 bg-gray-100">
-            <span />
-          </div> */}
-          <div className="">
-            <Outlet />
-            <ScrollRestoration />
-            <Scripts />
-          </div>
-          {/* <div className="col-span-1 col-start-4 col-end-5 fill-slate-600 bg-gray-100">
-            <span />
-          </div> */}
+          <Outlet />
+          <ScrollRestoration />
+          <Scripts />
         </div>
         <Scripts />
         <LiveReload />

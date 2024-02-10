@@ -1,10 +1,12 @@
 export default function Overview() {
     return (
-        <div>
-            <h1 className="text-3xl font-bold underline">
-                Carrier Dashboard
-            </h1>
-            <p className="text-xl font-bold">
+        <div className="container mx-auto px-4 py-8">
+           <div className="flex justify-center items-center shadow-md border-spacing-3 mb-6 w-full">
+                <h1 className="text-2xl font-bold mb-4 p-6 text-center text-green-500">
+                    Dashboard Overview
+                </h1>
+            </div>
+            <p className="text-xl font-bold justify-center items-center">
                 Welcome to the carrier dashboard
             </p>
         </div>

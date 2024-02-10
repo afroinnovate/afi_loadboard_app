@@ -1,4 +1,4 @@
-type Load = {
+export interface Load {
     id: number;
     userId: string;
     origin: string;

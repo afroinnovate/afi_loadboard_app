@@ -8,7 +8,7 @@ import type {
 import { json } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
-import { getSession } from "../api/services/session";
+import { commitSession, getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from '../components/overview';
 import AccessDenied from '~/components/accessdenied';
@@ -27,47 +27,50 @@ export const links: LinksFunction = () => [
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  //check if the sessoon is already set
-  let user = await authenticator.isAuthenticated(request, {
-    // failureRedirect: "/login/",
-    successRedirect: "/dashboard/",
-  });
-  console.log("I came to the dashboard page");
-  if (user) {
-    return json(user);
-  }
-  // if not check the session
   const session = await getSession(request.headers.get("Cookie"));
+  //check if the sessoon is already set
+  let response: any = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login/",
+  });
+
+  if (response) {
+    // Store the token in the session
+    session.set("user", response);
+    return json(response, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
+  }
 
   const error = session.get("_auth_error");
-  console.log("logging error", error);
   return json<any>({ error });
 };
 
 export default function Dashboard() {
-  // const loaderData: any  = useLoaderData();
+  const loaderData: any  = useLoaderData();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
   const location = useLocation();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
 
-  const loaderData = {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJqdGkiOiJlMGI3MWVkYS0zYTIxLTRiNjgtYTY1ZC0wMTQxNzM1ZjZjOGYiLCJuYmYiOjE3MDY2MjM2NTIsImV4cCI6MTcwNjYyNzI1NywiaWF0IjoxNzA2NjIzNjU3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.cZy-ARWMkcy84xcOqQTKEz4gNA4-TouNHXhArMcf-oQ",
-    "isLockedOut": true,
-    "requiresTwoFactor": false,
-    "user": {
-        "id": "228e82ac-ed1a-47a6-8027-9a6fc0a0efb9",
-        "userName": "tangogatdet76@gmail.com",
-        "email": "tangogatdet76@gmail.com",
-        "firstName": "Tango",
-        "lastName": "Tew",
-        "roles": [
-            "support",
-            "owner_operator"
-        ]
-    }
-}
+//   const loaderData = {
+//     "token": ".eyJzdWIiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJqdGkiOiI1OGY2NGM4YS1kZTk3LTQ0YzgtYjg2Ny0yMWQ3MGU0YjNmZTEiLCJuYmYiOjE3MDc1MTg0MTIsImV4cCI6MTcwNzUyMjAxNywiaWF0IjoxNzA3NTE4NDE3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.eiaWTZcljKZgttIMWcljSmugs2t73HWypEHRK6eMPG8",
+//     "isLockedOut": true,
+//     "requiresTwoFactor": false,
+//     "user": {
+//         "id": "asdfa-ed1a-47a6-8027-9a6fc0a0efb9",
+//         "userName": "smail.com",
+//         "email": "t@gmail.com",
+//         "firstName": "Test",
+//         "lastName": "Test",
+//         "roles": [
+//             "support",
+//             "owner_operator"
+//         ]
+//     }
+// }
   
   var roles: string[] = [""];
   // console.log("dashboard logging loader data", loaderData.user);
@@ -77,6 +80,8 @@ export default function Dashboard() {
     roles = user.roles.map((role: string) => role.toLowerCase());
   }
 
+  // Determine the active section based on the URL
+  const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
   // check if the user is authorized to access this page
@@ -117,9 +122,9 @@ export default function Dashboard() {
         </header>
         <div className="flex">
           <div className="">
-            {sidebarOpen && <Sidebar />}
+            {sidebarOpen && <Sidebar activeSection={activeSection} />}
           </div>
-          <main className='w-full flex justify-center content-center p-5 shadow-lg overscroll-y-auto'>
+          <main className='w-full flex justify-center content-center p-5 shadow-lg'>
             { location.pathname === '/dashboard/' && <Overview /> }
             <Outlet />
           </main>

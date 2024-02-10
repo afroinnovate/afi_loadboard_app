@@ -2,37 +2,27 @@ import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/re
 import { redirect, type ActionFunction, type LoaderFunction, json } from '@remix-run/node';
 import invariant from 'tiny-invariant';
 import { authenticator } from '~/api/services/auth.server';
-import type { LoginResponse } from '~/api/models/loginResponse';
 import AccessDenied from '~/components/accessdenied';
 import type { LoginUser } from '~/api/models/loginResponseUser';
 import { useState } from 'react';
 import type { LoadRequest } from '~/api/models/loadRequest';
 import { AddLoads } from '~/api/services/load.service';
-import { isElementOfType } from 'react-dom/test-utils';
-import { LoadResponse } from '~/api/models/loadResponse';
+import { getSession } from '~/api/services/session';
+import type { LoadResponse } from '~/api/models/loadResponse';
 
-const loaderData: LoginResponse = {
-  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiIyMjhlODJhYy1lZDFhLTQ3YTYtODAyNy05YTZmYzBhMGVmYjkiLCJqdGkiOiIxOGMzOWEwYS05MWZiLTQ2NjMtYmI0Ni1jOTNkYTRhOGExNDYiLCJuYmYiOjE3MDY5MTgzMjUsImV4cCI6MTcwNjkyMTkzMCwiaWF0IjoxNzA2OTE4MzMwLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.389gdxqvSNeIqrqv-GnS1DNfXw43RBxH_E8syiKD7rw",
-  "user": {
-      "id": "228e82ac-ed1a-47a6-8027-9a6fc0a0efb9",
-      "userName": "tangogatdet76@gmail.com",
-      "email": "tangogatdet76@gmail.com",
-      "firstName": "Tango",
-      "lastName": "Tew",
-      "roles": [
-          "support_carrier",
-          "owner_operator"
-      ]
-  },
-  "expiresIn": 3600,
-  "refreshToken": "eyJhbG",
-  "tokenType": "Bearer"
-}
 
 export const action: ActionFunction = async ({ request }) => {
   try{
+    // Find the parent route match containing the user and token
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get("user");
+  
+    if (!user) {
+      // Handle the missing token scenario
+      throw new Response("401 Unauthorized", { status: 401 });
+    }
+
     const formData = await request.formData();
-    // const loaderData: LoginResponse = useLoaderData();
 
     // Validate the form data
     invariant(formData.has('origin'), 'Origin is required');
@@ -41,28 +31,39 @@ export const action: ActionFunction = async ({ request }) => {
     invariant(formData.has('deliveryDate'), 'Delivery date is required');
     invariant(formData.has('weight'), 'Weight is required');
 
-    if (!loaderData && !loaderData.user) {
+    if (!user && !user.user.id) {
       invariant(formData.has('userId'), 'User ID is required');
     }
 
     if(isNaN(Number(formData.get('offerAmount')))){
       throw new Error("Offer cannot be a wrong value'")
     }
+
+    const pickupDate = formData.get('pickupDate');
+    const deliveryDate = formData.get('deliveryDate');
+
+    // Assuming that the time part is not critical for the pickupDate and deliveryDate,
+    // you can set it to a default time like 12:00:00.000Z (noon) or any other time you see fit.
+    const formattedPickupDate = new Date(pickupDate + 'T12:00:00.000Z').toISOString();
+    const formattedDeliveryDate = new Date(deliveryDate + 'T12:00:00.000Z').toISOString();
+
     // Create a new load request
     const loadRequest: LoadRequest = {
       loadDetails: formData.get('loadDetails') as string,
       origin: formData.get('origin') as string,
       destination: formData.get('destination') as string,
-      pickupDate: "2024-02-10T14:20:14.916Z", // Format the date
-      deliveryDate:  "2024-02-14T14:20:14.916Z", // Format the date
+      // pickupDate: "2024-02-10T14:20:14.916Z", // Format the date
+      // deliveryDate:  "2024-02-14T14:20:14.916Z", // Format the date
+      pickupDate: formattedPickupDate,
+      deliveryDate: formattedDeliveryDate,
       commodity: formData.get('commodities') as string,
       weight: Number(formData.get('weight')), // Ensure number type
       offerAmount: Number(formData.get('offerAmount')), // Correct field and ensure number type
-      userId: loaderData.user.id,
+      userId: user.user.id,
       loadStatus: 'open'
     }
     
-    const response: LoadResponse = await AddLoads(loadRequest, loaderData.token);
+    const response: LoadResponse = await AddLoads(loadRequest, user.token);
 
     if (response && typeof response === 'string') {
       console.log("throwing error")
@@ -70,9 +71,7 @@ export const action: ActionFunction = async ({ request }) => {
     }
     // Save the load to the database
     if(response){
-      return redirect('/dashboard/loads/view', {
-        payload: response
-      });
+      return redirect('/dashboard/loads/view');
     }else{
       return redirect('/dashboard/loads/add');
     }
@@ -86,18 +85,11 @@ export const action: ActionFunction = async ({ request }) => {
 export const loader: LoaderFunction = async ({ request }) => {  
   try {
     var user: any = await authenticator.isAuthenticated(request, {
-      // failureRedirect: '/login/',
-      successRedirect: '/dashboard/',
+      failureRedirect: '/login/'
     });
-  
-    user = loaderData.user;
-    if (!user) {
-      return redirect('/login/');
-    }
     // return the user info
     return user;
   }catch(error){
-    console.log("loader catch error: ", error);
     return error
   }
   
@@ -108,9 +100,7 @@ export default function AddLoad() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   
-  const loader: any = useLoaderData();
-  console.log("load action data", loader);
-  console.log("load action data", actionData);
+  const loaderData: any = useLoaderData();
 
   var roles: string[] = [""];
   var user: LoginUser = { id: '',userName: '', firstName: '', lastName: '', email: '', roles: [''] };
@@ -140,7 +130,11 @@ export default function AddLoad() {
   }else{
     return (
       <div className="container mx-auto p-4 flex flex-col justify-center items-center min-m-screen overflow-hidden">
-        <h1 className="text-2xl font-bold mb-4 text-green-500">Add Load</h1>
+        <div className="flex justify-center items-center shadow-sm border-spacing-3 mb-6 w-full">
+          <h1 className="text-2xl font-bold mb-4 p-6 text-center text-green-500">
+            Add New Load Offer
+          </h1>
+        </div>
         { error !== "" &&  <p className='flex justify-start text-red-500 text-sm itallic p-5 m-5'>{error}</p>}
         <Form method="post" className="w-full max-w-4xl">
         <div className="grid grid-cols-2 gap-6">
