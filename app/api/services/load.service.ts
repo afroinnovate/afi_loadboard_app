@@ -39,6 +39,7 @@ export async function GetLoads(token: string) {
                 'Authorization': `Bearer ${token}`
             }
         });
+
         // Check if the response is not ok (e.g., 400 or 500 status codes)
         if (response.status !== 200) {
             throw new Error(`${response.status}: ${response.statusText}`);
@@ -49,6 +50,32 @@ export async function GetLoads(token: string) {
         const responseData: LoadResponse = { ...data};
         return responseData;
     } catch (error) {
+        throw error // Rethrow the error to be handled by the caller
+    }
+}
+
+export async function DeleteLoad(token: string, id: Number) {
+    try {
+        const response = await fetch(`${baseUrl}loads/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+     
+        // Check if the response is not ok (e.g., 400 or 500 status codes)
+        if ( response.status === 500 || response.status === 400) {
+            throw new Error(`${response.status}: ${response.statusText}`);
+        }
+
+        // Assuming the response returns a JSON object
+         const resp = await response;
+         return resp.text
+        // const responseData: any  = { ...data};
+        
+    } catch (error) {
+        console.log(error)
         throw error // Rethrow the error to be handled by the caller
     }
 }

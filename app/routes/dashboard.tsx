@@ -12,6 +12,7 @@ import { commitSession, getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from '../components/overview';
 import AccessDenied from '~/components/accessdenied';
+import { LoginResponse } from '~/api/models/loginResponse';
 
 export const meta: MetaFunction = () => {
   return [
@@ -25,13 +26,31 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
+// const userData: LoginResponse = {
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI4NjhjYmFhOS03MjZjLTQzMDctYTg1Mi00ZjcyNmRjZjA1NzgiLCJuYmYiOjE3MDc4ODc1MzgsImV4cCI6MTcwNzg5MTE0MywiaWF0IjoxNzA3ODg3NTQzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.LLf1CsQ2j4r2e5tpt5Nmua7-2iCdyNLeMnmZOukW_Ts",
+//   "tokenType": "Bearer",
+//   "refreshToken": "eyJhbGci",
+//   "expiresIn": 3600,
+//   "user": {
+//       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+//       "userName": "tangogatdet76@gmail.com",
+//       "email": "tangogatdet76@gmail.com",
+//       "firstName": "Tango",
+//       "lastName": "Tew",
+//       "roles": [
+//           "support",
+//           "carrier"
+//       ]
+//   }
+// };
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  //check if the sessoon is already set
+  // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login/",
-      });
+    // successRedirect: "/dashboard/", //for testing locally
+  });
 
   if (response) {
     // Store the token in the session
@@ -43,6 +62,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
   }
 
+  // return json(userData)
   const error = session.get("_auth_error");
   return json<any>({ error });
 };
