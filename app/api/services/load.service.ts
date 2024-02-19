@@ -79,3 +79,30 @@ export async function DeleteLoad(token: string, id: Number) {
         throw error // Rethrow the error to be handled by the caller
     }
 }
+
+export async function UpdateLoad(token: string, id: Number, loadRequest: LoadRequest) {
+    try {
+        const url = `${baseUrl}loads/${id}`;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(loadRequest),
+
+        });
+        // Check if the response is not ok (e.g., 400 or 500 status codes)
+        if (response.status !== 204) {
+            throw new Error(`${response.status}: ${response.statusText}`);
+        }
+
+        // Assuming the response returns a JSON object
+        const data = await response;
+      
+        return data.text();
+    } catch (error) {
+        console.log("put error:", error)
+        throw error // Rethrow the error to be handled by the caller
+    }
+}

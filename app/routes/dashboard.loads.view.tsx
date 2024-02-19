@@ -2,7 +2,7 @@
 import { redirect, type LoaderFunction, json, type ActionFunction } from "@remix-run/node";
 import { useActionData, useLoaderData } from "@remix-run/react";
 import type { LoadResponse } from "~/api/models/loadResponse";
-import { DeleteLoad, GetLoads } from "~/api/services/load.service";
+import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
 import { getSession } from "../api/services/session";
 import {
@@ -13,9 +13,11 @@ import {
   PencilIcon,
   XCircleIcon
 } from "@heroicons/react/20/solid";
+import type { LoadRequest } from "~/api/models/loadRequest";
+import UpdateLoadView from "~/components/updateload";
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI1OWVkMDk5NS0xOGUxLTRlZTctOTNhMy1hY2NkZTBiODRiMDIiLCJuYmYiOjE3MDc4OTEzMTcsImV4cCI6MTcwNzg5NDkyMiwiaWF0IjoxNzA3ODkxMzIyLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.j9ELur-BylH84JgDOZO-jjr_ik6YXfF4KuJa-AMvhCg",
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5YTQ5MWNlYy1jOTY3LTRhMjQtOTg0Ny1kMDMxZmI1YjdlZDAiLCJuYmYiOjE3MDgzMTY5NDEsImV4cCI6MTcwODMyMDU0NiwiaWF0IjoxNzA4MzE2OTQ2LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Zond6YWbJYGIskYLoqCkzrdZXSSsO1eZwHbuUoUt-b0",
 //   "isLockedOut": true,
 //   "requiresTwoFactor": false,
 //   "user": {
@@ -69,6 +71,7 @@ export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get("user");
 
+  // const user: any = userData;
   if (!user) {
     throw new Response("401 Unauthorized", { status: 401 });
   }
@@ -76,14 +79,44 @@ export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const loadId = Number(formData.get("loadId"));
   const action = formData.get("_action");
-  console.log("ID: ",loadId)
+  console.log("ID: ",loadId, "Action: ", action)
+  console.log("Form Data: ", formData)
 
   try {
     if (action === "edit" && loadId) {
-      //
-    }else if (action === "delete" && loadId) {
+        return json("editMode");
+    }else if ( action === "save_changes"){
+      console.log("Saving Changes")
+      const data = formData.get("origin");
+      console.log("Data: ", data)
+      
+      const formattedPickupDate = new Date(formData.get("pickupDate") as string + 'T12:00:00.000Z').toISOString();
+      const formattedDeliveryDate = new Date(formData.get("deliveryDate") as string + 'T12:00:00.000Z').toISOString();
+      
+
+      console.log("loadId: ", formData.get("loadId"));
+      const Id = Number(formData.get("loadId")) !== 0 ? Number(formData.get("loadId")) : 99999;
+      const requestBody: LoadRequest = {
+        commodity: formData.get("commodity") as string,
+        deliveryDate: formattedDeliveryDate,
+        destination: formData.get("destination") as string,
+        loadDetails: formData.get("loadDetails") as string,
+        loadStatus: formData.get("loadStatus") as string,
+        offerAmount: Number(formData.get("offerAmount")),
+        origin: formData.get("origin") as string,
+        pickupDate: formattedPickupDate,
+        weight: Number(formData.get("weight")),
+        userId: user.user.id,
+      }
+
+      const response = await UpdateLoad(user.token, Id, requestBody);
+      if (response) {
+        console.log("Response: ", response)
+      }
+      return redirect("/dashboard/loads/view/");
+    }else if ( action === "delete" && loadId ) {
       return json("confirmation");
-    } else if ( action === "delete_confirmed" ){
+    }else if ( action === "delete_confirmed" ){
       await DeleteLoad(user.token, loadId);
       return redirect("/dashboard/loads/view/");
     }else if( action === "cancel" ){
@@ -132,9 +165,10 @@ export default function ViewLoads() {
   }
 
   let confirm = ''
-  if( actionData && actionData === 'confirmation'){
-    confirm = actionData
-  }
+  let editMode = ''
+  confirm =  actionData && actionData === 'confirmation' ? actionData : ''; //deleteconfirmation
+  editMode = actionData && actionData === 'editMode' ? actionData : ''; //editmode confirmation
+
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('admin') || roles.some(role => role.includes('carrier'));
 
@@ -154,9 +188,23 @@ export default function ViewLoads() {
               key={load.id}
               className="bg-white shadow rounded-lg"
             >
-              
               {({ open }) => (
                 <>
+                  { editMode === 'editMode' && (
+                   <UpdateLoadView 
+                      commodity={load.commodity} 
+                      deliveryDate={load.deliveryDate} 
+                      destination={load.destination} 
+                      loadDetails={load.loadDetails} 
+                      loadStatus={load.loadStatus} 
+                      offerAmount={load.offerAmount} 
+                      origin={load.origin} 
+                      pickupDate={load.pickupDate} 
+                      weight={load.weight} 
+                      userId={user.userId}
+                      loadId={load.id} 
+                    />
+                  )}
                   {confirm === 'confirmation' && (
                     <div className="fixed inset-0 z-50 overflow-y-auto">
                       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
