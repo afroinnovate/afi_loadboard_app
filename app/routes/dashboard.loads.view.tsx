@@ -269,7 +269,7 @@ export default function ViewLoads() {
                       {load.loadStatus === 'open' && (
                         <div className="flex items-center">
                           <LockOpenIcon className="w-5 h-5 text-orange-500" />
-                          <span className="text-green-500"></span>
+                          <span className="text-green-500">Open</span>
                         </div>
                       )}
                       {load.loadStatus === 'closed' && (
