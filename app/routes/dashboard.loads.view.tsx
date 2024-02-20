@@ -11,21 +11,26 @@ import {
   LockOpenIcon,
   TrashIcon,
   PencilIcon,
-  XCircleIcon
+  XCircleIcon,
+  DocumentCheckIcon,
+  CheckCircleIcon,
+  QueueListIcon,
+  MinusCircleIcon,
+  EllipsisHorizontalCircleIcon
 } from "@heroicons/react/20/solid";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5YTQ5MWNlYy1jOTY3LTRhMjQtOTg0Ny1kMDMxZmI1YjdlZDAiLCJuYmYiOjE3MDgzMTY5NDEsImV4cCI6MTcwODMyMDU0NiwiaWF0IjoxNzA4MzE2OTQ2LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Zond6YWbJYGIskYLoqCkzrdZXSSsO1eZwHbuUoUt-b0",
-//   "isLockedOut": true,
-//   "requiresTwoFactor": false,
-//   "user": {
-//       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-//       "userName": "tangogatdet76@gmail.com",
-//       "email": "tangogatdet76@gmail.com",
-//       "firstName": "Tango",
-//       "lastName": "Tew",
+  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5YTQ5MWNlYy1jOTY3LTRhMjQtOTg0Ny1kMDMxZmI1YjdlZDAiLCJuYmYiOjE3MDgzMTY5NDEsImV4cCI6MTcwODMyMDU0NiwiaWF0IjoxNzA4MzE2OTQ2LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Zond6YWbJYGIskYLoqCkzrdZXSSsO1eZwHbuUoUt-b0",
+  //   "isLockedOut": true,
+  //   "requiresTwoFactor": false,
+  //   "user": {
+      //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+      //       "userName": "tangogatdet76@gmail.com",
+      //       "email": "tangogatdet76@gmail.com",
+      //       "firstName": "Tango",
+      //       "lastName": "Tew",
 //       "roles": [
 //           "support",
 //           "carrier"
@@ -261,15 +266,40 @@ export default function ViewLoads() {
                     <span>{`${load.origin} -> ${load.destination}`}</span>
                     <span>{ `${load.loadDetails}` }</span>
                     <div className="flex items-center space-x-2">
-                      {load.loadStatus === 'open' ? (
+                      {load.loadStatus === 'open' && (
                         <div className="flex items-center">
                           <LockOpenIcon className="w-5 h-5 text-orange-500" />
                           <span className="text-green-500"></span>
                         </div>
-                      ) : (
+                      )}
+                      {load.loadStatus === 'closed' && (
                         <div className="flex items-center">
                           <LockClosedIcon className="w-5 h-5 text-red-500" />
                           <span className="text-red-500">Closed</span>
+                        </div>
+                      )}
+                      {load.loadStatus === 'accepted' && (
+                        <div className="flex items-center">
+                          <DocumentCheckIcon className="w-5 h-5 text-blue-500" />
+                          <span className="text-blue-500">Accepted</span>
+                        </div>
+                      )}
+                      {load.loadStatus === 'delivered' && (
+                        <div className="flex items-center">
+                          <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                          <span className="text-green-600">Delivered</span>
+                        </div>
+                      )}
+                      {load.loadStatus === 'rejected' && (
+                        <div className="flex items-center">
+                          <MinusCircleIcon className="w-5 h-5 text-red-500" />
+                          <span className="text-red-500">Rejected</span>
+                        </div>
+                      )}
+                      {load.loadStatus === 'enroute' && (
+                        <div className="flex items-center">
+                          <EllipsisHorizontalCircleIcon className="w-5 h-5 text-green-400" />
+                          <span className="text-orange-500">Enroute</span>
                         </div>
                       )}
                       <ChevronUpIcon className={`${open ? 'transform rotate-180' : ''} w-5 h-5 text-orange-500 font-extrabold`} />

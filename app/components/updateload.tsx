@@ -1,9 +1,7 @@
-import { ActionFunction, LinksFunction, LoaderFunction } from "@remix-run/node";
-import { Form, MetaFunction, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import type { ActionFunction, LinksFunction, LoaderFunction } from "@remix-run/node";
+import { Form, type MetaFunction, useNavigation } from "@remix-run/react";
 import customStyles from "../styles/global.css";
-import { LoadRequest } from "~/api/models/loadRequest";
 import { useState } from "react";
-import invariant from "tiny-invariant";
 
 export const meta: MetaFunction = () => {
   return [
@@ -125,7 +123,7 @@ export default function UpdateLoadView({
                     </div>
                     <div className="flex flex-wrap -mx-3 mb-6">
                       <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0 relative">
-                        <input
+                        {/* <input
                             className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white `}
                             id="loadStatus"
                             type="text"
@@ -139,7 +137,29 @@ export default function UpdateLoadView({
                             className={`absolute transition-all left-5 px-1 ${formData.loadStatus.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.loadStatus.length > 0 ? 'text-md' : ''}`}
                           >
                             Status
+                          </label> */}
+                          <select
+                            className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white `}
+                            id="loadStatus"
+                            name="loadStatus"
+                            value={formData.loadStatus}
+                            onChange={(e) => setFormData({ ...formData, loadStatus: e.target.value })}
+                          >
+                            <option value="" disabled>Select Status</option>
+                            <option value="open">Open</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="enroute">Enroute</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="closed">Closed</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                          <label
+                            htmlFor="loadStatus"
+                            className={`absolute transition-all left-5 px-1 ${formData.loadStatus.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.loadStatus.length > 0 ? 'text-md' : ''}`}
+                          >
+                            Status
                           </label>
+
                       </div>
                       <div className="w-full md:w-1/2 px-3 relative">
                         <input
