@@ -123,21 +123,6 @@ export default function UpdateLoadView({
                     </div>
                     <div className="flex flex-wrap -mx-3 mb-6">
                       <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0 relative">
-                        {/* <input
-                            className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white `}
-                            id="loadStatus"
-                            type="text"
-                            placeholder=" "
-                            name="loadStatus"
-                            value={formData.loadStatus}
-                            
-                          />
-                          <label
-                            htmlFor="loadStatus"
-                            className={`absolute transition-all left-5 px-1 ${formData.loadStatus.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.loadStatus.length > 0 ? 'text-md' : ''}`}
-                          >
-                            Status
-                          </label> */}
                           <select
                             className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white `}
                             id="loadStatus"

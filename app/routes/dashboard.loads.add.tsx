@@ -10,14 +10,31 @@ import { AddLoads } from '~/api/services/load.service';
 import { getSession } from '~/api/services/session';
 import type { LoadResponse } from '~/api/models/loadResponse';
 
+// const userData: LoginResponse = {
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiJhYjc4Zjc3OC1mMDEwLTQ0ZjAtYjM2NS1iNjc1OWJhMDBhYTIiLCJuYmYiOjE3MDg3NTM5NTIsImV4cCI6MTcwODc1NzU1NywiaWF0IjoxNzA4NzUzOTU3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.WvOTqrLNwO9ogIWA-6KNxSRkSg041Wn_QrExGwDoaJI",
+//   "tokenType": "Bearer",
+//   "refreshToken": "eyJhbGci",
+//   "expiresIn": 3600,
+//   "user": {
+//     "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
+//     "firstName": "Tango",
+//     "lastName": "Tew",
+//     "roles": [
+//         "support",
+//         "carrier"
+//     ]
+// }
+// };
 
 export const action: ActionFunction = async ({ request }) => {
   try{
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get("user");
-  
-    if (!user) {
+    
+         if (!user) {
       // Handle the missing token scenario
       throw new Response("401 Unauthorized", { status: 401 });
     }
@@ -35,8 +52,8 @@ export const action: ActionFunction = async ({ request }) => {
       invariant(formData.has('userId'), 'User ID is required');
     }
 
-    if(isNaN(Number(formData.get('offerAmount')))){
-      throw new Error("Offer cannot be a wrong value'")
+    if(isNaN(Number(formData.get('offerAmount'))) || formData.get('offerAmount') === ""){
+      formData.set('offerAmount', '0');
     }
 
     const pickupDate = formData.get('pickupDate');
@@ -86,7 +103,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     var user: any = await authenticator.isAuthenticated(request, {
       failureRedirect: '/login/'
-    });
+          });
     // return the user info
     return user;
   }catch(error){
@@ -141,22 +158,22 @@ export default function AddLoad() {
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title <span className='text-red-500'>*</span></label>
             <input type="text" name="title" id="title" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
+                    </div>
           
           <div>
             <label htmlFor="loadDetails" className="block text-sm font-medium text-gray-700">Load Details</label>
             <input type="text" name="loadDetails" id="loadDetails" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
+                    </div>
 
           <div>
             <label htmlFor="origin" className="block text-sm font-medium text-gray-700">Origin <span className='text-red-500'>*</span></label>
             <input type="text" name="origin" id="origin" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
+                    </div>
           
           <div>
             <label htmlFor="destination" className="block text-sm font-medium text-gray-700">Destination <span className='text-red-500'>*</span></label>
             <input type="text" name="destination" id="destination" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
+                    </div>
 
           <div>
             <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700">Pick-up Date <span className='text-red-500'>*</span></label>
@@ -166,12 +183,12 @@ export default function AddLoad() {
           <div>
             <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700">Delivery Date <span className='text-red-500'>*</span></label>
             <input type="date" name="deliveryDate" id="deliveryDate" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
-
-          <div>
+                    </div>
+          
+<div>
             <label htmlFor="commodities" className="block text-sm font-medium text-gray-700">Commodities <span className='text-red-500'>*</span></label>
             <input type="text" name="commodities" id="commodities" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
+                      </div>
 
           <div className="flex items-center space-x-4">
             <label className="flex items-center cursor-pointer">
@@ -200,13 +217,13 @@ export default function AddLoad() {
           <div>
             <label htmlFor="weight" className="block text-sm font-medium text-gray-700">Weight <span className='text-red-500'>*</span></label>
             <input type="number" name="weight" id="weight" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-          </div>
+                    </div>
 
           {offerType === 'flat' && (
             <div>
-              <label htmlFor="offerAmount" className="block text-sm font-medium text-gray-700">Offer Amount <span className='text-red-500'>*</span></label>
-              <input type="number" name="offerAmount" id="offerAmount" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-            </div>
+            <label htmlFor="offerAmount" className="block text-sm font-medium text-gray-700">Offer Amount <span className='text-red-500'>*</span></label>
+            <input type="number" name="offerAmount" id="offerAmount" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                        </div>
           )}
 
         </div>

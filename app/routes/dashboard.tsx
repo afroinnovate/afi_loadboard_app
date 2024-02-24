@@ -27,16 +27,16 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
-//   "tokenType": "Bearer",
-//   "refreshToken": "eyJhbGci",
-//   "expiresIn": 3600,
-//   "user": {
-//       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-//       "userName": "tangogatdet76@gmail.com",
-//       "email": "tangogatdet76@gmail.com",
-//       "firstName": "Tango",
-//       "lastName": "Tew",
+  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
+  //   "tokenType": "Bearer",
+  //   "refreshToken": "eyJhbGci",
+  //   "expiresIn": 3600,
+  //   "user": {
+      //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+      //       "userName": "tangogatdet76@gmail.com",
+      //       "email": "tangogatdet76@gmail.com",
+      //       "firstName": "Tango",
+      //       "lastName": "Tew",
 //       "roles": [
 //           "support",
 //           "carrier"
@@ -53,13 +53,13 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
 
   if (response) {
-    // Store the token in the session
-    session.set("user", response);
-    return json(response, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
+  // Store the token in the session
+  session.set("user", response);
+  return json(response, {
+  headers: {
+  "Set-Cookie": await commitSession(session),
+  },
+  });
   }
   // return json(userData);
 
