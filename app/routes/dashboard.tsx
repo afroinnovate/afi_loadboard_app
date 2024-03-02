@@ -5,7 +5,7 @@ import type {
   LinksFunction,
   LoaderFunction,
 } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
@@ -18,7 +18,7 @@ export const meta: MetaFunction = () => {
   return [
     {
       title: "Loadboard | Carrier dashboard",
-      description: "Sign up for a new account",
+      description: "Dashboard for carriers",
     },
   ];
 };
@@ -27,11 +27,11 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
+    //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
   //   "tokenType": "Bearer",
-  //   "refreshToken": "eyJhbGci",
-  //   "expiresIn": 3600,
-  //   "user": {
+    //   "refreshToken": "eyJhbGci",
+    //   "expiresIn": 3600,
+    //   "user": {
       //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
       //       "userName": "tangogatdet76@gmail.com",
       //       "email": "tangogatdet76@gmail.com",
@@ -48,8 +48,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-    // successRedirect: "/dashboard/", //for testing locally
+  failureRedirect: "/login/",
+  // successRedirect: "/dashboard/", //for testing locally
   });
 
   if (response) {
@@ -87,9 +87,16 @@ export default function Dashboard() {
   const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
+  const shipperAccess = roles.includes('shipper') || roles.includes('admin') || roles.includes('owner_operator') 
+                        roles.includes('dispatcher') || 
+                        roles.includes('company_driver') ||
+                        roles.includes('fleet_owner');
   // check if the user is authorized to access this page
-  if (!hasAccess) {
+  if (!hasAccess && !shipperAccess) {
    return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
+  }else if(shipperAccess){
+    console.log('redirecting to shipper dashboard');
+    return redirect('/dashboard/shipper/');
   }else {
     return (
       <>
