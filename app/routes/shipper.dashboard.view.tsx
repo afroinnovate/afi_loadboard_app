@@ -4,7 +4,7 @@ import {
   type LoaderFunction,
   json,
   type ActionFunction,
-  MetaFunction,
+  type MetaFunction,
 } from "@remix-run/node";
 import { useActionData, useLoaderData } from "@remix-run/react";
 import type { LoadResponse } from "~/api/models/loadResponse";
@@ -330,11 +330,11 @@ export default function ShipperViewLoads() {
                             name="_action"
                             value="edit"
                             className={`px-4 py-2 mr-2 text-blue-700 rounded ${
-                              hasAccess
+                              shipperHasAccess
                                 ? "bg-gray-100 hover:bg-orange-400"
                                 : "bg-gray-400 cursor-not-allowed"
                             }`}
-                            disabled={!hasAccess}
+                            disabled={!shipperHasAccess}
                           >
                             <PencilIcon
                               className="w-6 h-6 text-blue-700"
