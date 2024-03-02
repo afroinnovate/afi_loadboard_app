@@ -45,18 +45,14 @@ export const action: ActionFunction = async ({ request }) => {
 
   let user: LoginResponse = await authenticator.authenticate("user-pass", request, {
     failureRedirect: "/login/",
-    // successRedirect: "/dashboard/",
+    successRedirect: "/dashboard/",
   });
 
   if (user) {
     const session = await getSession(request.headers.get("Cookie"));
     session.flash(authenticator.sessionErrorKey, null);
     await commitSession(session);
-    if (user.user.roles.includes("owner_operator") || user.user.roles.includes("fleet_owner") || user.user.roles.includes("company_driver")){
-      return redirect("/shipper/dashboard/");
-    }else {
-      return redirect("/dashboard/");
-    }
+    return redirect("/dashboard/");
   }
   return "Invalid username or password";
 };
