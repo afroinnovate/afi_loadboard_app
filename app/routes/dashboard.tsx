@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, Outlet, useLoaderData, useLocation, NavLink } from "@remix-run/react";
+import { useEffect, useState } from 'react';
+import { Link, Outlet, useLoaderData, useLocation, NavLink, useNavigate } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
@@ -27,16 +27,16 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-    //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
+  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
   //   "tokenType": "Bearer",
-    //   "refreshToken": "eyJhbGci",
-    //   "expiresIn": 3600,
-    //   "user": {
-      //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-      //       "userName": "tangogatdet76@gmail.com",
-      //       "email": "tangogatdet76@gmail.com",
-      //       "firstName": "Tango",
-      //       "lastName": "Tew",
+  //   "refreshToken": "eyJhbGci",
+  //   "expiresIn": 3600,
+  //   "user": {
+    //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+    //       "userName": "tangogatdet76@gmail.com",
+    //       "email": "tangogatdet76@gmail.com",
+    //       "firstName": "Tango",
+    //       "lastName": "Tew",
 //       "roles": [
 //           "support",
 //           "carrier"
@@ -48,7 +48,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
-  failureRedirect: "/login/",
+    failureRedirect: "/login/",
   // successRedirect: "/dashboard/", //for testing locally
   });
 
@@ -56,10 +56,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   // Store the token in the session
   session.set("user", response);
   return json(response, {
-  headers: {
-  "Set-Cookie": await commitSession(session),
-  },
-  });
+    headers: {
+    "Set-Cookie": await commitSession(session),
+    },
+    });
   }
   // return json(userData);
 
@@ -73,6 +73,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
   const location = useLocation();
+  const navigate = useNavigate();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
   
@@ -96,7 +97,13 @@ export default function Dashboard() {
    return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
   }else if(shipperAccess){
     console.log('redirecting to shipper dashboard');
-    return redirect('/dashboard/shipper/');
+    useEffect(() => {
+      
+          console.log("redirecting to carrier dashboard");
+          navigate('/shipper/dashboard/');
+      
+  }, []);
+    // return redirect('/shipper/dashboard/');
   }else {
     return (
       <>

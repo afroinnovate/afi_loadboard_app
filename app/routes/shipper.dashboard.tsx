@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   Outlet,
   useLoaderData,
   useLocation,
   NavLink,
+  useNavigate,
 } from "@remix-run/react";
 import type {
   MetaFunction,
@@ -35,16 +36,16 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
-//     "tokenType": "Bearer",
-//     "refreshToken": "eyJhbGci",
-//     "expiresIn": 3600,
-//     "user": {
-//       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//       "userName": "tangotew@gmail.com",
-//       "email": "tangotew@gmail.com",
-//       "firstName": "Tango",
-//       "lastName": "Tew",
+    //     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
+    //     "tokenType": "Bearer",
+    //     "refreshToken": "eyJhbGci",
+    //     "expiresIn": 3600,
+    //     "user": {
+      //       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+      //       "userName": "tangotew@gmail.com",
+      //       "email": "tangotew@gmail.com",
+      //       "firstName": "Tango",
+      //       "lastName": "Tew",
 //       "roles": [
 //           "owner_operator"
 //       ]
@@ -61,12 +62,12 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
 
   if (response) {
-    // Store the token in the session
-    session.set("user", response);
-    return json(response, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
+  // Store the token in the session
+  session.set("user", response);
+  return json(response, {
+    headers: {
+    "Set-Cookie": await commitSession(session),
+    },
     });
   }
   // return json(userData);
@@ -81,6 +82,7 @@ export default function ShipperDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isLoadOperationsActive =
     location.pathname.startsWith("/dashboard/loads/");
@@ -118,8 +120,12 @@ export default function ShipperDashboard() {
       />
     );
   } else if (hasAccess && !shipperAccess) {
-    console.log("redirecting to carrier dashboard");
-    return redirect("/dashboard/");
+    useEffect(() => {
+      if (hasAccess && !shipperAccess) {
+          console.log("redirecting to carrier dashboard");
+          navigate('/dashboard');
+      }
+  }, []);
   } else {
     return (
       <>

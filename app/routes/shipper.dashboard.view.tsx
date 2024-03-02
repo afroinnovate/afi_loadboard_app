@@ -6,7 +6,7 @@ import {
   type ActionFunction,
   type MetaFunction,
 } from "@remix-run/node";
-import { useActionData, useLoaderData } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigate } from "@remix-run/react";
 import type { LoadResponse } from "~/api/models/loadResponse";
 import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
@@ -29,23 +29,26 @@ import {
 import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 import AccessDenied from "~/components/accessdenied";
+import { useEffect } from "react";
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMjQyYmMxODQtNWQ1Ni00YThhLWE2ZjYtYWE0NTM5MDBhMDI2IiwibmJmIjoxNzA5MzY3NjI4LCJleHAiOjE3MDkzNzEyMzMsImlhdCI6MTcwOTM2NzYzMywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.7xSgzvGde0uBVZGt4BZkbK3iQk6wnivownr0O3ULOjE",
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiJlZWJhNDAzMC04YmI0LTQxODUtODg0Yi0zM2NmOTI1NGE5Y2IiLCJuYmYiOjE3MDk0MDk3NDksImV4cCI6MTcwOTQxMzM1NCwiaWF0IjoxNzA5NDA5NzU0LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.hRBED53O2VRLywDStH1cdmD0kqmnPNgjx7CHwXx60zc",
 //   "tokenType": "Bearer",
 //   "refreshToken": "eyJhbGci",
 //   "expiresIn": 3600,
 //   "user": {
-//     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
+//     "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
 //     "firstName": "Tango",
 //     "lastName": "Tew",
 //     "roles": [
-//         "owner_operator"
+//         "support",
+//         "carrier"
 //     ]
 //   }
 // };
+
 export const meta: MetaFunction = () => {
   return [
     {
@@ -162,7 +165,8 @@ export const action: ActionFunction = async ({ request }) => {
 export default function ShipperViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
-
+  const navigate = useNavigate();
+  
   let error = "";
 
   if (loaderData && loaderData.errno) {
@@ -218,6 +222,7 @@ export default function ShipperViewLoads() {
     roles.some((role) => role.includes("fleet_owner"));
 
   if (!shipperHasAccess && !carrierHasAccess) {
+    console.log("access denied")
     return (
       <AccessDenied
         returnUrl="/"
@@ -225,7 +230,13 @@ export default function ShipperViewLoads() {
       />
     );
   } else if (carrierHasAccess && !shipperHasAccess) {
-    return redirect("/dashboard/");
+    console.log("redirecting to dashboard")
+    useEffect(() => {
+      
+      console.log("redirecting to carrier dashboard");
+      navigate('/dashboard/');
+  
+}, []);
   } else {
     return (
       <div className="container mx-auto px-4 py-8 bg-slate-900 text-white">
@@ -351,11 +362,11 @@ export default function ShipperViewLoads() {
                             data-tooltip-target="tooltip-light"
                             data-tooltip-style="light"
                             className={`px-4 py-2 mr-2 text-orange-500 rounded ${
-                              hasAccess
+                              shipperHasAccess
                                 ? " hover:bg-blue-700"
                                 : "bg-gray-400 cursor-not-allowed"
                             }`}
-                            disabled={!hasAccess}
+                            disabled={!shipperHasAccess }
                           >
                             <ChatBubbleLeftIcon
                               className="w-6 h-6 text-orange-500 hover:text-lg"
