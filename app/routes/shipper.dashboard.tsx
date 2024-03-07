@@ -36,16 +36,16 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-    //     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
+        //     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
     //     "tokenType": "Bearer",
-    //     "refreshToken": "eyJhbGci",
-    //     "expiresIn": 3600,
-    //     "user": {
-      //       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-      //       "userName": "tangotew@gmail.com",
-      //       "email": "tangotew@gmail.com",
-      //       "firstName": "Tango",
-      //       "lastName": "Tew",
+        //     "refreshToken": "eyJhbGci",
+        //     "expiresIn": 3600,
+        //     "user": {
+            //       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+            //       "userName": "tangotew@gmail.com",
+            //       "email": "tangotew@gmail.com",
+            //       "firstName": "Tango",
+            //       "lastName": "Tew",
 //       "roles": [
 //           "owner_operator"
 //       ]
@@ -57,18 +57,18 @@ export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-    // successRedirect: "/dashboard/shipper/", //for testing locally
+  failureRedirect: "/login/",
+  // successRedirect: "/dashboard/shipper/", //for testing locally
   });
 
   if (response) {
   // Store the token in the session
   session.set("user", response);
   return json(response, {
-    headers: {
-    "Set-Cookie": await commitSession(session),
-    },
-    });
+  headers: {
+  "Set-Cookie": await commitSession(session),
+  },
+  });
   }
   // return json(userData);
 
@@ -109,7 +109,21 @@ export default function ShipperDashboard() {
     roles.some((role) => role.includes("dispatcher")) ||
     roles.some((role) => role.includes("company_driver")) ||
     roles.some((role) => role.includes("fleet_owner"));
+  
+  useEffect(() => {
+    // Set the sidebar state based on window width after component mounts
+    const handleResize = () => setSidebarOpen(window.innerWidth > 768);
+    
+    // Call handleResize immediately to set the initial state based on current window size
+    handleResize();
+    
+    // Add event listener to adjust sidebar visibility on window resize
+    window.addEventListener("resize", handleResize);
 
+    // Cleanup event listener on component unmount
+    return () => window.removeEventListener("resize", handleResize);
+  }, []); // Empty dependency array ensures this runs once on mount
+  
   // check if the user is authorized to access this page
   if (!shipperAccess && !hasAccess) {
     console.log("No access");
@@ -129,11 +143,11 @@ export default function ShipperDashboard() {
   } else {
     return (
       <>
-        <header className="w-full flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
-          <div className="flex items-center space-x-4">
+        <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 lg:w-auto md:w-auto">
+          <div className="flex items-center space-x-4 ">
             <button
               onClick={toggleSidebar}
-              className="text-black hover:text-black mr-4 text-4xl"
+              className="text-black hover:text-black text-3xl sm:text-4xl"
             >
               {/* Replace with an appropriate icon or text */}
               &#9776;
@@ -144,8 +158,8 @@ export default function ShipperDashboard() {
               className={({ isActive }) =>
                 "text-black font-semibold " +
                 (isActive
-                  ? "border-b-2 border-blue-400"
-                  : "text-gray-400 hover:text-black")
+                  ? "border-b-2 border-blue-400 sm:text-4xl"
+                  : "text-gray-400 hover:text-black sm:text-4xl")
               }
             >
               Home
@@ -156,8 +170,8 @@ export default function ShipperDashboard() {
               className={() =>
                 "text-black font-semibold " +
                 (isLoadOperationsActive
-                  ? "border-b-2 border-blue-400"
-                  : "text-gray-500 hover:text-black")
+                  ? "border-b-2 border-blue-400 sm:text-4xl"
+                  : "text-gray-500 hover:text-black sm:text-4xl")
               }
             >
               Load Operations
@@ -165,7 +179,7 @@ export default function ShipperDashboard() {
           </div>
           <Link
             to="/shipper/dashboard/help"
-            className="text-gray-500 hover:text-black px-4 py-2 rounded hover:border-b-2 hover:border-blue-400"
+            className="text-gray-500 hover:text-black px-4 py-2 rounded hover:border-b-2 hover:border-blue-400 sm:text-4xl"
           >
             Help
           </Link>
