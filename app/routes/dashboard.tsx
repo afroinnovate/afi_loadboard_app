@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Link, Outlet, useLoaderData, useLocation, NavLink } from "@remix-run/react";
+import { useEffect, useState } from 'react';
+import { Link, Outlet, useLoaderData, useLocation, NavLink, useNavigate } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
   LoaderFunction,
 } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
@@ -18,7 +18,7 @@ export const meta: MetaFunction = () => {
   return [
     {
       title: "Loadboard | Carrier dashboard",
-      description: "Sign up for a new account",
+      description: "Dashboard for carriers",
     },
   ];
 };
@@ -32,11 +32,11 @@ export const links: LinksFunction = () => [
   //   "refreshToken": "eyJhbGci",
   //   "expiresIn": 3600,
   //   "user": {
-      //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-      //       "userName": "tangogatdet76@gmail.com",
-      //       "email": "tangogatdet76@gmail.com",
-      //       "firstName": "Tango",
-      //       "lastName": "Tew",
+    //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+    //       "userName": "tangogatdet76@gmail.com",
+    //       "email": "tangogatdet76@gmail.com",
+    //       "firstName": "Tango",
+    //       "lastName": "Tew",
 //       "roles": [
 //           "support",
 //           "carrier"
@@ -49,17 +49,17 @@ export const loader: LoaderFunction = async ({ request }) => {
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login/",
-    // successRedirect: "/dashboard/", //for testing locally
+  // successRedirect: "/dashboard/", //for testing locally
   });
 
   if (response) {
   // Store the token in the session
   session.set("user", response);
   return json(response, {
-  headers: {
-  "Set-Cookie": await commitSession(session),
-  },
-  });
+    headers: {
+    "Set-Cookie": await commitSession(session),
+    },
+    });
   }
   // return json(userData);
 
@@ -73,6 +73,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
   const location = useLocation();
+  const navigate = useNavigate();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
   
@@ -87,9 +88,22 @@ export default function Dashboard() {
   const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
+  const shipperAccess = roles.includes('shipper') || roles.includes('admin') || roles.includes('owner_operator') 
+                        roles.includes('dispatcher') || 
+                        roles.includes('company_driver') ||
+                        roles.includes('fleet_owner');
   // check if the user is authorized to access this page
-  if (!hasAccess) {
+  if (!hasAccess && !shipperAccess) {
    return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
+  }else if(shipperAccess){
+    console.log('redirecting to shipper dashboard');
+    useEffect(() => {
+      
+          console.log("redirecting to carrier dashboard");
+          navigate('/shipper/dashboard/');
+      
+  }, []);
+    // return redirect('/shipper/dashboard/');
   }else {
     return (
       <>
