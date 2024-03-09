@@ -31,22 +31,22 @@ import UpdateLoadView from "~/components/updateload";
 import AccessDenied from "~/components/accessdenied";
 import { useEffect } from "react";
 
-const userData: LoginResponse = {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOTJjMmFiMmQtMGE1My00MWExLWEyYzktYjE3M2QwNTc1ZDA3IiwibmJmIjoxNzA5OTY1Njg4LCJleHAiOjE3MDk5NjkyOTMsImlhdCI6MTcwOTk2NTY5MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.trcE4MYAZ6zutVqzExwjIn9hvNQDIrUdTm8EXd-U3bc",
-  "tokenType": "Bearer",
-  "refreshToken": "eyJhbGci",
-  "expiresIn": 3600,
-  "user": {
-    "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-    "userName": "tangotew@gmail.com",
-    "email": "tangotew@gmail.com",
-    "firstName": "Tango",
-    "lastName": "Tew",
-    "roles": [
-        "owner_operator"
-    ]
-  }
-};
+// const userData: LoginResponse = {
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOTJjMmFiMmQtMGE1My00MWExLWEyYzktYjE3M2QwNTc1ZDA3IiwibmJmIjoxNzA5OTY1Njg4LCJleHAiOjE3MDk5NjkyOTMsImlhdCI6MTcwOTk2NTY5MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.trcE4MYAZ6zutVqzExwjIn9hvNQDIrUdTm8EXd-U3bc",
+//   "tokenType": "Bearer",
+//   "refreshToken": "eyJhbGci",
+//   "expiresIn": 3600,
+//   "user": {
+//     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+//     "userName": "tangotew@gmail.com",
+//     "email": "tangotew@gmail.com",
+//     "firstName": "Tango",
+//     "lastName": "Tew",
+//     "roles": [
+//         "owner_operator"
+//     ]
+//   }
+// };
 
 export const meta: MetaFunction = () => {
   return [
@@ -60,9 +60,9 @@ export const meta: MetaFunction = () => {
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     // // Find the parent route match containing the user and token
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user: any = session.get("user");
-    const user: any = userData;
+    const session = await getSession(request.headers.get("Cookie"));
+    const user: any = session.get("user");
+    // const user: any = userData;
 
     if (!user) {
       throw new Error("401 Unauthorized");
