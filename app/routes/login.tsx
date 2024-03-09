@@ -111,14 +111,14 @@ export default function Login() {
                   className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
                   ${email.length >= 6 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                   // className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
-                  // placeholder="Enter your username"
+                  placeholder="Enter your username"
                 />
-                <label
+                {/* <label
                   htmlFor="email"
                   className={`absolute transition-all left-5 px-1 ${email.length <= 0 ? 'top-2 text-gray-400' : '-top-5 text-gray-500'} ${email.length > 0 ? 'text-md' : ''}`}
                 >
                   Email
-                </label>
+                </label> */}
               </div>
               
               {/* <div>
