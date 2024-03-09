@@ -386,7 +386,8 @@ export default function ShipperViewLoads() {
                   </>
                 )}
               </Disclosure>
-            ))}
+            )
+          )}
         </div>
       </div>
     );
