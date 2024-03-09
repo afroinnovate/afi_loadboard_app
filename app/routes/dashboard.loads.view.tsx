@@ -21,30 +21,29 @@ import {
 import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 
-// const userData: LoginResponse = {
-  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5YTQ5MWNlYy1jOTY3LTRhMjQtOTg0Ny1kMDMxZmI1YjdlZDAiLCJuYmYiOjE3MDgzMTY5NDEsImV4cCI6MTcwODMyMDU0NiwiaWF0IjoxNzA4MzE2OTQ2LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Zond6YWbJYGIskYLoqCkzrdZXSSsO1eZwHbuUoUt-b0",
-  //   "isLockedOut": true,
-    //   "requiresTwoFactor": false,
-    //   "user": {
-            //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-            //       "userName": "tangogatdet76@gmail.com",
-            //       "email": "tangogatdet76@gmail.com",
-            //       "firstName": "Tango",
-            //       "lastName": "Tew",
-//       "roles": [
-//           "support",
-//           "carrier"
-//       ]
-//   }
-// };
+const userData: LoginResponse = {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOTJjMmFiMmQtMGE1My00MWExLWEyYzktYjE3M2QwNTc1ZDA3IiwibmJmIjoxNzA5OTY1Njg4LCJleHAiOjE3MDk5NjkyOTMsImlhdCI6MTcwOTk2NTY5MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.trcE4MYAZ6zutVqzExwjIn9hvNQDIrUdTm8EXd-U3bc",
+    "isLockedOut": true,
+      "requiresTwoFactor": false,
+      "user": {
+        "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+        "userName": "tangotew@gmail.com",
+        "email": "tangotew@gmail.com",
+        "firstName": "Tango",
+        "lastName": "Tew",
+        "roles": [
+            "carrier"
+        ]
+    }
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
    
     // Find the parent route match containing the user and token
-    const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
-    // const user: any = userData;
+    // const session = await getSession(request.headers.get("Cookie"));
+    // const user: any = session.get("user");
+    const user: any = userData;
     
     if(!user) {
       throw new Error("401 Unauthorized");
@@ -178,10 +177,10 @@ export default function ViewLoads() {
   const hasAccess = roles.includes('admin') || roles.some(role => role.includes('carrier'));
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-4">
       <div className="flex justify-center items-center shadow-md border-spacing-3 mb-6">
-        <h1 className="text-2xl font-bold mb-4 p-6 text-center text-green-500">
-          Manage your Loads with Ease
+        <h1 className="text-2xl font-bold mb-4 p-4 text-center text-green-500">
+          Manage your Loads
         </h1>
       </div>
       {error && <p className="text-center text-red-500">{error}</p>}

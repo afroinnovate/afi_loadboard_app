@@ -26,42 +26,43 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// const userData: LoginResponse = {
-  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
-  //   "tokenType": "Bearer",
-  //   "refreshToken": "eyJhbGci",
-  //   "expiresIn": 3600,
-  //   "user": {
-    //       "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-    //       "userName": "tangogatdet76@gmail.com",
-    //       "email": "tangogatdet76@gmail.com",
-    //       "firstName": "Tango",
-    //       "lastName": "Tew",
-//       "roles": [
-//           "support",
-//           "carrier"
-//       ]
-//   }
-// };
+const userData: LoginResponse = {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYmMzYjFjZDgtYTYyZi00YzZkLTlkM2UtNGY1ZTgxMWI5MjEzIiwibmJmIjoxNzA5OTU3MDg0LCJleHAiOjE3MDk5NjA2ODksImlhdCI6MTcwOTk1NzA4OSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.c_ZmgpbIsoFLczmLPVhv6tlE6WNvHIV7w-XpAGzeO8M",
+    "tokenType": "Bearer",
+    "refreshToken": "eyJhbGci",
+    "expiresIn": 3600,
+    "user": {
+      "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+      "userName": "tangotew@gmail.com",
+      "email": "tangotew@gmail.com",
+      "firstName": "Tango",
+      "lastName": "Tew",
+      "roles": [
+          // "owner_operator"
+          "carrier"
+      ]
+  }
+};
+
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  // check if the sessoon is already set
-  let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-  // successRedirect: "/dashboard/", //for testing locally
-  });
+  // const session = await getSession(request.headers.get("Cookie"));
+  // // check if the sessoon is already set
+  // let response: any = await authenticator.isAuthenticated(request, {
+  //   failureRedirect: "/login/",
+  // // successRedirect: "/dashboard/", //for testing locally
+  // });
 
-  if (response) {
-  // Store the token in the session
-  session.set("user", response);
-  return json(response, {
-    headers: {
-    "Set-Cookie": await commitSession(session),
-    },
-    });
-  }
-  // return json(userData);
+  // if (response) {
+  // // Store the token in the session
+  // session.set("user", response);
+  // return json(response, {
+  //   headers: {
+  //   "Set-Cookie": await commitSession(session),
+  //   },
+  //   });
+  // }
+  return json(userData);
 
   // return json(userData)
   const error = session.get("_auth_error");
@@ -107,8 +108,9 @@ export default function Dashboard() {
   }else {
     return (
       <>
-        <header className="w-full flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
-          <div className="flex items-center space-x-4">
+        {/* Desktop view setup */}
+        <header className="hidden lg:flex w-full justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
+          <div className="items-center space-x-4">
             <button onClick={toggleSidebar} className="text-black hover:text-black mr-4 text-4xl">
               {/* Replace with an appropriate icon or text */}
               &#9776;
@@ -138,7 +140,7 @@ export default function Dashboard() {
           </Link>
         </header>
         <div className="flex">
-          <div className="">
+          <div className="hidden lg:flex">
             {sidebarOpen && <Sidebar activeSection={activeSection} />}
           </div>
           <main className='w-full flex justify-center content-center p-5 shadow-lg'>
