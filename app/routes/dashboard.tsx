@@ -26,45 +26,44 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-const userData: LoginResponse = {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYmMzYjFjZDgtYTYyZi00YzZkLTlkM2UtNGY1ZTgxMWI5MjEzIiwibmJmIjoxNzA5OTU3MDg0LCJleHAiOjE3MDk5NjA2ODksImlhdCI6MTcwOTk1NzA4OSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.c_ZmgpbIsoFLczmLPVhv6tlE6WNvHIV7w-XpAGzeO8M",
-    "tokenType": "Bearer",
-    "refreshToken": "eyJhbGci",
-    "expiresIn": 3600,
-    "user": {
-      "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-      "userName": "tangotew@gmail.com",
-      "email": "tangotew@gmail.com",
-      "firstName": "Tango",
-      "lastName": "Tew",
-      "roles": [
-          // "owner_operator"
-          "carrier"
-      ]
-  }
-};
+// const userData: LoginResponse = {
+//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYmMzYjFjZDgtYTYyZi00YzZkLTlkM2UtNGY1ZTgxMWI5MjEzIiwibmJmIjoxNzA5OTU3MDg0LCJleHAiOjE3MDk5NjA2ODksImlhdCI6MTcwOTk1NzA4OSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.c_ZmgpbIsoFLczmLPVhv6tlE6WNvHIV7w-XpAGzeO8M",
+//     "tokenType": "Bearer",
+//     "refreshToken": "eyJhbGci",
+//     "expiresIn": 3600,
+//     "user": {
+//       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+//       "userName": "tangotew@gmail.com",
+//       "email": "tangotew@gmail.com",
+//       "firstName": "Tango",
+//       "lastName": "Tew",
+//       "roles": [
+//           // "owner_operator"
+//           "carrier"
+//       ]
+//   }
+// };
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  // const session = await getSession(request.headers.get("Cookie"));
-  // // check if the sessoon is already set
-  // let response: any = await authenticator.isAuthenticated(request, {
-  //   failureRedirect: "/login/",
-  // // successRedirect: "/dashboard/", //for testing locally
-  // });
+  const session = await getSession(request.headers.get("Cookie"));
+  // check if the sessoon is already set
+  let response: any = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login/",
+  // successRedirect: "/dashboard/", //for testing locally
+  });
 
-  // if (response) {
-  // // Store the token in the session
-  // session.set("user", response);
-  // return json(response, {
-  //   headers: {
-  //   "Set-Cookie": await commitSession(session),
-  //   },
-  //   });
-  // }
-  return json(userData);
+  if (response) {
+    // Store the token in the session
+    session.set("user", response);
+    return json(response, {
+      headers: {
+      "Set-Cookie": await commitSession(session),
+      },
+    });
+  }
+  // return json(userData);
 
-  // return json(userData)
   const error = session.get("_auth_error");
   return json<any>({ error });
 };
@@ -93,6 +92,7 @@ export default function Dashboard() {
                         roles.includes('dispatcher') || 
                         roles.includes('company_driver') ||
                         roles.includes('fleet_owner');
+
   // check if the user is authorized to access this page
   if (!hasAccess && !shipperAccess) {
    return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
@@ -143,7 +143,7 @@ export default function Dashboard() {
           <div className="hidden lg:flex">
             {sidebarOpen && <Sidebar activeSection={activeSection} />}
           </div>
-          <main className='w-full flex justify-center content-center p-5 shadow-lg'>
+          <main className='w-full flex justify-center content-center p-3 shadow-lg'>
             { location.pathname === '/dashboard/' && <Overview /> }
             <Outlet />
           </main>
