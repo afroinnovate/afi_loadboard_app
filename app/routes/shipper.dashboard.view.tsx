@@ -32,7 +32,7 @@ import AccessDenied from "~/components/accessdenied";
 import { useEffect } from "react";
 
 const userData: LoginResponse = {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYjVjYWU1ZDQtYmJhNy00Mzk2LTgyZTUtNGI5NjQ5YjcwZDM2IiwibmJmIjoxNzEwMDQwOTA2LCJleHAiOjE3MTAwNDQ1MTEsImlhdCI6MTcxMDA0MDkxMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.QFk7W_FztNHcfN-zH_-EG7npeAyTZl2P1W04tDbW4Ug",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOGNmOGY0M2EtZDZmNC00NDQ2LWE1NTItMmQ1OWJkOGFmMGYwIiwibmJmIjoxNzEwMDQ1MDM4LCJleHAiOjE3MTAwNDg2NDMsImlhdCI6MTcxMDA0NTA0MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.gQY42hckvc0KQUI7PZUPej79pfD5OH2x9XGAAFktYWk",
   "tokenType": "Bearer",
   "refreshToken": "eyJhbGci",
   "expiresIn": 3600,
@@ -47,6 +47,15 @@ const userData: LoginResponse = {
     ]
   }
 };
+
+const carrier: any = {
+  "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+  "userName": "tangotew@gmail.com",
+  "email": "tangotew@gmail.com",
+  "firstName": "Bol",
+  "lastName": "Ring",
+  "type":"Independent Carrier"
+}
 
 export const meta: MetaFunction = () => {
   return [
@@ -99,61 +108,65 @@ export const action: ActionFunction = async ({ request }) => {
   if (!user) {
     throw new Response("401 Unauthorized", { status: 401 });
   }
-
+ 
   const formData = await request.formData();
+  console.log("LoadId: ", formData.get("loadId"));
   const loadId = Number(formData.get("loadId"));
   const action = formData.get("_action");
   console.log("ID: ", loadId, "Action: ", action);
   console.log("Form Data: ", formData);
 
   try {
-    if (action === "edit" && loadId) {
+    if (action === "contact" && loadId) {
+      console.log("Contacting Carrier");
       return json("editMode");
-    } else if (action === "save_changes") {
-      console.log("Saving Changes");
-      const data = formData.get("origin");
-      console.log("Data: ", data);
-
-      const formattedPickupDate = new Date(
-        (formData.get("pickupDate") as string) + "T12:00:00.000Z"
-      ).toISOString();
-      const formattedDeliveryDate = new Date(
-        (formData.get("deliveryDate") as string) + "T12:00:00.000Z"
-      ).toISOString();
-
-      console.log("loadId: ", formData.get("loadId"));
-      const Id =
-        Number(formData.get("loadId")) !== 0
-          ? Number(formData.get("loadId"))
-          : 99999;
-      const requestBody: LoadRequest = {
-        commodity: formData.get("commodity") as string,
-        deliveryDate: formattedDeliveryDate,
-        destination: formData.get("destination") as string,
-        loadDetails: formData.get("loadDetails") as string,
-        loadStatus: formData.get("loadStatus") as string,
-        offerAmount: Number(formData.get("offerAmount")),
-        origin: formData.get("origin") as string,
-        pickupDate: formattedPickupDate,
-        weight: Number(formData.get("weight")),
-        userId: user.user.id,
-      };
-
-      const response = await UpdateLoad(user.token, Id, requestBody);
-      if (response) {
-        console.log("Response: ", response);
-      }
-      return redirect("/dashboard/loads/view/");
-    } else if (action === "delete" && loadId) {
-      return json("confirmation");
-    } else if (action === "delete_confirmed") {
-      await DeleteLoad(user.token, loadId);
-      return redirect("/dashboard/loads/view/");
-    } else if (action === "cancel") {
-      return redirect("/dashboard/loads/view/");
-    } else {
-      throw new Error("Invalid action");
     }
+    // } else if (action === "save_changes") {
+    //   console.log("Saving Changes");
+    //   const data = formData.get("origin");
+    //   console.log("Data: ", data);
+
+    //   const formattedPickupDate = new Date(
+    //     (formData.get("pickupDate") as string) + "T12:00:00.000Z"
+    //   ).toISOString();
+    //   const formattedDeliveryDate = new Date(
+    //     (formData.get("deliveryDate") as string) + "T12:00:00.000Z"
+    //   ).toISOString();
+
+    //   console.log("loadId: ", formData.get("loadId"));
+    //   const Id =
+    //     Number(formData.get("loadId")) !== 0
+    //       ? Number(formData.get("loadId"))
+    //       : 99999;
+    //   const requestBody: LoadRequest = {
+    //     commodity: formData.get("commodity") as string,
+    //     deliveryDate: formattedDeliveryDate,
+    //     destination: formData.get("destination") as string,
+    //     loadDetails: formData.get("loadDetails") as string,
+    //     loadStatus: formData.get("loadStatus") as string,
+    //     offerAmount: Number(formData.get("offerAmount")),
+    //     origin: formData.get("origin") as string,
+    //     pickupDate: formattedPickupDate,
+    //     weight: Number(formData.get("weight")),
+    //     userId: user.user.id,
+    //   };
+
+    //   const response = await UpdateLoad(user.token, Id, requestBody);
+    //   if (response) {
+    //     console.log("Response: ", response);
+    //   }
+    //   return redirect("/dashboard/loads/view/");
+    // } else if (action === "delete" && loadId) {
+    //   return json("confirmation");
+    // } else if (action === "delete_confirmed") {
+    //   await DeleteLoad(user.token, loadId);
+    //   return redirect("/dashboard/loads/view/");
+    // } else if (action === "cancel") {
+    //   return redirect("/dashboard/loads/view/");
+    // } else {
+    //   throw new Error("Invalid action");
+    // }
+    return "editMode";
   } catch (error: any) {
     if (error.message.includes(401)) {
       return redirect("/login/");
@@ -194,6 +207,7 @@ export default function ShipperViewLoads() {
         loads[i] = load;
         i++;
       }
+      load.poster = carrier;
     }
     user = loaderData[1];
   }
@@ -234,6 +248,7 @@ export default function ShipperViewLoads() {
     useEffect(() => {
       navigate('/dashboard/');
     }, []);
+    // return redirect("/dashboard/");
   } else {
     return (
       <div className={`container mx-auto dark:bg-gray-800 ${error ? 'mb-4' : ''}`}>
@@ -243,7 +258,7 @@ export default function ShipperViewLoads() {
           </div>
         )}
           <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
-           <h1 className="text-2xl font-bold mb-4 p-3 text-center text-green-500 shadow-md shadow-white">
+           <h1 className="text-2xl font-san font-serif mb-4 p-3 text-center text-white shadow-md shadow-white">
              Pick your Load and Hit the Road
            </h1>
          </div>
@@ -264,7 +279,7 @@ export default function ShipperViewLoads() {
                       {/* Middle section with posted by and amount */}
                       <div className="flex flex-col items-center justify-center flex-grow mx-4">
                         <span className="text-xs text-gray-400">Posted by</span>
-                        <span className="text-sm font-medium text-gray-300">{`${load.posterFirstName} ${load.posterLastName}`}</span>
+                        <span className="text-sm font-medium text-gray-300">{`${load.poster.firstName} ${load.poster.lastName}`}</span>
                         <span className="text-lg font-semibold text-blue-400">${load.offerAmount}</span>
                       </div>
 
@@ -296,25 +311,37 @@ export default function ShipperViewLoads() {
                       </div>
                       {/* Action buttons */}
                       <div className="flex justify-end space-x-2 mt-4">
-                        {/* Other buttons */}
-                        <button
-                          onClick={() => handleContact(load.id)}
-                          className="flex items-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                          disabled={!shipperHasAccess}
-                          aria-label="Contact Carrier"
-                        >
-                          <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
-                          Message Carrier
-                        </button>
-                        <button
-                          onClick={() => handleBid(load.id)}
-                          className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          disabled={!shipperHasAccess}
-                          aria-label="Place Bid"
-                        >
-                          <CurrencyDollarIcon className="w-5 h-5 mr-2" />
-                          Place a Bid
-                        </button>
+                        <form method="post">
+                          <input type="hidden" name="loadId" value={load.id} />
+                          <input type="hidden" name="user" value={user} />
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="contact"
+                            className="flex items-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            disabled={!shipperHasAccess}
+                            aria-label="Contact Carrier"
+                          >
+                            <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
+                            Message Carrier
+                          </button>
+                        </form>
+                        <form method="post">
+                          <input type="hidden" name="loadId" value={load.id} />
+                          <input type="hidden" name="user" value={user} />
+                          <button
+                            // onClick={() => handleBid(load.id)}
+                            type="submit"
+                            name="_action"
+                            value="bid"
+                            className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            disabled={!shipperHasAccess}
+                            aria-label="Place Bid"
+                          >
+                            <CurrencyDollarIcon className="w-5 h-5 mr-2" />
+                            Place a Bid
+                          </button>
+                        </form>
                       </div>
                     </Disclosure.Panel>
                   </>
