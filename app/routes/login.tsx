@@ -5,6 +5,7 @@ import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
 import type { LoginResponse } from "../api/models/loginResponse";
+import { useState } from "react";
 // import invariant from "tiny-invariant";
 
 export const meta: MetaFunction = () => {
@@ -67,6 +68,21 @@ export default function Login() {
   }else {
     loaderMessage = "Something went wrong. Please try again later."
   }
+
+  const [showPasswordRules, setShowPasswordRules] = useState(false);
+  const [password, setPassword] = useState('');
+
+  const [email, setEmail] = useState('');
+
+  // Function to handle password field focus - show rules
+  const handlePasswordFocus = () => {
+    setShowPasswordRules(true);
+  };
+
+  // Function to handle password field blur - hide rules
+  const handlePasswordBlur = () => {
+    setShowPasswordRules(false);
+  };
  
   return (
     <>
@@ -82,21 +98,30 @@ export default function Login() {
             </p>
           )}
           <Form reloadDocument method="post" className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <div className="relative">
+                {/* <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   <span className="text-red-500">*</span> Username
-                </label>
+                </label> */}
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
+                  ${email.length >= 6 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                  // className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your username"
                 />
+                {/* <label
+                  htmlFor="email"
+                  className={`absolute transition-all left-5 px-1 ${email.length <= 0 ? 'top-2 text-gray-400' : '-top-5 text-gray-500'} ${email.length > 0 ? 'text-md' : ''}`}
+                >
+                  Email
+                </label> */}
               </div>
-              <div>
+              
+              {/* <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   <span className="text-red-500">*</span> Password
                 </label>
@@ -109,6 +134,43 @@ export default function Login() {
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your password"
                 />
+              </div> */}
+               <div>
+                {/* <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <span className="text-red-500">*</span> Password
+                </label> */}
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
+                  ${password.length >= 8 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                  // className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your password"
+                  minLength={8}
+                  onFocus={handlePasswordFocus}
+                  onBlur={handlePasswordBlur}
+                />
+                {showPasswordRules && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Password must:
+                    <ul className="list-disc pl-5">
+                      <li>Be at least 8 characters long</li>
+                      <li>Include both lower and upper case characters</li>
+                      <li>Contain at least one number</li>
+                      <li>Have at least one special character (e.g., !@#$%)</li>
+                    </ul>
+                  </div>
+                )}
+
+                <label
+                  htmlFor="password"
+                  className={`absolute transition-all left-5 px-1 ${password.length <= 0 ? 'top-2 text-gray-400' : '-top-5 text-gray-500'} ${password.length > 0 ? 'text-md' : ''}`}
+                >
+                  Enter Password
+                </label>
               </div>
               <button
                 type="submit"
@@ -129,7 +191,6 @@ export default function Login() {
             </Form>
           </div>
       </div>
-
     </>
   );
 }

@@ -32,19 +32,18 @@ import AccessDenied from "~/components/accessdenied";
 import { useEffect } from "react";
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiJlZWJhNDAzMC04YmI0LTQxODUtODg0Yi0zM2NmOTI1NGE5Y2IiLCJuYmYiOjE3MDk0MDk3NDksImV4cCI6MTcwOTQxMzM1NCwiaWF0IjoxNzA5NDA5NzU0LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.hRBED53O2VRLywDStH1cdmD0kqmnPNgjx7CHwXx60zc",
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOTJjMmFiMmQtMGE1My00MWExLWEyYzktYjE3M2QwNTc1ZDA3IiwibmJmIjoxNzA5OTY1Njg4LCJleHAiOjE3MDk5NjkyOTMsImlhdCI6MTcwOTk2NTY5MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.trcE4MYAZ6zutVqzExwjIn9hvNQDIrUdTm8EXd-U3bc",
 //   "tokenType": "Bearer",
 //   "refreshToken": "eyJhbGci",
 //   "expiresIn": 3600,
 //   "user": {
-//     "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
+//     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+//     "userName": "tangotew@gmail.com",
+//     "email": "tangotew@gmail.com",
 //     "firstName": "Tango",
 //     "lastName": "Tew",
 //     "roles": [
-//         "support",
-//         "carrier"
+//         "owner_operator"
 //     ]
 //   }
 // };
@@ -60,7 +59,7 @@ export const meta: MetaFunction = () => {
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    // Find the parent route match containing the user and token
+    // // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user: any = session.get("user");
     // const user: any = userData;
@@ -232,16 +231,13 @@ export default function ShipperViewLoads() {
   } else if (carrierHasAccess && !shipperHasAccess) {
     console.log("redirecting to dashboard")
     useEffect(() => {
-      
-      console.log("redirecting to carrier dashboard");
       navigate('/dashboard/');
-  
-}, []);
+    }, []);
   } else {
     return (
       <div className="container mx-auto px-4 py-8 bg-slate-900 text-white">
-        <div className="flex justify-center items-center shadow-md border-spacing-3 mb-6">
-          <h1 className="text-2xl font-bold mb-4 p-6 text-center text-green-500 shadow-md shadow-white">
+        <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
+          <h1 className="text-2xl font-bold mb-4 p-3 text-center text-green-500 shadow-md shadow-white">
             Pick your Load and Hit the Road
           </h1>
         </div>
@@ -390,7 +386,8 @@ export default function ShipperViewLoads() {
                   </>
                 )}
               </Disclosure>
-            ))}
+            )
+          )}
         </div>
       </div>
     );
