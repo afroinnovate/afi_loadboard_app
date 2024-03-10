@@ -22,8 +22,8 @@ import {
   DocumentCheckIcon,
   CheckCircleIcon,
   QueueListIcon,
-  MinusCircleIcon,
-  EllipsisHorizontalCircleIcon,
+  ArrowRightIcon,
+  CurrencyDollarIcon,
   ChatBubbleLeftIcon,
 } from "@heroicons/react/20/solid";
 import type { LoadRequest } from "~/api/models/loadRequest";
@@ -31,22 +31,22 @@ import UpdateLoadView from "~/components/updateload";
 import AccessDenied from "~/components/accessdenied";
 import { useEffect } from "react";
 
-// const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOTJjMmFiMmQtMGE1My00MWExLWEyYzktYjE3M2QwNTc1ZDA3IiwibmJmIjoxNzA5OTY1Njg4LCJleHAiOjE3MDk5NjkyOTMsImlhdCI6MTcwOTk2NTY5MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.trcE4MYAZ6zutVqzExwjIn9hvNQDIrUdTm8EXd-U3bc",
-//   "tokenType": "Bearer",
-//   "refreshToken": "eyJhbGci",
-//   "expiresIn": 3600,
-//   "user": {
-//     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
-//     "firstName": "Tango",
-//     "lastName": "Tew",
-//     "roles": [
-//         "owner_operator"
-//     ]
-//   }
-// };
+const userData: LoginResponse = {
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYjVjYWU1ZDQtYmJhNy00Mzk2LTgyZTUtNGI5NjQ5YjcwZDM2IiwibmJmIjoxNzEwMDQwOTA2LCJleHAiOjE3MTAwNDQ1MTEsImlhdCI6MTcxMDA0MDkxMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.QFk7W_FztNHcfN-zH_-EG7npeAyTZl2P1W04tDbW4Ug",
+  "tokenType": "Bearer",
+  "refreshToken": "eyJhbGci",
+  "expiresIn": 3600,
+  "user": {
+    "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+    "userName": "tangotew@gmail.com",
+    "email": "tangotew@gmail.com",
+    "firstName": "Tango",
+    "lastName": "Tew",
+    "roles": [
+        "owner_operator"
+    ]
+  }
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -60,9 +60,9 @@ export const meta: MetaFunction = () => {
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     // // Find the parent route match containing the user and token
-    const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
-    // const user: any = userData;
+    // const session = await getSession(request.headers.get("Cookie"));
+    // const user: any = session.get("user");
+    const user: any = userData;
 
     if (!user) {
       throw new Error("401 Unauthorized");
@@ -91,10 +91,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get("user");
+  // const session = await getSession(request.headers.get("Cookie"));
+  // const user = session.get("user");
 
-  // const user: any = userData;
+  const user: any = userData;
+
   if (!user) {
     throw new Response("401 Unauthorized", { status: 401 });
   }
@@ -235,161 +236,109 @@ export default function ShipperViewLoads() {
     }, []);
   } else {
     return (
-      <div className="container mx-auto px-4 py-8 bg-slate-900 text-white">
-        <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
-          <h1 className="text-2xl font-bold mb-4 p-3 text-center text-green-500 shadow-md shadow-white">
-            Pick your Load and Hit the Road
-          </h1>
-        </div>
-        {error && <p className="text-center text-red-500">{error}</p>}
-        <div className="space-y-4 pt-2">
-          {loads &&
-            Object.values(loads).map((load) => (
-              <Disclosure
-                as="div"
-                key={load.id}
-                className="bg-white shadow rounded-lg"
-              >
+      <div className={`container mx-auto dark:bg-gray-800 ${error ? 'mb-4' : ''}`}>
+        {error && (
+          <div className="p-4 mb-2 text-center text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-300">
+            {error}
+          </div>
+        )}
+          <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
+           <h1 className="text-2xl font-bold mb-4 p-3 text-center text-green-500 shadow-md shadow-white">
+             Pick your Load and Hit the Road
+           </h1>
+         </div>
+          <div className="space-y-4 pt-2">
+            {loads && Object.values(loads).map((load) => (
+              <Disclosure as="div" key={load.id} className="bg-gray-700 shadow rounded-lg">
                 {({ open }) => (
                   <>
-                    {editMode === "editMode" && (
-                      <UpdateLoadView
-                        commodity={load.commodity}
-                        deliveryDate={load.deliveryDate}
-                        destination={load.destination}
-                        loadDetails={load.loadDetails}
-                        loadStatus={load.loadStatus}
-                        offerAmount={load.offerAmount}
-                        origin={load.origin}
-                        pickupDate={load.pickupDate}
-                        weight={load.weight}
-                        userId={user.userId}
-                        loadId={load.id}
-                      />
-                    )}
-                    <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-green-800 hover:bg-green-50">
-                      <span>{`${load.origin} -> ${load.destination}`}</span>
-                      <span>{`${load.loadDetails}`}</span>
+                    {/* Load Overview */}
+                    <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
+                       {/* Load route title */}
+                      <div className="pl-2 flex items-center space-x-3">
+                        <h2 className="text-lg font-bold">{load.origin}</h2>
+                        <ArrowRightIcon className="w-6 h-6 text-red-400"/>
+                        <h2 className="text-lg font-bold">{load.destination}</h2>
+                      </div>
+
+                      {/* Middle section with posted by and amount */}
+                      <div className="flex flex-col items-center justify-center flex-grow mx-4">
+                        <span className="text-xs text-gray-400">Posted by</span>
+                        <span className="text-sm font-medium text-gray-300">{`${load.posterFirstName} ${load.posterLastName}`}</span>
+                        <span className="text-lg font-semibold text-blue-400">${load.offerAmount}</span>
+                      </div>
+
+                      {/* Status and expand icon */}
                       <div className="flex items-center space-x-2">
-                        {load.loadStatus === "open" && (
-                          <div className="flex items-center">
-                            <LockOpenIcon className="w-5 h-5 text-orange-500" />
-                            <span className="text-green-500">Open</span>
-                          </div>
-                        )}
-                        {/* {load.loadStatus === 'closed' && (
-                          <div className="flex items-center">
-                            <LockClosedIcon className="w-5 h-5 text-red-500" />
-                            <span className="text-red-500">Closed</span>
-                          </div>
-                        )} */}
-                        {load.loadStatus === "accepted" && (
-                          <div className="flex items-center">
-                            <DocumentCheckIcon className="w-5 h-5 text-blue-500" />
-                            <span className="text-blue-500">Accepted</span>
-                          </div>
-                        )}
-                        {/* {load.loadStatus === 'delivered' && (
-                          <div className="flex items-center">
-                            <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                            <span className="text-green-600">Delivered</span>
-                          </div>
-                        )}
-                        {load.loadStatus === 'rejected' && (
-                          <div className="flex items-center">
-                            <MinusCircleIcon className="w-5 h-5 text-red-500" />
-                            <span className="text-red-500">Rejected</span>
-                          </div>
-                        )} */}
-                        {load.loadStatus === "enroute" && (
-                          <div className="flex items-center">
-                            <EllipsisHorizontalCircleIcon className="w-5 h-5 text-green-400" />
-                            <span className="text-orange-500">Enroute</span>
-                          </div>
-                        )}
+                        <span className={`text-xs font-medium py-1 px-2 rounded-full ${getStatusStyles(load.loadStatus)}`}>
+                          {load.loadStatus.charAt(0).toUpperCase() + load.loadStatus.slice(1)}
+                        </span>
                         <ChevronUpIcon
-                          className={`${
-                            open ? "transform rotate-180" : ""
-                          } w-5 h-5 text-orange-500 font-extrabold`}
+                          className={`w-8 h-8 ${open ? "transform rotate-180" : ""} text-gray-300`}
                         />
                       </div>
                     </Disclosure.Button>
-                    <Disclosure.Panel className="p-2 pl-4 text-gray-500">
+                    <Disclosure.Panel className="p-2 pl-4 text-gray-300 bg-gray-800">
+                      {/* Load details */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <p>
-                          Pickup Date:{" "}
-                          {new Date(load.pickupDate).toLocaleDateString()}
-                        </p>
-                        <p>
-                          Delivery Date:{" "}
-                          {new Date(load.deliveryDate).toLocaleDateString()}
-                        </p>
-                        <p>Commodity: {load.commodity}</p>
+                         <p>
+                           Pickup Date:{" "}
+                           {new Date(load.pickupDate).toLocaleDateString()}
+                         </p>
+                         <p>
+                           Delivery Date:{" "}
+                           {new Date(load.deliveryDate).toLocaleDateString()}
+                         </p>
+                         <p>Commodity: {load.commodity}</p>
                         <p>Weight: {load.weight} kg</p>
                         <p>Offer Amount: ${load.offerAmount}</p>
-                        <p>Details: {load.loadDetails}</p>
+                         <p>Details: {load.loadDetails}</p>
                       </div>
+                      {/* Action buttons */}
                       <div className="flex justify-end space-x-2 mt-4">
-                        <form method="post">
-                          <input type="hidden" name="loadId" value={load.id} />
-                          <button
-                            type="submit"
-                            name="_action"
-                            value="edit"
-                            className={`px-4 py-2 mr-2 text-blue-700 rounded ${
-                              shipperHasAccess
-                                ? "bg-gray-100 hover:bg-orange-400"
-                                : "bg-gray-400 cursor-not-allowed"
-                            }`}
-                            disabled={!shipperHasAccess}
-                          >
-                            <PencilIcon
-                              className="w-6 h-6 text-blue-700"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </form>
-                        <form method="post" className="bg-gray-100">
-                          <input type="hidden" name="loadId" value={load.id} />
-                          <button
-                            type="submit"
-                            name="_action"
-                            value="contact"
-                            data-tooltip-target="tooltip-light"
-                            data-tooltip-style="light"
-                            className={`px-4 py-2 mr-2 text-orange-500 rounded ${
-                              shipperHasAccess
-                                ? " hover:bg-blue-700"
-                                : "bg-gray-400 cursor-not-allowed"
-                            }`}
-                            disabled={!shipperHasAccess }
-                          >
-                            <ChatBubbleLeftIcon
-                              className="w-6 h-6 text-orange-500 hover:text-lg"
-                              aria-hidden="true"
-                            />
-                          </button>
-                          <div
-                            id="tooltip-light"
-                            role="tooltip"
-                            className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 tooltip"
-                          >
-                            Contact Carrier...
-                            <div
-                              className="tooltip-arrow"
-                              data-popper-arrow
-                            ></div>
-                          </div>
-                        </form>
+                        {/* Other buttons */}
+                        <button
+                          onClick={() => handleContact(load.id)}
+                          className="flex items-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          disabled={!shipperHasAccess}
+                          aria-label="Contact Carrier"
+                        >
+                          <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
+                          Message Carrier
+                        </button>
+                        <button
+                          onClick={() => handleBid(load.id)}
+                          className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          disabled={!shipperHasAccess}
+                          aria-label="Place Bid"
+                        >
+                          <CurrencyDollarIcon className="w-5 h-5 mr-2" />
+                          Place a Bid
+                        </button>
                       </div>
                     </Disclosure.Panel>
                   </>
                 )}
               </Disclosure>
-            )
-          )}
+            ))}
+          </div>
         </div>
-      </div>
     );
   }
+  // Utility function to determine styles based on the load status
+  function getStatusStyles(status: any) {
+    switch (status) {
+      case 'open':
+        return 'bg-orange-500';
+      case 'accepted':
+        return 'bg-blue-500';
+      case 'enroute':
+        return 'bg-yellow-500';
+      // Add more cases as needed
+      default:
+        return 'bg-gray-500';
+    }
+  }
 }
+
+
