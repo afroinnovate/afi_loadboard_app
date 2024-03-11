@@ -22,7 +22,7 @@ export default function Header({ user }) {
       <nav className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         <div className="hidden lg:flex justify-center flex-grow">
           <Link to="/" className="flex items-center">
-            <img src="" alt="AFI Logo" className="h-8 w-auto text-xl text-green-700 hover:translate-x-2 hover:translate-y-2 hover:underline hover:cursor-pointer" />
+            <img src="" alt="AFI LoadBoard" className="h-8 w-auto text-xl text-green-700 hover:translate-x-2 hover:translate-y-2 hover:underline hover:cursor-pointer" />
           </Link>
         </div>
 
