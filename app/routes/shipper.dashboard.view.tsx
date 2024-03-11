@@ -32,19 +32,19 @@ import AccessDenied from "~/components/accessdenied";
 import { useEffect } from "react";
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOGNmOGY0M2EtZDZmNC00NDQ2LWE1NTItMmQ1OWJkOGFmMGYwIiwibmJmIjoxNzEwMDQ1MDM4LCJleHAiOjE3MTAwNDg2NDMsImlhdCI6MTcxMDA0NTA0MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.gQY42hckvc0KQUI7PZUPej79pfD5OH2x9XGAAFktYWk",
-//   "tokenType": "Bearer",
-//   "refreshToken": "eyJhbGci",
-//   "expiresIn": 3600,
-//   "user": {
-//     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
-//     "firstName": "Tango",
-//     "lastName": "Tew",
-//     "roles": [
-//         "owner_operator"
-//     ]
+  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOGNmOGY0M2EtZDZmNC00NDQ2LWE1NTItMmQ1OWJkOGFmMGYwIiwibmJmIjoxNzEwMDQ1MDM4LCJleHAiOjE3MTAwNDg2NDMsImlhdCI6MTcxMDA0NTA0MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.gQY42hckvc0KQUI7PZUPej79pfD5OH2x9XGAAFktYWk",
+  //   "tokenType": "Bearer",
+  //   "refreshToken": "eyJhbGci",
+  //   "expiresIn": 3600,
+  //   "user": {
+    //     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+    //     "userName": "tangotew@gmail.com",
+    //     "email": "tangotew@gmail.com",
+    //     "firstName": "Tango",
+    //     "lastName": "Tew",
+    //     "roles": [
+        //         "owner_operator"
+    //     ]
 //   }
 // };
 
@@ -79,7 +79,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // const response: LoadResponse = await GetLoads(userData.token);
     let response: LoadResponse = await GetLoads(user.token);
-
+    
     if (response && typeof response === "string") {
       throw new Error(response);
     }
@@ -90,7 +90,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     return json([response, user]);
   } catch (error: any) {
-    if (error.message.includes("401")) {
+        if (error.message.includes("401")) {
       return redirect("/login/");
     }
 
@@ -136,6 +136,7 @@ export default function ShipperViewLoads() {
   const navigate = useNavigate();
   
   let error = "";
+  let info = "";
 
   if (loaderData && loaderData.errno) {
     if (loaderData.errno === "ENOTFOUND") {
@@ -165,13 +166,23 @@ export default function ShipperViewLoads() {
       load.poster = carrier;
     }
     user = loaderData[1];
+  }else {
+    error = "No loads found, Or something went wrong, please try again later or contact support";
+  }
+
+  if(Object.keys(loads).length === 0){
+    info = "No loads posted, please check back later";
   }
 
   var roles: string[] = [""];
 
-  if (user && error === "") {
+  if (Object.keys(user).length > 0 && error === "") {
     user = user.user;
+    console.log("user", user);
     roles = user.roles.map((role: string) => role.toLowerCase());
+    console.log("roles", roles);
+  }else{
+    roles = ["admin"];
   }
 
   let editMode = "";
@@ -217,6 +228,11 @@ export default function ShipperViewLoads() {
              Pick your Load and Hit the Road
            </h1>
          </div>
+         {info && (
+           <div className="p-4 mb-2 text-center text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-300">
+             {info}
+            </div>
+          )}
           <div className="space-y-4 pt-2">
             {loads && Object.values(loads).map((load) => (
               <Disclosure as="div" key={load.id} className="bg-gray-700 shadow rounded-lg">

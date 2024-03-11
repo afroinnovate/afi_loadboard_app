@@ -36,16 +36,16 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//             "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
+        //             "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI5ZDVkNDk2My1hNTk2LTQ5ZWQtOWJkNi03NzEyNjVhZGI1NjAiLCJuYmYiOjE3MDgyOTk1NTQsImV4cCI6MTcwODMwMzE1OSwiaWF0IjoxNzA4Mjk5NTU5LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.Ad-RhvuqqxT2CjdHReocKwmSDWpMISIPVbcFHhaAK7s",
 //         "tokenType": "Bearer",
-//             "refreshToken": "eyJhbGci",
-//             "expiresIn": 3600,
-//             "user": {
-//                   "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//                   "userName": "tangotew@gmail.com",
-//                   "email": "tangotew@gmail.com",
-//                   "firstName": "Tango",
-//                   "lastName": "Tew",
+        //             "refreshToken": "eyJhbGci",
+        //             "expiresIn": 3600,
+        //             "user": {
+              //                   "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+              //                   "userName": "tangotew@gmail.com",
+              //                   "email": "tangotew@gmail.com",
+              //                   "firstName": "Tango",
+              //                   "lastName": "Tew",
 //       "roles": [
 //           "owner_operator"
 //       ]
@@ -95,7 +95,6 @@ export default function ShipperDashboard() {
     roles = user.roles.map((role: string) => role.toLowerCase());
   }
 
-  console.log("roles", roles);
   // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";
   // Check if user has 'support', 'admin' or any role containing 'shipper'

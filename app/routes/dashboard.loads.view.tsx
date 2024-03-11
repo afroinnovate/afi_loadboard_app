@@ -157,14 +157,18 @@ export default function ViewLoads() {
   if (loaderData.length == 2 && error === "") {
     loads = loaderData[0];
     user = loaderData[1];
+  }else{
+    error = "Ooops!, Something Went wrong, please try again.";
   }
   
   var roles: string[] = [""];
 
  
-  if (user && error === "") {
+  if(Object.keys(user).length > 0 && error === "") {
     user = user.user;
     roles = user.roles.map((role: string) => role.toLowerCase());
+  }else{  
+    error = "Ooops!, Something Went wrong, please try again.";
   }
 
   let confirm = ''
