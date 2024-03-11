@@ -105,7 +105,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     var user: any = await authenticator.isAuthenticated(request, {
       failureRedirect: '/login/'
-          });
+    });
     // return the user info
     return user;
   }catch(error){

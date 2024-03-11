@@ -58,8 +58,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
-  // failureRedirect: "/login/",
-    successRedirect: "/shipper/dashboard/", //for testing locally
+    failureRedirect: "/login/",
+    // successRedirect: "/shipper/dashboard/", //for testing locally
   });
 
   if (response) {
@@ -72,7 +72,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       },
     });
   }
-  
+
   // return json(userData);
 
   const error = session.get("_auth_error");
@@ -139,13 +139,13 @@ export default function ShipperDashboard() {
       />
     );
   } else if (hasAccess && !shipperAccess) {
-  //   useEffect(() => {
-  //     if (hasAccess && !shipperAccess) {
-  //         console.log("redirecting to carrier dashboard");
-  //         navigate('/dashboard');
-  //     }
-  // }, []);
-    return redirect("/dashboard/");
+    useEffect(() => {
+      if (hasAccess && !shipperAccess) {
+          console.log("redirecting to carrier dashboard");
+          navigate('/dashboard');
+      }
+  }, []);
+    // return redirect("/dashboard/");
   } else { 
     // If the shipper logged in 
     return (
