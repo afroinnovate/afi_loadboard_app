@@ -10,36 +10,36 @@ import { AddLoads } from '~/api/services/load.service';
 import { getSession } from '~/api/services/session';
 import type { LoadResponse } from '~/api/models/loadResponse';
 
-const userData: LoginResponse = {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiJhYjc4Zjc3OC1mMDEwLTQ0ZjAtYjM2NS1iNjc1OWJhMDBhYTIiLCJuYmYiOjE3MDg3NTM5NTIsImV4cCI6MTcwODc1NzU1NywiaWF0IjoxNzA4NzUzOTU3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.WvOTqrLNwO9ogIWA-6KNxSRkSg041Wn_QrExGwDoaJI",
-  "tokenType": "Bearer",
-  "refreshToken": "eyJhbGci",
-  "expiresIn": 3600,
-  "user": {
-    "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-    "userName": "tangogatdet76@gmail.com",
-    "email": "tangogatdet76@gmail.com",
-    "firstName": "Tango",
-    "lastName": "Tew",
-    "roles": [
-        "support",
-        "carrier"
-    ]
-  }
-};
+// const userData: LoginResponse = {
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiJhYjc4Zjc3OC1mMDEwLTQ0ZjAtYjM2NS1iNjc1OWJhMDBhYTIiLCJuYmYiOjE3MDg3NTM5NTIsImV4cCI6MTcwODc1NzU1NywiaWF0IjoxNzA4NzUzOTU3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.WvOTqrLNwO9ogIWA-6KNxSRkSg041Wn_QrExGwDoaJI",
+//   "tokenType": "Bearer",
+//   "refreshToken": "eyJhbGci",
+//   "expiresIn": 3600,
+//   "user": {
+//     "id": "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
+//     "firstName": "Tango",
+//     "lastName": "Tew",
+//     "roles": [
+//         "support",
+//         "carrier"
+//     ]
+//   }
+// };
 
 export const action: ActionFunction = async ({ request }) => {
   try{
     // Find the parent route match containing the user and token
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user = session.get("user");
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get("user");
     
-    //      if (!user) {
-    //   // Handle the missing token scenario
-    //   throw new Response("401 Unauthorized", { status: 401 });
-    // }
+         if (!user) {
+      // Handle the missing token scenario
+      throw new Response("401 Unauthorized", { status: 401 });
+    }
 
-    const user = userData;
+    // const user = userData;
 
     const formData = await request.formData();
 
@@ -105,7 +105,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     var user: any = await authenticator.isAuthenticated(request, {
       failureRedirect: '/login/'
-          });
+    });
     // return the user info
     return user;
   }catch(error){
