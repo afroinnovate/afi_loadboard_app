@@ -26,25 +26,25 @@ import {
   CurrencyDollarIcon,
   ChatBubbleLeftIcon,
 } from "@heroicons/react/20/solid";
-import type { LoadRequest } from "~/api/models/loadRequest";
-import UpdateLoadView from "~/components/updateload";
 import AccessDenied from "~/components/accessdenied";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import BidAdjustmentView from "~/components/bidadjustmentview";
+import ContactShipperView from "~/components/contactshipper";
 
 // const userData: LoginResponse = {
-  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOGNmOGY0M2EtZDZmNC00NDQ2LWE1NTItMmQ1OWJkOGFmMGYwIiwibmJmIjoxNzEwMDQ1MDM4LCJleHAiOjE3MTAwNDg2NDMsImlhdCI6MTcxMDA0NTA0MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.gQY42hckvc0KQUI7PZUPej79pfD5OH2x9XGAAFktYWk",
-  //   "tokenType": "Bearer",
-  //   "refreshToken": "eyJhbGci",
-  //   "expiresIn": 3600,
-  //   "user": {
-    //     "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-    //     "userName": "tangotew@gmail.com",
-    //     "email": "tangotew@gmail.com",
-    //     "firstName": "Tango",
-    //     "lastName": "Tew",
-    //     "roles": [
-        //         "owner_operator"
-    //     ]
+//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiZjdhMmJkOWUtOTQ3NS00OTkwLTlmOTgtYzJmYTViYmU3YmMwIiwibmJmIjoxNzEwMjE1NjgyLCJleHAiOjE3MTAyMTkyODcsImlhdCI6MTcxMDIxNTY4NywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.DOhSz1fTWdIRZlBsLqkYAIrhVTT8vO5rRQvT60zdWrc",
+//     "tokenType": "Bearer",
+//     "refreshToken": "eyJhbGci",
+//     "expiresIn": 3600,
+//     "user": {
+//         "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+//         "userName": "tangotew@gmail.com",
+//         "email": "tangotew@gmail.com",
+//         "firstName": "Tango",
+//         "lastName": "Tew",
+//         "roles": [
+//                 "owner_operator"
+//         ]
 //   }
 // };
 
@@ -52,9 +52,10 @@ const carrier: any = {
   "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
   "userName": "tangotew@gmail.com",
   "email": "tangotew@gmail.com",
-  "firstName": "Bol",
-  "lastName": "Ring",
-  "type":"Independent Carrier"
+  "phoneNumber": "1234567890",
+  "firstName": "Gatluak",
+  "lastName": "Pal",
+  "company":"Independent shipper"
 }
 
 export const meta: MetaFunction = () => {
@@ -113,13 +114,18 @@ export const action: ActionFunction = async ({ request }) => {
   console.log("LoadId: ", formData.get("loadId"));
   const loadId = Number(formData.get("loadId"));
   const action = formData.get("_action");
-  console.log("ID: ", loadId, "Action: ", action);
-  console.log("Form Data: ", formData);
 
   try {
     if (action === "contact" && loadId) {
       console.log("Contacting Carrier");
-      return json("editMode");
+      return json("contactMode");
+    }else if (action === "bid" && loadId) {
+      console.log("Bidding for Load");
+      return json("bidMode");
+    }else if (action === 'placebid') {
+      console.log("Placing Bid, Load ID: ", loadId, "Bid Amount: ", formData.get("bidAmount"));
+      
+      return json("bidPlaced");
     }
     return "editMode";
   } catch (error: any) {
@@ -178,15 +184,33 @@ export default function ShipperViewLoads() {
 
   if (Object.keys(user).length > 0 && error === "") {
     user = user.user;
-    console.log("user", user);
     roles = user.roles.map((role: string) => role.toLowerCase());
     console.log("roles", roles);
   }else{
     roles = ["admin"];
   }
 
-  let editMode = "";
-  editMode = actionData && actionData === "editMode" ? actionData : ""; //editmode confirmation
+  let contactMode = actionData && actionData === "contactMode" ? actionData : ""; //editmode confirmation
+  let bidMode = actionData && actionData === "bidMode" ? actionData : ""; //bidmode confirmation
+
+ 
+  // Function to handle bid amount change
+  const handleBidChange = (event) => {
+    setCurrentBid(event.target.value);
+  };
+
+   // Function to close the bid adjustment view
+  const handleCloseBidAdjustment = () => {
+    setShowBidAdjustment(false);
+  };
+
+  // Function to handle placing a bid
+  const handlePlaceBid = (loadId, bidAmount) => {
+    // Logic to submit the bid
+    console.log(`Submitting bid: ${bidAmount} for load: ${loadId}`);
+    handleCloseBidAdjustment();
+  };
+
 
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const carrierHasAccess =
@@ -238,6 +262,20 @@ export default function ShipperViewLoads() {
               <Disclosure as="div" key={load.id} className="bg-gray-700 shadow rounded-lg">
                 {({ open }) => (
                   <>
+                  {/* Load Overview */}
+                    {bidMode && (
+                      <BidAdjustmentView
+                        loadId={load.id}
+                        initialBid={load.offerAmount}
+                        onBidChange={handleBidChange}
+                      />
+                    )}
+
+                    {/* Load Shipper contact */}
+                    {contactMode && (
+                      <ContactShipperView shipper={load.poster} />
+                    )}
+                    
                     {/* Load Overview */}
                     <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
                        {/* Load route title */}
