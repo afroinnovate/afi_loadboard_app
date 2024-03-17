@@ -54,13 +54,21 @@ const BidAdjustmentView = ({ loadId, initialBid }) => {
                 <input type="hidden" name="loadId" value={loadId} />
                 <input type="hidden" name="bidAmount" value={bidAmount} />
                 <button
-                type='submit'
-                name='_action'
-                value='placebid'
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                >
-                {isPlacing ? "Placing the bid..." : "Place Bid"}
+                  type='submit'
+                  name='_action'
+                  value='placebid'
+                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                  {isPlacing ? "Placing the bid..." : "Place Bid"}
                 </button>
+                <button
+                  type="submit"
+                  name="_action"
+                  value="closeContact"
+                  className="flex-1 bg-gray-500 hover:bg-gray-700 text-white m-2 font-bold py-2 px-4 rounded"
+                >
+                  Close
+              </button>
             </form>
         </div>
       </div>

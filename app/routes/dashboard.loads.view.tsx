@@ -20,29 +20,28 @@ import {
 import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 
-// const userData: LoginResponse = {
-//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiOTJjMmFiMmQtMGE1My00MWExLWEyYzktYjE3M2QwNTc1ZDA3IiwibmJmIjoxNzA5OTY1Njg4LCJleHAiOjE3MDk5NjkyOTMsImlhdCI6MTcwOTk2NTY5MywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.trcE4MYAZ6zutVqzExwjIn9hvNQDIrUdTm8EXd-U3bc",
-//     "isLockedOut": true,
-//       "requiresTwoFactor": false,
-//       "user": {
-//         "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//         "userName": "tangotew@gmail.com",
-//         "email": "tangotew@gmail.com",
-//         "firstName": "Tango",
-//         "lastName": "Tew",
-//         "roles": [
-//             "carrier"
-//         ]
-//     }
-// };
+const userData: LoginResponse = {
+  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI3YjA1MjY0MC0wMWEyLTQ0MmEtYTFjOC02NGU4NGY1MTdjZDQiLCJuYmYiOjE3MTA2NDkxMjUsImV4cCI6MTcxMDY1MjczMCwiaWF0IjoxNzEwNjQ5MTMwLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.c0fgCaVIJaLxDH0OBsBNFGCxzNHmnj_-4Rt2ZNBo08Q",
+  tokenType: "Bearer",
+  refreshToken: "eyJhbGci",
+  expiresIn: 3600,
+  user: {
+    id: "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+    userName: "tangogatdet76@gmail.com",
+    email: "tangogatdet76@gmail.com",
+    firstName: "Tango",
+    lastName: "Tew",
+    roles: ["support", "shipper"],
+  },
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
    
     // Find the parent route match containing the user and token
-    const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
-    // const user: any = userData;
+    // const session = await getSession(request.headers.get("Cookie"));
+    // const user: any = session.get("user");
+    const user: any = userData;
     
     if(!user) {
       throw new Error("401 Unauthorized");
@@ -71,10 +70,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get("user");
+  // const session = await getSession(request.headers.get("Cookie"));
+  // const user = session.get("user");
 
-  // const user: any = userData;
+  const user: any = userData;
   if (!user) {
     throw new Response("401 Unauthorized", { status: 401 });
   }
@@ -83,19 +82,32 @@ export const action: ActionFunction = async ({ request }) => {
   const loadId = Number(formData.get("loadId"));
   const action = formData.get("_action");
   console.log("ID: ",loadId, "Action: ", action)
-  console.log("Form Data: ", formData)
 
   try {
     if (action === "edit" && loadId) {
-        return json("editMode");
+        console.log("Editing Load Mode")
+        const load = {
+          commodity: formData.get("commodity"),
+          deliveryDate: formData.get("deliveryDate"),
+          destination: formData.get("destination"),
+          loadDetails: formData.get("loadDetails"),
+          loadStatus: formData.get("loadStatus"),
+          offerAmount: formData.get("offerAmount"),
+          origin: formData.get("origin"),
+          pickupDate: formData.get("pickupDate"),
+          weight: formData.get("weight"),
+          userId: user.user.id,
+          loadId: loadId,
+        };
+        console.log("Load: ", load)
+        return json({"status": "editMode", "load": load});
     }else if ( action === "save_changes"){
       console.log("Saving Changes")
-      const data = formData.get("origin");
-      console.log("Data: ", data)
+      console.log("LoadDetails: ", formData.get("loadDetails"));
       
       const formattedPickupDate = new Date(formData.get("pickupDate") as string + 'T12:00:00.000Z').toISOString();
       const formattedDeliveryDate = new Date(formData.get("deliveryDate") as string + 'T12:00:00.000Z').toISOString();
-      
+      const formattedDate = new Date().toISOString();
 
       console.log("loadId: ", formData.get("loadId"));
       const Id = Number(formData.get("loadId")) !== 0 ? Number(formData.get("loadId")) : 99999;
@@ -110,6 +122,8 @@ export const action: ActionFunction = async ({ request }) => {
         pickupDate: formattedPickupDate,
         weight: Number(formData.get("weight")),
         userId: user.user.id,
+        modifiedBy: user.user.id,
+        modified: formattedDate
       }
 
       const response = await UpdateLoad(user.token, Id, requestBody);
@@ -118,20 +132,21 @@ export const action: ActionFunction = async ({ request }) => {
       }
       return redirect("/dashboard/loads/view/");
     }else if ( action === "delete" && loadId ) {
-      return json("confirmation");
+      console.log("Deleting Load with ID: ", loadId)
+      return json({"status": "confirmation", "loadId": loadId});
     }else if ( action === "delete_confirmed" ){
       await DeleteLoad(user.token, loadId);
       return redirect("/dashboard/loads/view/");
     }else if( action === "cancel" ){
       return redirect("/dashboard/loads/view/");
     }else {
-      throw new Error("Invalid action");
+      throw new Error({"status":"Invalid action"});
     }
   } catch (error: any) {
     if (error.message.includes(401)){
       return redirect("/login/")
     }
-    return new Response("Failed to delete load", { status: 500 });
+    return json({"status": `Failed to delete load, ${error.message}`});
   }
 };
 
@@ -141,6 +156,7 @@ export default function ViewLoads() {
  
   let error = ''
  
+  console.log("ActionData: ", actionData)
   if (loaderData && loaderData.errno) {
     if (loaderData.errno === "ENOTFOUND") {
       error =
@@ -148,8 +164,13 @@ export default function ViewLoads() {
     }else {
       error = "Oops!, Something Went wrong, please try again.";
     }
-  }else if (actionData && actionData.includes('Failed')) {
-    error = "Ooops!, your load hasn't been deleted, please try again."
+  }else if (actionData !== undefined && actionData !== null && actionData !== "" && Object.entries(actionData).length > 0) {
+    console.log("actionData: ", actionData)
+    if (actionData.status.includes("Failed")) {
+      error = "Ooops!, your load hasn't been updated, please try again.";
+    }else if (actionData.status.includes("Failed")) {
+        error = "Ooops!, your load hasn't been updated, please try again.";
+    }
   }
 
   var loads: object = {};
@@ -173,11 +194,18 @@ export default function ViewLoads() {
 
   let confirm = ''
   let editMode = ''
-  confirm =  actionData && actionData === 'confirmation' ? actionData : ''; //deleteconfirmation
-  editMode = actionData && actionData === 'editMode' ? actionData : ''; //editmode confirmation
-
-  // Check if user has 'support', 'admin' or any role containing 'carrier'
-  const hasAccess = roles.includes('admin') || roles.some(role => role.includes('carrier'));
+  confirm =  actionData && actionData.status === 'confirmation' ? actionData.status : ''; //deleteconfirmation
+  editMode = actionData && actionData.status === 'editMode' ? actionData.status : ''; //editmode confirmation
+  let updatingLoad: any = {}
+  if (editMode === 'editMode') {
+    updatingLoad = actionData.load;
+  }
+  let loadIdToBeDeleted = 0;
+  if (confirm === 'confirmation') {
+    loadIdToBeDeleted = actionData.loadId;
+  }
+  // Check if user has 'support', 'admin' or any role containing 'shipper'
+  const shipperHasAccess = roles.includes('admin') || roles.some(role => role.includes('shipper'));
 
   return (
     <div className="container mx-auto px-4 py-4">
@@ -199,17 +227,17 @@ export default function ViewLoads() {
                 <>
                   { editMode === 'editMode' && (
                    <UpdateLoadView 
-                      commodity={load.commodity} 
-                      deliveryDate={load.deliveryDate} 
-                      destination={load.destination} 
-                      loadDetails={load.loadDetails} 
-                      loadStatus={load.loadStatus} 
-                      offerAmount={load.offerAmount} 
-                      origin={load.origin} 
-                      pickupDate={load.pickupDate} 
-                      weight={load.weight} 
+                      commodity={updatingLoad.commodity} 
+                      deliveryDate={updatingLoad.deliveryDate} 
+                      destination={updatingLoad.destination} 
+                      loadDetails={updatingLoad.loadDetails} 
+                      loadStatus={updatingLoad.loadStatus} 
+                      offerAmount={updatingLoad.offerAmount} 
+                      origin={updatingLoad.origin} 
+                      pickupDate={updatingLoad.pickupDate} 
+                      weight={updatingLoad.weight} 
                       userId={user.userId}
-                      loadId={load.id} 
+                      loadId={updatingLoad.loadId} 
                     />
                   )}
                   {confirm === 'confirmation' && (
@@ -239,7 +267,7 @@ export default function ViewLoads() {
                         </div>
                         <div className="bg-gray-50 px-4 py-3 sm:px-6 md:flex sm:flex-row-reverse">
                           <form method="post" className="bg-gray-100">
-                            <input type="hidden" name="loadId" value={load.id} />
+                            <input type="hidden" name="loadId" value={loadIdToBeDeleted} />
                             <button
                                 type="submit"
                                 name="_action"
@@ -325,12 +353,21 @@ export default function ViewLoads() {
                     <div className="flex justify-end space-x-2 mt-4">
                       <form method="post">
                         <input type="hidden" name="loadId" value={load.id} />
+                        <input type="hidden" name="origin" value={load.origin} />
+                        <input type="hidden" name="destination" value={load.destination} />
+                        <input type="hidden" name="pickupDate" value={load.pickupDate} />
+                        <input type="hidden" name="deliveryDate" value={load.deliveryDate} />
+                        <input type="hidden" name="commodity" value={load.commodity} />
+                        <input type="hidden" name="weight" value={load.weight} />
+                        <input type="hidden" name="offerAmount" value={load.offerAmount} />
+                        <input type="hidden" name="loadDetails" value={load.loadDetails} />
+                        <input type="hidden" name="loadStatus" value={load.loadStatus} />
                         <button
                           type="submit"
                           name="_action"
                           value="edit"
-                          className={`px-4 py-2 mr-2 text-blue-700 rounded ${hasAccess ? 'bg-gray-100 hover:bg-orange-400' : 'bg-gray-400 cursor-not-allowed'}`}
-                          disabled={!hasAccess}
+                          className={`px-4 py-2 mr-2 text-blue-700 rounded ${shipperHasAccess ? 'bg-gray-100 hover:bg-orange-400' : 'bg-gray-400 cursor-not-allowed'}`}
+                          disabled={!shipperHasAccess}
                         >
                           <PencilIcon className="w-6 h-6 text-blue-700" aria-hidden="true" />
                         </button>
@@ -341,8 +378,8 @@ export default function ViewLoads() {
                           type="submit"
                           name="_action"
                           value="delete"
-                          className={`px-4 py-2 mr-2 text-red-700 rounded ${hasAccess ? ' hover:bg-orange-400' : 'bg-gray-400 cursor-not-allowed'}`}
-                          disabled={!hasAccess}
+                          className={`px-4 py-2 mr-2 text-red-700 rounded ${shipperHasAccess ? ' hover:bg-orange-400' : 'bg-gray-400 cursor-not-allowed'}`}
+                          disabled={!shipperHasAccess}
                         >
                           <TrashIcon className="w-6 h-6 text-red-700" aria-hidden="true" />
                         </button>

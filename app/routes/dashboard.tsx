@@ -17,8 +17,8 @@ import { LoginResponse } from '~/api/models/loginResponse';
 export const meta: MetaFunction = () => {
   return [
     {
-      title: "Loadboard | Carrier dashboard",
-      description: "Dashboard for carriers",
+      title: "Loadboard | Shipper's dashboard",
+      description: "Dashboard for Shippers",
     },
   ];
 };
@@ -26,46 +26,44 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// const userData: LoginResponse = {
-//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYmMzYjFjZDgtYTYyZi00YzZkLTlkM2UtNGY1ZTgxMWI5MjEzIiwibmJmIjoxNzA5OTU3MDg0LCJleHAiOjE3MDk5NjA2ODksImlhdCI6MTcwOTk1NzA4OSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.c_ZmgpbIsoFLczmLPVhv6tlE6WNvHIV7w-XpAGzeO8M",
-//     "tokenType": "Bearer",
-//     "refreshToken": "eyJhbGci",
-//     "expiresIn": 3600,
-//     "user": {
-//       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//       "userName": "tangotew@gmail.com",
-//       "email": "tangotew@gmail.com",
-//       "firstName": "Tango",
-//       "lastName": "Tew",
-//       "roles": [
-//           // "owner_operator"
-//           "carrier"
-//       ]
-//   }
-// };
+const userData: LoginResponse = {
+  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiI3YjA1MjY0MC0wMWEyLTQ0MmEtYTFjOC02NGU4NGY1MTdjZDQiLCJuYmYiOjE3MTA2NDkxMjUsImV4cCI6MTcxMDY1MjczMCwiaWF0IjoxNzEwNjQ5MTMwLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.c0fgCaVIJaLxDH0OBsBNFGCxzNHmnj_-4Rt2ZNBo08Q",
+  tokenType: "Bearer",
+  refreshToken: "eyJhbGci",
+  expiresIn: 3600,
+  user: {
+    id: "ae2f32ad-c778-479a-b722-88e427c3b6fd",
+    userName: "tangogatdet76@gmail.com",
+    email: "tangogatdet76@gmail.com",
+    firstName: "Tango",
+    lastName: "Tew",
+    roles: ["support", "shipper"],
+  },
+};
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  // check if the sessoon is already set
-  let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-  // successRedirect: "/dashboard/", //for testing locally
-  });
+  // const session = await getSession(request.headers.get("Cookie"));
+  // // check if the sessoon is already set
+  // let response: any = await authenticator.isAuthenticated(request, {
+  //   failureRedirect: "/login/",
+  // // successRedirect: "/dashboard/", //for testing locally
+  // });
 
-  if (response) {
-    // Store the token in the session
-    session.set("user", response);
-    return json(response, {
-      headers: {
-      "Set-Cookie": await commitSession(session),
-      },
-    });
-  }
-  // return json(userData);
+  // if (response) {
+  //   // Store the token in the session
+  //   session.set("user", response);
+  //   return json(response, {
+  //     headers: {
+  //     "Set-Cookie": await commitSession(session),
+  //     },
+  //   });
+  // }
+  // 
+  return json(userData);
 
-  const error = session.get("_auth_error");
-  return json<any>({ error });
+  // const error = session.get("_auth_error");
+  // return json<any>({ error });
 };
 
 export default function Dashboard() {
@@ -87,21 +85,18 @@ export default function Dashboard() {
   // Determine the active section based on the URL
   const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
-  const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
-  const shipperAccess = roles.includes('shipper') || roles.includes('admin') || roles.includes('owner_operator') 
-                        roles.includes('dispatcher') || 
-                        roles.includes('company_driver') ||
-                        roles.includes('fleet_owner');
+  const shipperHasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('shipper'));
+  const carrierHasAccess = roles.includes('carrier') || roles.includes('admin')
 
   // check if the user is authorized to access this page
-  if (!hasAccess && !shipperAccess) {
+  if (!shipperHasAccess && !carrierHasAccess) {
    return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
-  }else if(shipperAccess){
-    console.log('redirecting to shipper dashboard');
+  }else if(carrierHasAccess){
+    console.log('redirecting to carrier dashboard');
     useEffect(() => {
       
           console.log("redirecting to carrier dashboard");
-          navigate('/shipper/dashboard/');
+          navigate('/carriers/dashboard/');
       
   }, []);
     // return redirect('/shipper/dashboard/');
