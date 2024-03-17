@@ -41,14 +41,15 @@ export type LoaderData = {
 export const loader: LoaderFunction = async () => {
   // Here you can fetch and return any data needed for your form
   const roles = {
-    Support: "support",
-    "Owner Operator": "owner_operator",
-    "Fleet Owner": "fleet_owner",
-    Dispatcher: "dispatcher",
-    "Independent Carrier": "independent_carrier",
-    "Gov. Carrier": "gov_carrier",
-    "Corporate Carrier": "corporate_carrier",
-    Admin: "admin",
+    "Support": "support",
+    "Admin": "admin",
+    "Owner Operator": "owner_operator_carrier",
+    "Fleet Owner": "fleet_owner_carrier",
+    "Company Driver": "company_carrier",
+    "Dispatcher": "dispatcher_carrier",
+    "Independent Shipper": "independent_shipper",
+    "Gov. Shipper": "gov_shipper",
+    "Corporate Shipper": "corporate_shipper",
     // ... other roles
   };
 
