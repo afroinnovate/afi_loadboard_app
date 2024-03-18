@@ -4,7 +4,6 @@ import type { LoadResponse } from "../models/loadResponse";
 const baseUrl = "https://api.frieght.afroinnovate.com/";
 
 export async function AddLoads(loadRequest: LoadRequest, token: string) {
-    console.log(loadRequest)
     try {
         const response = await fetch(baseUrl + "loads/", {
             method: 'POST',

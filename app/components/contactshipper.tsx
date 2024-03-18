@@ -17,7 +17,8 @@ const ContactShipperView = ({ shipper }) => {
         <h3 className="text-lg font-bold">Contact Shipper</h3>
         <div>
           <p className="font-semibold"><p>{shipper.firstName} {shipper.lastName}</p></p>
-          <p className="text-green-500 font-semibold">{shipper.company}</p>
+          <span className="text-sm italic ">Company: </span><p className="text-green-500 font-semibold">{shipper.companyName}</p>    
+          <span className="text-sm italic">Registration Number: </span><p className="text-green-500 font-semibold">{shipper.dotNumber}</p>
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">

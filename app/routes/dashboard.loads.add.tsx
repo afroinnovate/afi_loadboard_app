@@ -21,33 +21,37 @@ import { AddLoads } from "~/api/services/load.service";
 import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 
-const userData: LoginResponse = {
-  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiJhZTJmMzJhZC1jNzc4LTQ3OWEtYjcyMi04OGU0MjdjM2I2ZmQiLCJqdGkiOiJmNWUwNzQ3YS0xYTJhLTRmYjYtOGJiNy04YzI1MTU3ODVmYmYiLCJuYmYiOjE3MTA2OTExNzcsImV4cCI6MTcxMDY5NDc4MiwiaWF0IjoxNzEwNjkxMTgyLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.T44bsPAx_hSrPjs-aBeLA-6Pi_8PgTle_EaM6n0tAKs",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    id: "ae2f32ad-c778-479a-b722-88e427c3b6fd",
-    userName: "tangogatdet76@gmail.com",
-    email: "tangogatdet76@gmail.com",
-    firstName: "Tango",
-    lastName: "Tew",
-    roles: ["support", "shipper"],
-  },
-};
+// const userData: LoginResponse = {
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYjkwMmYyYi0zYTg5LTRhMzQtYjExYy0yOWIxZDQ5MWJiMGYiLCJnaXZlbl9uYW1lIjoiVGFuZyIsImZhbWlseV9uYW1lIjoiVGV3IiwiZW1haWwiOiJ0YW5nb2dhdGRldDc2QGdtYWlsLmNvbSIsIm5hbWVpZCI6IjBiOTAyZjJiLTNhODktNGEzNC1iMTFjLTI5YjFkNDkxYmIwZiIsImp0aSI6IjViODc4NTBlLWJjMDItNDdkOS1iZDMzLTk3YzU3M2MzODBmMyIsIm5iZiI6MTcxMDczNjg5MywiZXhwIjoxNzEwNzQwNDk4LCJpYXQiOjE3MTA3MzY4OTgsImlzcyI6ImFmcm9pbm5vdmF0ZS5jb20iLCJhdWQiOiJhcHAubG9hZGJvYXJkLmFmcm9pbm5vdmF0ZS5jb20ifQ.DdF6H7PHRszqizScrB_Qv3d18QMILCgS6nP2y9weXtY",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     "id": "0b902f2b-3a89-4a34-b11c-29b1d491bb0f",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
+//     "firstName": "Tang",
+//     "lastName": "Tew",
+//     "roles": [
+//         "independent_shipper"
+//     ],
+//     "companyName": "Best Transport Company",
+//     "dotNumber": "SH123543"
+//   }
+// };
 
 export const action: ActionFunction = async ({ request }) => {
   try {
     // Find the parent route match containing the user and token
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user = session.get("user");
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get("user");
 
-    //      if (!user) {
-    //   // Handle the missing token scenario
-    //   throw new Response("401 Unauthorized", { status: 401 });
-    // }
+    if (!user) {
+      // Handle the missing token scenario
+      throw new Response("401 Unauthorized", { status: 401 });
+    }
 
-    const user = userData;
+    // const user = userData;
 
     const formData = await request.formData();
 
@@ -83,13 +87,6 @@ export const action: ActionFunction = async ({ request }) => {
 
     const formattedDate = new Date().toISOString();
 
-    const requestUser = {
-      id: user.user.id,
-      userName: user.user.userName,
-      firstName: user.user.firstName,
-      lastName: user.user.lastName,
-      email: user.user.email,
-    };
     // Create a new load request
     const loadRequest: LoadRequest = {
       loadDetails: formData.get("loadDetails") as string,
@@ -103,17 +100,19 @@ export const action: ActionFunction = async ({ request }) => {
       weight: Number(formData.get("weight")), // Ensure number type
       offerAmount: Number(formData.get("offerAmount")), // Correct field and ensure number type
       userId: user.user.id,
-      createdBy: requestUser,
+      shipperUserId: user.user.id,
       created: formattedDate,
       loadStatus: "open",
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
-    console.log("response: ", response);
-    console.log("message: ", response.message)
-    if (response.includes("Error") ) {
+
+    if (Object.keys(response).length > 0 && response.origin !== undefined) {
+      return redirect("/dashboard/loads/view");
+    }
+    if (response.message.includes("Error") || response.includes("Error") ) {
       console.log("throwing error")
-      return (response);
+      return new Error(response);
     }
     // Save the load to the database
     if (!response.toString().includes("Error")) {
@@ -133,10 +132,10 @@ export const action: ActionFunction = async ({ request }) => {
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    // var user: any = await authenticator.isAuthenticated(request, {
-    //   failureRedirect: '/login/'
-    // });
-    const user = userData;
+    var user: any = await authenticator.isAuthenticated(request, {
+      failureRedirect: '/login/'
+    });
+    // const user = userData;
     // return the user info
     return user;
   } catch (error) {

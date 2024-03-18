@@ -1,6 +1,6 @@
 export type LoadRequest = {
     userId: string;
-    createdBy: object;
+    shipperUserId: string;
     origin: string;
     destination: string;
     pickupDate: string;

@@ -34,15 +34,15 @@ import { BidRequest } from "~/api/models/bidRequest";
 import { GetBid, GetBids, PlaceBid, UpdateBid } from "~/api/services/bid.service";
 
 // const userData: LoginResponse = {
-//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzMxMjZhZjYtM2Y0OC00ZjE1LTg3MTEtZDdiMzk0ZjQ2NjRmIiwibmJmIjoxNzEwNjIxNzA4LCJleHAiOjE3MTA2MjUzMTMsImlhdCI6MTcxMDYyMTcxMywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.-e8D8EQJ5QVTVNmw_hDDk6vpVvK7U-U3_4bGoebNbQM",
-//     "tokenType": "Bearer",
-//     "refreshToken": "eyJhbGci",
-//     "expiresIn": 3600,
-//     "user": {
-//         "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//         "userName": "tangotew@gmail.com",
-//         "email": "tangotew@gmail.com",
-//         "firstName": "Tango",
+  //     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzMxMjZhZjYtM2Y0OC00ZjE1LTg3MTEtZDdiMzk0ZjQ2NjRmIiwibmJmIjoxNzEwNjIxNzA4LCJleHAiOjE3MTA2MjUzMTMsImlhdCI6MTcxMDYyMTcxMywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.-e8D8EQJ5QVTVNmw_hDDk6vpVvK7U-U3_4bGoebNbQM",
+  //     "tokenType": "Bearer",
+  //     "refreshToken": "eyJhbGci",
+  //     "expiresIn": 3600,
+  //     "user": {
+    //         "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+    //         "userName": "tangotew@gmail.com",
+    //         "email": "tangotew@gmail.com",
+    //         "firstName": "Tango",
 //         "lastName": "Tew",
 //         "roles": [
 //           "owner_operator"
@@ -50,15 +50,15 @@ import { GetBid, GetBids, PlaceBid, UpdateBid } from "~/api/services/bid.service
 //   }
 // };
 
-const carrier: any = {
-  "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-  "userName": "tangotew@gmail.com",
-  "email": "tangotew@gmail.com",
-  "phoneNumber": "1234567890",
-  "firstName": "Gatluak",
-  "lastName": "Pal",
-  "company":"Independent shipper"
-}
+// const carrier: any = {
+//   "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+//   "userName": "tangotew@gmail.com",
+//   "email": "tangotew@gmail.com",
+//   "phoneNumber": "1234567890",
+//   "firstName": "Gatluak",
+//   "lastName": "Pal",
+//   "company":"Independent shipper"
+// }
 
 export const meta: MetaFunction = () => {
   return [
@@ -81,9 +81,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     }
 
     // const response: LoadResponse = await GetLoads(userData.token);
-    let response: LoadResponse = await GetLoads(user.token);
+    let response: any = await GetLoads(user.token);
     
-    if (response && typeof response === "string") {
+        if (response && typeof response === "string") {
       throw new Error(response);
     }
     if (typeof response === "string") {
@@ -249,7 +249,7 @@ export default function ShipperViewLoads() {
     //     loads[i] = load;
     //     i++;
     //   }
-    //   load.crea = carrier;
+    //   load.createdBy = carrier;
     // }
     user = loaderData[1];
   }else {

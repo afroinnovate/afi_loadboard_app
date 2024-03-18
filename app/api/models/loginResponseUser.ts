@@ -5,4 +5,6 @@ export type LoginUser = {
     firstName: string;
     lastName: string;
     roles: string[];
+    companyName: string;
+    dotNumber: string;
 }

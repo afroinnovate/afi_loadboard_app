@@ -36,15 +36,15 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzQxY2EzMjYtMzdiNS00NTRhLTkwMWEtZDBkNTFlZTU1MzM0IiwibmJmIjoxNzEwNjE0NzkyLCJleHAiOjE3MTA2MTgzOTcsImlhdCI6MTcxMDYxNDc5NywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.NThAHoItJRv6NhQcIlI2W2MY5AMOmCy1SITOCtYh660",
-//   "tokenType": "Bearer",
-//   "refreshToken": "eyJhbGci",
-//   "expiresIn": 3600,
-//   "user": {
-//       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//       "userName": "tangotew@gmail.com",
-//       "email": "tangotew@gmail.com",
-//       "firstName": "Tango",
+  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzQxY2EzMjYtMzdiNS00NTRhLTkwMWEtZDBkNTFlZTU1MzM0IiwibmJmIjoxNzEwNjE0NzkyLCJleHAiOjE3MTA2MTgzOTcsImlhdCI6MTcxMDYxNDc5NywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.NThAHoItJRv6NhQcIlI2W2MY5AMOmCy1SITOCtYh660",
+  //   "tokenType": "Bearer",
+  //   "refreshToken": "eyJhbGci",
+  //   "expiresIn": 3600,
+  //   "user": {
+    //       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
+    //       "userName": "tangotew@gmail.com",
+    //       "email": "tangotew@gmail.com",
+    //       "firstName": "Tango",
 //       "lastName": "Tew",
 //       "roles": [
 //         "owner_operator"
@@ -58,19 +58,19 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-    // successRedirect: "/carriers/dashboard/", //for testing locally
+  failureRedirect: "/login/",
+  // successRedirect: "/carriers/dashboard/", //for testing locally
   });
 
   if (response) {
   // Store the token in the session
-    session.set("user", response);
+  session.set("user", response);
       
-    return json(response, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
+  return json(response, {
+  headers: {
+  "Set-Cookie": await commitSession(session),
+  },
+  });
   }
 
   // return json(userData);

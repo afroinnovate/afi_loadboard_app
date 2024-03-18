@@ -143,8 +143,8 @@ export default function ConfirmEmailPage() {
   });
 
   // Determine if the user is a Fleet Owner or Driver
-  const isFleetOwner = ["fleet_owner"].includes(selectedRole);
-  const isOwnerOperator = ["owner_operator"].includes(selectedRole);
+  const isFleetOwner = selectedRole.includes("fleet_owner");
+  const isOwnerOperator = selectedRole.includes("owner_operator");
 
   const handleVehicleChange = (e: any) => {
     const { name, checked } = e.target;
@@ -278,7 +278,7 @@ export default function ConfirmEmailPage() {
             )}
 
             {/* Conditional Fleet Size Radios */}
-            {selectedRole === "fleet_owner" && (
+            {selectedRole === "fleet_owner_carrier" && (
               <div className="col-span-2">
                 <p>Fleet Size:</p>
                 <label className="px-6">
