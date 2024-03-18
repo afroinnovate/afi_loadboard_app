@@ -90,7 +90,7 @@ export default function Dashboard() {
   const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const shipperHasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('shipper'));
-  const carrierHasAccess = roles.includes('carrier') || roles.includes('admin')
+  const carrierHasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
 
   // check if the user is authorized to access this page
   if (!shipperHasAccess && !carrierHasAccess) {
