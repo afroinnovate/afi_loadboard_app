@@ -7,7 +7,7 @@ export default function Overview() {
                 </h1>
             </div>
             <p className="sm:w-auto md:w-auto lg:w-auto justify-center">
-                Welcome to the carrier dashboard
+                Welcome to the Shippers dashboard
             </p>
         </div>
     );

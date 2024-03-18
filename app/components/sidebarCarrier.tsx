@@ -9,15 +9,15 @@ const sidebarLinks = [
   // ... other sub-task links
 ];
 
-export default function SidebarShipper({ activeSection }) {
+export default function SidebarCarrier({ activeSection }) {
   var renderingLinks = sidebarLinks
   if (activeSection === "home"){
     renderingLinks = [
-      { name: 'Overview', to: '/shipper/dashboard/'},
+      { name: 'Overview', to: '/carriers/dashboard/'},
     ]
   }else {
     renderingLinks = [
-      { name: 'View Open Loads', to: '/shipper/dashboard/view/' },
+      { name: 'View Open Loads', to: '/carriers/dashboard/view/' },
     ]
   }
   return (

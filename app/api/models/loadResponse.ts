@@ -10,6 +10,7 @@ export interface Load {
     offerAmount: number;
     loadDetails: string;    
     loadStatus: string;
+    createdBy: object;
 }
 
 export type LoadResponse = Load[];

@@ -17,8 +17,8 @@ import { LoginResponse } from '~/api/models/loginResponse';
 export const meta: MetaFunction = () => {
   return [
     {
-      title: "Loadboard | Carrier dashboard",
-      description: "Dashboard for carriers",
+      title: "Loadboard | Shipper's dashboard",
+      description: "Dashboard for Shippers",
     },
   ];
 };
@@ -27,20 +27,21 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiYmMzYjFjZDgtYTYyZi00YzZkLTlkM2UtNGY1ZTgxMWI5MjEzIiwibmJmIjoxNzA5OTU3MDg0LCJleHAiOjE3MDk5NjA2ODksImlhdCI6MTcwOTk1NzA4OSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.c_ZmgpbIsoFLczmLPVhv6tlE6WNvHIV7w-XpAGzeO8M",
-//     "tokenType": "Bearer",
-//     "refreshToken": "eyJhbGci",
-//     "expiresIn": 3600,
-//     "user": {
-//       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//       "userName": "tangotew@gmail.com",
-//       "email": "tangotew@gmail.com",
-//       "firstName": "Tango",
-//       "lastName": "Tew",
-//       "roles": [
-//           // "owner_operator"
-//           "carrier"
-//       ]
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYjkwMmYyYi0zYTg5LTRhMzQtYjExYy0yOWIxZDQ5MWJiMGYiLCJnaXZlbl9uYW1lIjoiVGFuZyIsImZhbWlseV9uYW1lIjoiVGV3IiwiZW1haWwiOiJ0YW5nb2dhdGRldDc2QGdtYWlsLmNvbSIsIm5hbWVpZCI6IjBiOTAyZjJiLTNhODktNGEzNC1iMTFjLTI5YjFkNDkxYmIwZiIsImp0aSI6IjViODc4NTBlLWJjMDItNDdkOS1iZDMzLTk3YzU3M2MzODBmMyIsIm5iZiI6MTcxMDczNjg5MywiZXhwIjoxNzEwNzQwNDk4LCJpYXQiOjE3MTA3MzY4OTgsImlzcyI6ImFmcm9pbm5vdmF0ZS5jb20iLCJhdWQiOiJhcHAubG9hZGJvYXJkLmFmcm9pbm5vdmF0ZS5jb20ifQ.DdF6H7PHRszqizScrB_Qv3d18QMILCgS6nP2y9weXtY",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     "id": "0b902f2b-3a89-4a34-b11c-29b1d491bb0f",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
+//     "firstName": "Tang",
+//     "lastName": "Tew",
+//     "roles": [
+//         "independent_shipper"
+//     ],
+//     "companyName": "Best Transport Company",
+//     "dotNumber": "SH123543"
 //   }
 // };
 
@@ -62,6 +63,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       },
     });
   }
+  
   // return json(userData);
 
   const error = session.get("_auth_error");
@@ -87,21 +89,18 @@ export default function Dashboard() {
   // Determine the active section based on the URL
   const activeSection = location.pathname.split('/')[2] || 'home';
   // Check if user has 'support', 'admin' or any role containing 'carrier'
-  const hasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('carrier'));
-  const shipperAccess = roles.includes('shipper') || roles.includes('admin') || roles.includes('owner_operator') 
-                        roles.includes('dispatcher') || 
-                        roles.includes('company_driver') ||
-                        roles.includes('fleet_owner');
+  const shipperHasAccess = roles.includes('support') || roles.includes('admin') || roles.some(role => role.includes('shipper'));
+  const carrierHasAccess = roles.includes('carrier') || roles.includes('admin')
 
   // check if the user is authorized to access this page
-  if (!hasAccess && !shipperAccess) {
+  if (!shipperHasAccess && !carrierHasAccess) {
    return <AccessDenied returnUrl = "/" message="You do not have an access to the carrier dashboard"/>
-  }else if(shipperAccess){
-    console.log('redirecting to shipper dashboard');
+  }else if(carrierHasAccess){
+    console.log('redirecting to carrier dashboard');
     useEffect(() => {
       
           console.log("redirecting to carrier dashboard");
-          navigate('/shipper/dashboard/');
+          navigate('/carriers/dashboard/');
       
   }, []);
     // return redirect('/shipper/dashboard/');

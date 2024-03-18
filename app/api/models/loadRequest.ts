@@ -1,5 +1,6 @@
 export type LoadRequest = {
     userId: string;
+    shipperUserId: string;
     origin: string;
     destination: string;
     pickupDate: string;
@@ -9,5 +10,8 @@ export type LoadRequest = {
     offerAmount: number;
     loadDetails: string;
     loadStatus: string;
+    modifiedBy: string;
+    modified: string;
+    created: string;
 }
 

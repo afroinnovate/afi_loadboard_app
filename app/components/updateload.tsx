@@ -6,8 +6,8 @@ import { useState } from "react";
 export const meta: MetaFunction = () => {
   return [
     {
-      title: "Loadboard | Carrier dashboard",
-      description: "Sign up for a new account",
+      title: "Loadboard | Shipper dashboard",
+      description: "Update Load",
     },
   ];
 };
@@ -15,17 +15,6 @@ export const meta: MetaFunction = () => {
 export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
-
-export const loader: LoaderFunction = async ({ request }) => {
-  console.log('request ', request);
-};
-
-export const action: ActionFunction = async ({ request }) => {
-  console.log('came to the action function')
-  const data = request.formData();
-  console.log('data ', data);
-
-};
 
 export default function UpdateLoadView({
   userId,
@@ -47,7 +36,7 @@ export default function UpdateLoadView({
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  const [formData, setFormData] = useState({
+  const [loadInfo, setloadInfo] = useState({
     origin,
     destination,
     loadStatus,
@@ -59,7 +48,7 @@ export default function UpdateLoadView({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
+    setloadInfo((prevData) => ({
       ...prevData,
       [name]: value,
     }));
@@ -82,21 +71,23 @@ export default function UpdateLoadView({
                 <div className="mt-2">
                   <Form method="post" className="w-full max-w-lg">
                     <div className="flex flex-wrap -mx-3 mb-6">
+                      <input type="hidden" name="loadId" value={loadId} />
                       <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0 relative">
                         <input
                           className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
-                            ${formData.origin.length >= 2 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                            ${loadInfo.origin.length >= 2 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                           id="origin"
                           type="text"
                           placeholder=" "
                           name="origin"
-                          defaultValue={formData.origin}
+                          value={loadInfo.origin}
+                          // defaultValue={loadInfo.origin}
                           onChange={handleChange}
                           required
                         />
                         <label
                           htmlFor="origin"
-                          className={`absolute transition-all left-5 px-1 ${formData.origin.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.origin.length > 0 ? 'text-md' : ''}`}
+                          className={`absolute transition-all left-5 px-1 ${loadInfo.origin.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.origin.length > 0 ? 'text-md' : ''}`}
                         >
                           Origin
                         </label>
@@ -104,18 +95,19 @@ export default function UpdateLoadView({
                       <div className="w-full md:w-1/2 px-3 relative">
                         <input
                           className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
-                            ${formData.destination.length >= 2 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                            ${loadInfo.destination.length >= 2 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                           id="destination"
                           type="text"
                           placeholder=" "
                           name="destination"
-                          defaultValue={formData.destination}
+                          value={loadInfo.destination}
+                          // defaultValue={loadInfo.destination}
                           onChange={handleChange}
                           required
                         />
                         <label
                           htmlFor="destination"
-                          className={`absolute transition-all left-5 px-1 ${formData.destination.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.destination.length > 0 ? 'text-md' : ''}`}
+                          className={`absolute transition-all left-5 px-1 ${loadInfo.destination.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.destination.length > 0 ? 'text-md' : ''}`}
                         >
                           Destination
                         </label>
@@ -127,8 +119,8 @@ export default function UpdateLoadView({
                             className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white `}
                             id="loadStatus"
                             name="loadStatus"
-                            value={formData.loadStatus}
-                            onChange={(e) => setFormData({ ...formData, loadStatus: e.target.value })}
+                            value={loadInfo.loadStatus}
+                            onChange={(e) => setloadInfo({ ...loadInfo, loadStatus: e.target.value })}
                           >
                             <option value="" disabled>Select Status</option>
                             <option value="open">Open</option>
@@ -140,7 +132,7 @@ export default function UpdateLoadView({
                           </select>
                           <label
                             htmlFor="loadStatus"
-                            className={`absolute transition-all left-5 px-1 ${formData.loadStatus.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.loadStatus.length > 0 ? 'text-md' : ''}`}
+                            className={`absolute transition-all left-5 px-1 ${loadInfo.loadStatus.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.loadStatus.length > 0 ? 'text-md' : ''}`}
                           >
                             Status
                           </label>
@@ -149,19 +141,20 @@ export default function UpdateLoadView({
                       <div className="w-full md:w-1/2 px-3 relative">
                         <input
                           className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
-                            ${formData.weight >= 0 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                            ${loadInfo.weight >= 0 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                           id="weight"
                           step={1}
                           type="number"
                           placeholder=" "
                           name="weight"
-                          defaultValue={formData.weight}
+                          value={loadInfo.weight}
+                          // defaultValue={loadInfo.weight}
                           onChange={handleChange}
                           required
                         />
                         <label
                           htmlFor="weight"
-                          className={`absolute transition-all left-5 px-1 ${formData.weight === 0 || formData.weight === undefined ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.weight > 0 || formData.weight !== undefined ? 'text-md' : ''}`}
+                          className={`absolute transition-all left-5 px-1 ${loadInfo.weight === 0 || loadInfo.weight === undefined ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.weight > 0 || loadInfo.weight !== undefined ? 'text-md' : ''}`}
                         >
                           Weight
                         </label>
@@ -171,19 +164,20 @@ export default function UpdateLoadView({
                       <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0 relative">
                         <input
                           className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
-                            ${formData.offerAmount > 0 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                            ${loadInfo.offerAmount > 0 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                           id="offerAmount"
                           step={1}
                           type="number"
                           placeholder=" "
                           name="offerAmount"
-                          defaultValue={formData.offerAmount}
+                          value={loadInfo.offerAmount}
+                          // defaultValue={loadInfo.offerAmount}
                           onChange={handleChange}
                           required
                         />
                         <label
                           htmlFor="offerAmount"
-                          className={`absolute transition-all left-5 px-1 ${formData.offerAmount === 0 || formData.offerAmount === undefined ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.offerAmount > 0 || formData.offerAmount !== undefined ? 'text-md' : ''}`}
+                          className={`absolute transition-all left-5 px-1 ${loadInfo.offerAmount === 0 || loadInfo.offerAmount === undefined ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.offerAmount > 0 || loadInfo.offerAmount !== undefined ? 'text-md' : ''}`}
                         >
                           Offer Amount
                         </label>
@@ -191,17 +185,18 @@ export default function UpdateLoadView({
                       <div className="w-full md:w-1/2 px-3 relative">
                         <input
                             className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white
-                             ${formData.commodity.length >= 5 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                             ${loadInfo.commodity.length >= 5 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                             type="text"
                             placeholder=" "
                             name="commodity"
-                            defaultValue={formData.commodity}
+                            value={loadInfo.commodity}
+                            // defaultValue={loadInfo.commodity}
                             onChange={handleChange}
                             required
                           />
                           <label
                             htmlFor="commodity"
-                            className={`absolute transition-all left-5 px-1 ${formData.commodity.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.commodity.length > 0 ? 'text-md' : ''}`}
+                            className={`absolute transition-all left-5 px-1 ${loadInfo.commodity.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.commodity.length > 0 ? 'text-md' : ''}`}
                           >
                             Items
                           </label>
@@ -216,7 +211,8 @@ export default function UpdateLoadView({
                           name="pickupDate"
                           type="date"
                           placeholder="Pickup Date"
-                          defaultValue={ formatedPickUpDate }
+                          value={formatedPickUpDate}
+                          // defaultValue={ formatedPickUpDate }
                           onChange={handleChange}
                           required
                         />
@@ -235,7 +231,8 @@ export default function UpdateLoadView({
                           id="deliveryDate"
                           type="date"
                           name="deliveryDate"
-                          defaultValue={ formatedDeliveryDate }
+                          value={formatedDeliveryDate}
+                          // defaultValue={ formatedDeliveryDate }
                           onChange={handleChange}
                           required
                         />
@@ -251,31 +248,34 @@ export default function UpdateLoadView({
                       <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0 relative">
                         <textarea
                           className={`appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-6 px-4 mb-3 leading-tight focus:outline-none focus:bg-white resize-none
-                            ${formData.loadDetails.length >= 5 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
+                            ${loadInfo.loadDetails.length >= 5 ? 'border-t-white border-b-green-500' : 'border-b-red-500 border-l-red-500 border-r-red-500 border-t-white'}`}
                           id="loadDetails"
                           placeholder=""
                           name="loadDetails"
-                          defaultValue={formData.loadDetails}
+                          value={loadDetails}
+                          // defaultValue={loadInfo.loadDetails}
                           onChange={handleChange}
                           required
                         />
                         <label
                           htmlFor="loadDetails"
-                          className={`absolute transition-all left-5 px-1 ${formData.loadDetails.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${formData.loadDetails.length > 0 ? 'text-md' : ''}`}
+                          className={`absolute transition-all left-5 px-1 ${loadInfo.loadDetails.length <= 0 ? 'top-2 text-gray-400' : '-top-3 text-gray-500'} ${loadInfo.loadDetails.length > 0 ? 'text-md' : ''}`}
                         >
                           Load Details  
                         </label>
                       </div>
                     </div>
                     <div className="flex justify-end items-right justify-right">
-                      <button
-                        className="bg-blue-500 hover:bg-orange-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        type="submit"
-                        name="_action"
-                        value="save_changes"
-                      >
-                       {isSubmitting ? "Submitting the load..." : "Save Changes"}
-                      </button>
+                        <input type="hidden" name="loadId" value={loadId} />
+                        <input type="hidden" name="userId" value={userId} />
+                        <button
+                          className="bg-blue-500 hover:bg-orange-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                          type="submit"
+                          name="_action"
+                          value="save_changes"
+                        >
+                        {isSubmitting ? "Submitting the load..." : "Save Changes"}
+                        </button>
                     </div>
                   </Form>
                 </div>
