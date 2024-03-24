@@ -16,7 +16,8 @@ export default function Header({ user }) {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const isLoadOperationsActive =
+  const isLoadOperationsActive = 
+    location.pathname.startsWith("/carriers/dashboard/") ||
     location.pathname.startsWith("/dashboard/loads/");
 
   return (

@@ -13,5 +13,6 @@ export type LoadRequest = {
     modifiedBy: string;
     modified: string;
     created: string;
+    createdBy: object;
 }
 

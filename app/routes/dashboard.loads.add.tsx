@@ -22,27 +22,27 @@ import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 
 // const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYjkwMmYyYi0zYTg5LTRhMzQtYjExYy0yOWIxZDQ5MWJiMGYiLCJnaXZlbl9uYW1lIjoiVGFuZyIsImZhbWlseV9uYW1lIjoiVGV3IiwiZW1haWwiOiJ0YW5nb2dhdGRldDc2QGdtYWlsLmNvbSIsIm5hbWVpZCI6IjBiOTAyZjJiLTNhODktNGEzNC1iMTFjLTI5YjFkNDkxYmIwZiIsImp0aSI6IjViODc4NTBlLWJjMDItNDdkOS1iZDMzLTk3YzU3M2MzODBmMyIsIm5iZiI6MTcxMDczNjg5MywiZXhwIjoxNzEwNzQwNDk4LCJpYXQiOjE3MTA3MzY4OTgsImlzcyI6ImFmcm9pbm5vdmF0ZS5jb20iLCJhdWQiOiJhcHAubG9hZGJvYXJkLmFmcm9pbm5vdmF0ZS5jb20ifQ.DdF6H7PHRszqizScrB_Qv3d18QMILCgS6nP2y9weXtY",
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
 //   tokenType: "Bearer",
 //   refreshToken: "eyJhbGci",
 //   expiresIn: 3600,
 //   user: {
-//     "id": "0b902f2b-3a89-4a34-b11c-29b1d491bb0f",
+//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
 //     "userName": "tangogatdet76@gmail.com",
 //     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Tang",
-//     "lastName": "Tew",
+//     "firstName": "Gatluak",
+//     "lastName": "Deng",
 //     "roles": [
 //         "independent_shipper"
 //     ],
-//     "companyName": "Best Transport Company",
-//     "dotNumber": "SH123543"
+//     "companyName": "GatLuak LLCs",
+//     "dotNumber": "SH12345"
 //   }
 // };
 
 export const action: ActionFunction = async ({ request }) => {
   try {
-    // Find the parent route match containing the user and token
+    // // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get("user");
 
@@ -86,7 +86,15 @@ export const action: ActionFunction = async ({ request }) => {
     ).toISOString();
 
     const formattedDate = new Date().toISOString();
-
+    
+    const shipper = {
+      userId: user.user.id,
+      firstName: user.user.firstName,
+      lastName: user.user.lastName,
+      email: user.user.email,
+      companyName: user.user.companyName,
+      dotNumber: user.user.dotNumber
+    }
     // Create a new load request
     const loadRequest: LoadRequest = {
       loadDetails: formData.get("loadDetails") as string,
@@ -103,16 +111,13 @@ export const action: ActionFunction = async ({ request }) => {
       shipperUserId: user.user.id,
       created: formattedDate,
       loadStatus: "open",
+      createdBy: shipper
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
-
+    console.log("response: ", response);
     if (Object.keys(response).length > 0 && response.origin !== undefined) {
       return redirect("/dashboard/loads/view");
-    }
-    if (response.message.includes("Error") || response.includes("Error") ) {
-      console.log("throwing error")
-      return new Error(response);
     }
     // Save the load to the database
     if (!response.toString().includes("Error")) {

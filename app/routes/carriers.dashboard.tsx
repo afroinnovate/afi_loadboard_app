@@ -58,19 +58,19 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   // check if the sessoon is already set
   let response: any = await authenticator.isAuthenticated(request, {
-  failureRedirect: "/login/",
+    failureRedirect: "/login/",
   // successRedirect: "/carriers/dashboard/", //for testing locally
   });
 
   if (response) {
-  // Store the token in the session
-  session.set("user", response);
-      
-  return json(response, {
-  headers: {
-  "Set-Cookie": await commitSession(session),
-  },
-  });
+    // Store the token in the session
+    session.set("user", response);
+        
+    return json(response, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
   }
 
   // return json(userData);
