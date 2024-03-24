@@ -74,10 +74,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  // const session = await getSession(request.headers.get("Cookie"));
-  // const user = session.get("user");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get("user");
 
-  const user: any = userData;
+  // const user: any = userData;
+
   if (!user) {
     throw new Response("401 Unauthorized", { status: 401 });
   }

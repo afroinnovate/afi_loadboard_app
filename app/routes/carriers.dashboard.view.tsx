@@ -1,4 +1,3 @@
-// routes/dashboard/loads/view.tsx
 import {
   redirect,
   type LoaderFunction,
@@ -7,21 +6,12 @@ import {
   type MetaFunction,
 } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigate } from "@remix-run/react";
-import type { LoadResponse } from "~/api/models/loadResponse";
-import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
+import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
 import { getSession } from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
-  LockClosedIcon,
-  LockOpenIcon,
-  TrashIcon,
-  PencilIcon,
-  XCircleIcon,
-  DocumentCheckIcon,
-  CheckCircleIcon,
-  QueueListIcon,
   ArrowRightIcon,
   CurrencyDollarIcon,
   ChatBubbleLeftIcon,
@@ -30,8 +20,6 @@ import AccessDenied from "~/components/accessdenied";
 import { useEffect, useState } from "react";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
-import { BidRequest } from "~/api/models/bidRequest";
-import { GetBid, GetBids, PlaceBid, UpdateBid } from "~/api/services/bid.service";
 
 // const userData: LoginResponse = {
   //     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzMxMjZhZjYtM2Y0OC00ZjE1LTg3MTEtZDdiMzk0ZjQ2NjRmIiwibmJmIjoxNzEwNjIxNzA4LCJleHAiOjE3MTA2MjUzMTMsImlhdCI6MTcxMDYyMTcxMywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.-e8D8EQJ5QVTVNmw_hDDk6vpVvK7U-U3_4bGoebNbQM",

@@ -135,8 +135,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     var user: any = await authenticator.isAuthenticated(request, {
       failureRedirect: '/login/'
     });
+
     // const user = userData;
-    // return the user info
+   
     return user;
   } catch (error) {
     console.log("loader error: ", error);
@@ -162,7 +163,8 @@ export default function AddLoad() {
     roles: [""],
   };
 
-  user = userData.user;
+  // user = userData.user;
+  
   console.log("It got here:...");
   if (loaderData && loaderData.user) {
     user = loaderData.user;
