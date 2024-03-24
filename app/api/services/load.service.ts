@@ -12,7 +12,6 @@ export async function AddLoads(loadRequest: LoadRequest, token: string) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(loadRequest),
-
         });
         
         // Check if the response is not ok (e.g., 400 or 500 status codes)
@@ -27,7 +26,7 @@ export async function AddLoads(loadRequest: LoadRequest, token: string) {
       
         return responseData;
     } catch (error) {
-        return error // Rethrow the error to be handled by the caller
+        throw error // Rethrow the error to be handled by the caller
     }
 }
 

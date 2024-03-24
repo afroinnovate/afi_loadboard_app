@@ -22,7 +22,7 @@ import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 
 const userData: LoginResponse = {
-  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiI0YzQ0ZjViMC01ZWZiLTQwZjEtYTYwZi1hZmYyNTk1NGU1MTMiLCJuYmYiOjE3MTExMjk5MjUsImV4cCI6MTcxMTEzMzUzMCwiaWF0IjoxNzExMTI5OTMwLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.yQ0uplCwVSSSQroqC7fWWv0R0T1FdICdsMpqAt8879U",
+  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
   tokenType: "Bearer",
   refreshToken: "eyJhbGci",
   expiresIn: 3600,
@@ -86,7 +86,15 @@ export const action: ActionFunction = async ({ request }) => {
     ).toISOString();
 
     const formattedDate = new Date().toISOString();
-
+    
+    const shipper = {
+      userId: user.user.id,
+      firstName: user.user.firstName,
+      lastName: user.user.lastName,
+      email: user.user.email,
+      companyName: user.user.companyName,
+      dotNumber: user.user.dotNumber
+    }
     // Create a new load request
     const loadRequest: LoadRequest = {
       loadDetails: formData.get("loadDetails") as string,
@@ -103,16 +111,13 @@ export const action: ActionFunction = async ({ request }) => {
       shipperUserId: user.user.id,
       created: formattedDate,
       loadStatus: "open",
+      createdBy: shipper
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
-
+    console.log("response: ", response);
     if (Object.keys(response).length > 0 && response.origin !== undefined) {
       return redirect("/dashboard/loads/view");
-    }
-    if (response.message.includes("Error") || response.includes("Error") ) {
-      console.log("throwing error")
-      return new Error(response);
     }
     // Save the load to the database
     if (!response.toString().includes("Error")) {
@@ -162,7 +167,8 @@ export default function AddLoad() {
     roles: [""],
   };
 
-  user = userData.user;
+  // user = userData.user;
+
   console.log("It got here:...");
   if (loaderData && loaderData.user) {
     user = loaderData.user;
