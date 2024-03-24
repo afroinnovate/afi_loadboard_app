@@ -20,32 +20,33 @@ import {
 import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 
-const userData: LoginResponse = {
-  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-    "userName": "tangogatdet76@gmail.com",
-    "email": "tangogatdet76@gmail.com",
-    "firstName": "Gatluak",
-    "lastName": "Deng",
-    "roles": [
-        "independent_shipper"
-    ],
-    "companyName": "GatLuak LLCs",
-    "dotNumber": "SH12345"
-  }
-};
+// const userData: LoginResponse = {
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
+//     "firstName": "Gatluak",
+//     "lastName": "Deng",
+//     "roles": [
+//         "independent_shipper"
+//     ],
+//     "companyName": "GatLuak LLCs",
+//     "dotNumber": "SH12345"
+//   }
+// };
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
    
     // // Find the parent route match containing the user and token
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user: any = session.get("user");
-    const user: any = userData;
+    const session = await getSession(request.headers.get("Cookie"));
+    const user: any = session.get("user");
+
+    // const user: any = userData;
     
     if(!user) {
       throw new Error("401 Unauthorized");
@@ -74,10 +75,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  // const session = await getSession(request.headers.get("Cookie"));
-  // const user = session.get("user");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get("user");
 
-  const user: any = userData;
+  // const user: any = userData;
+
   if (!user) {
     throw new Response("401 Unauthorized", { status: 401 });
   }

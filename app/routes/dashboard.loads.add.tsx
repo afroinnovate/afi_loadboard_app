@@ -21,37 +21,37 @@ import { AddLoads } from "~/api/services/load.service";
 import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 
-const userData: LoginResponse = {
-  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-    "userName": "tangogatdet76@gmail.com",
-    "email": "tangogatdet76@gmail.com",
-    "firstName": "Gatluak",
-    "lastName": "Deng",
-    "roles": [
-        "independent_shipper"
-    ],
-    "companyName": "GatLuak LLCs",
-    "dotNumber": "SH12345"
-  }
-};
+// const userData: LoginResponse = {
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
+//     "userName": "tangogatdet76@gmail.com",
+//     "email": "tangogatdet76@gmail.com",
+//     "firstName": "Gatluak",
+//     "lastName": "Deng",
+//     "roles": [
+//         "independent_shipper"
+//     ],
+//     "companyName": "GatLuak LLCs",
+//     "dotNumber": "SH12345"
+//   }
+// };
 
 export const action: ActionFunction = async ({ request }) => {
   try {
     // // Find the parent route match containing the user and token
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user = session.get("user");
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get("user");
 
-    // if (!user) {
-    //   // Handle the missing token scenario
-    //   throw new Response("401 Unauthorized", { status: 401 });
-    // }
+    if (!user) {
+      // Handle the missing token scenario
+      throw new Response("401 Unauthorized", { status: 401 });
+    }
 
-    const user = userData;
+    // const user = userData;
 
     const formData = await request.formData();
 
@@ -137,11 +137,12 @@ export const action: ActionFunction = async ({ request }) => {
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    // var user: any = await authenticator.isAuthenticated(request, {
-    //   failureRedirect: '/login/'
-    // });
-    const user = userData;
-    // return the user info
+    var user: any = await authenticator.isAuthenticated(request, {
+      failureRedirect: '/login/'
+    });
+
+    // const user = userData;
+   
     return user;
   } catch (error) {
     console.log("loader error: ", error);
@@ -168,7 +169,7 @@ export default function AddLoad() {
   };
 
   // user = userData.user;
-
+  
   console.log("It got here:...");
   if (loaderData && loaderData.user) {
     user = loaderData.user;
