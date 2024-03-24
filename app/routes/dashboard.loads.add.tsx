@@ -21,37 +21,37 @@ import { AddLoads } from "~/api/services/load.service";
 import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 
-// const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYjkwMmYyYi0zYTg5LTRhMzQtYjExYy0yOWIxZDQ5MWJiMGYiLCJnaXZlbl9uYW1lIjoiVGFuZyIsImZhbWlseV9uYW1lIjoiVGV3IiwiZW1haWwiOiJ0YW5nb2dhdGRldDc2QGdtYWlsLmNvbSIsIm5hbWVpZCI6IjBiOTAyZjJiLTNhODktNGEzNC1iMTFjLTI5YjFkNDkxYmIwZiIsImp0aSI6IjViODc4NTBlLWJjMDItNDdkOS1iZDMzLTk3YzU3M2MzODBmMyIsIm5iZiI6MTcxMDczNjg5MywiZXhwIjoxNzEwNzQwNDk4LCJpYXQiOjE3MTA3MzY4OTgsImlzcyI6ImFmcm9pbm5vdmF0ZS5jb20iLCJhdWQiOiJhcHAubG9hZGJvYXJkLmFmcm9pbm5vdmF0ZS5jb20ifQ.DdF6H7PHRszqizScrB_Qv3d18QMILCgS6nP2y9weXtY",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     "id": "0b902f2b-3a89-4a34-b11c-29b1d491bb0f",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Tang",
-//     "lastName": "Tew",
-//     "roles": [
-//         "independent_shipper"
-//     ],
-//     "companyName": "Best Transport Company",
-//     "dotNumber": "SH123543"
-//   }
-// };
+const userData: LoginResponse = {
+  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiI0YzQ0ZjViMC01ZWZiLTQwZjEtYTYwZi1hZmYyNTk1NGU1MTMiLCJuYmYiOjE3MTExMjk5MjUsImV4cCI6MTcxMTEzMzUzMCwiaWF0IjoxNzExMTI5OTMwLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.yQ0uplCwVSSSQroqC7fWWv0R0T1FdICdsMpqAt8879U",
+  tokenType: "Bearer",
+  refreshToken: "eyJhbGci",
+  expiresIn: 3600,
+  user: {
+    "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
+    "userName": "tangogatdet76@gmail.com",
+    "email": "tangogatdet76@gmail.com",
+    "firstName": "Gatluak",
+    "lastName": "Deng",
+    "roles": [
+        "independent_shipper"
+    ],
+    "companyName": "GatLuak LLCs",
+    "dotNumber": "SH12345"
+  }
+};
 
 export const action: ActionFunction = async ({ request }) => {
   try {
-    // Find the parent route match containing the user and token
-    const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
+    // // Find the parent route match containing the user and token
+    // const session = await getSession(request.headers.get("Cookie"));
+    // const user = session.get("user");
 
-    if (!user) {
-      // Handle the missing token scenario
-      throw new Response("401 Unauthorized", { status: 401 });
-    }
+    // if (!user) {
+    //   // Handle the missing token scenario
+    //   throw new Response("401 Unauthorized", { status: 401 });
+    // }
 
-    // const user = userData;
+    const user = userData;
 
     const formData = await request.formData();
 
@@ -132,10 +132,10 @@ export const action: ActionFunction = async ({ request }) => {
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    var user: any = await authenticator.isAuthenticated(request, {
-      failureRedirect: '/login/'
-    });
-    // const user = userData;
+    // var user: any = await authenticator.isAuthenticated(request, {
+    //   failureRedirect: '/login/'
+    // });
+    const user = userData;
     // return the user info
     return user;
   } catch (error) {

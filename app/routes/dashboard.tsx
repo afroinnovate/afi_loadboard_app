@@ -26,48 +26,48 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYjkwMmYyYi0zYTg5LTRhMzQtYjExYy0yOWIxZDQ5MWJiMGYiLCJnaXZlbl9uYW1lIjoiVGFuZyIsImZhbWlseV9uYW1lIjoiVGV3IiwiZW1haWwiOiJ0YW5nb2dhdGRldDc2QGdtYWlsLmNvbSIsIm5hbWVpZCI6IjBiOTAyZjJiLTNhODktNGEzNC1iMTFjLTI5YjFkNDkxYmIwZiIsImp0aSI6IjViODc4NTBlLWJjMDItNDdkOS1iZDMzLTk3YzU3M2MzODBmMyIsIm5iZiI6MTcxMDczNjg5MywiZXhwIjoxNzEwNzQwNDk4LCJpYXQiOjE3MTA3MzY4OTgsImlzcyI6ImFmcm9pbm5vdmF0ZS5jb20iLCJhdWQiOiJhcHAubG9hZGJvYXJkLmFmcm9pbm5vdmF0ZS5jb20ifQ.DdF6H7PHRszqizScrB_Qv3d18QMILCgS6nP2y9weXtY",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     "id": "0b902f2b-3a89-4a34-b11c-29b1d491bb0f",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Tang",
-//     "lastName": "Tew",
-//     "roles": [
-//         "independent_shipper"
-//     ],
-//     "companyName": "Best Transport Company",
-//     "dotNumber": "SH123543"
-//   }
-// };
+const userData: LoginResponse = {
+  token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIxMTIzZjU5Yi02N2QzLTQyOTItYmY3NS1iM2JlODRiYmJiMzgiLCJuYmYiOjE3MTExMjg3ODMsImV4cCI6MTcxMTEzMjM4OCwiaWF0IjoxNzExMTI4Nzg4LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.rN8MkNFCNTqwa5139tuRPBHtb4bRpyFnxsON977zVC8",
+  tokenType: "Bearer",
+  refreshToken: "eyJhbGci",
+  expiresIn: 3600,
+  user: {
+    "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
+    "userName": "tangogatdet76@gmail.com",
+    "email": "tangogatdet76@gmail.com",
+    "firstName": "Gatluak",
+    "lastName": "Deng",
+    "roles": [
+        "independent_shipper"
+    ],
+    "companyName": "GatLuak LLCs",
+    "dotNumber": "SH12345"
+  }
+};
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  // check if the sessoon is already set
-  let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-  // successRedirect: "/dashboard/", //for testing locally
-  });
+  // const session = await getSession(request.headers.get("Cookie"));
+  // // check if the sessoon is already set
+  // let response: any = await authenticator.isAuthenticated(request, {
+  //   failureRedirect: "/login/",
+  // // successRedirect: "/dashboard/", //for testing locally
+  // });
 
-  if (response) {
-    // Store the token in the session
-    session.set("user", response);
-    return json(response, {
-      headers: {
-      "Set-Cookie": await commitSession(session),
-      },
-    });
-  }
+  // if (response) {
+  //   // Store the token in the session
+  //   session.set("user", response);
+  //   return json(response, {
+  //     headers: {
+  //     "Set-Cookie": await commitSession(session),
+  //     },
+  //   });
+  // }
   
-  // return json(userData);
+  return json(userData);
 
-  const error = session.get("_auth_error");
-  return json<any>({ error });
+  // const error = session.get("_auth_error");
+  // return json<any>({ error });
 };
 
 export default function Dashboard() {
