@@ -46,10 +46,10 @@ export default function CarrierHeader({ isAuthenticated, isLoadOperationsActive,
                       Home
                     </NavLink>
                   </div>
-                  <div className="pl-4 m-2"> 
+                  {/* <div className="pl-4 m-2"> 
                     <NavLink
                       onClick={toggleMenu}
-                      to="/carriers/dashboard/view/"
+                      to="/dashboard/loads/view/"
                       className={() =>
                         "text-black font-semibold " +
                         (isLoadOperationsActive
@@ -59,7 +59,7 @@ export default function CarrierHeader({ isAuthenticated, isLoadOperationsActive,
                     >
                       Load Operations
                     </NavLink>
-                  </div>
+                  </div> */}
                   <div className="pl-2 m-2">
                     <Link 
                       onClick={toggleMenu}
