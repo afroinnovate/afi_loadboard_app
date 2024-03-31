@@ -57,28 +57,28 @@ export async function GetBids(token: string) {
 
 export async function GetBid(token: string, id: Number) {
     try {
-        const response = await fetch(`${baseUrl}bids/${id}`, {
+        console.log("bid service get by ID op", id)
+        const response = await fetch(`${baseUrl}bids/load/${id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             }
         });
-     
+        
         // Check if the response is not ok (e.g., 400 or 500 status codes)
-        if ( response.status === 500 || response.status === 400) {
-            throw new Error(`${response.status}: ${response.statusText}`);
+        if (!response.ok) { // This checks for any response outside of the 2xx range.
+           return (`${response.status}: ${response.statusText}`);
         }
 
-        // Assuming the response returns a JSON object
-         const resp = await response;
-        //  return resp.text
-        const responseData: any  = { ...resp};
+        // Here we parse the response body as JSON
+        const responseData = await response.json();
+        console.log("bid service get by ID op Response Data", responseData);
         return responseData;
-        
+
     } catch (error) {
-        console.log("bid service get by ID op",error)
-        return error // Rethrow the error to be handled by the caller
+        console.log("bid service get by ID op Error", error);
+        throw error; // Rethrow the error to be handled by the caller
     }
 }
 
@@ -110,6 +110,7 @@ export async function DeleteBid(token: string, id: Number) {
 
 export async function UpdateBid(token: string, id: Number, bidRequest: BidRequest) {
     try {
+        console.log("bid serviceput op",bidRequest)
         const url = `${baseUrl}bids/${id}`;
         const response = await fetch(url, {
             method: 'PUT',
