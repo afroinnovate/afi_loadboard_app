@@ -10,7 +10,7 @@ export default function Header({ user }) {
 
   let isAuthenticated =
     location.pathname.startsWith("/dashboard/") ||
-    location.pathname.startsWith("/carriers/dashboard");
+    location.pathname.startsWith("/carriers/dashboard/");
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -33,7 +33,7 @@ export default function Header({ user }) {
           </Link>
         </div>
 
-        {/* Desktop view  for shipper dashhboard*/}
+        {/* Desktop view  for carrier dashhboard*/}
         {location.pathname.startsWith("/carriers/dashboard") && (
           <div className="hidden lg:flex justify right space-x-4">
             {!isAuthenticated ? (
@@ -71,7 +71,7 @@ export default function Header({ user }) {
             )}
           </div>
         )}
-        {/* Desktop view for carrier dashboard */}
+        {/* Desktop view for shipper dashboard */}
         {location.pathname.startsWith("/dashboard/") && (
           <div className="hidden lg:flex justify right space-x-4">
             {!isAuthenticated ? (
@@ -145,7 +145,7 @@ export default function Header({ user }) {
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
           <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
             {location.pathname.startsWith("/carriers/dashboard") && (
-              <ShipperHeader
+              <CarrierHeader
                 isAuthenticated={isAuthenticated}
                 isLoadOperationsActive={isLoadOperationsActive}
                 toggleMenu={toggleMenu}
@@ -159,7 +159,7 @@ export default function Header({ user }) {
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
           <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
             {location.pathname.startsWith("/dashboard/") && (
-              <CarrierHeader
+              <ShipperHeader
                 isAuthenticated={isAuthenticated}
                 isLoadOperationsActive={isLoadOperationsActive}
                 toggleMenu={toggleMenu}
