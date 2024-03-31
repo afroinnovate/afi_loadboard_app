@@ -20,32 +20,26 @@ import AccessDenied from "~/components/accessdenied";
 import { useEffect, useState } from "react";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
+import { LoginResponse } from "~/api/models/loginResponse";
+import { GetBids, UpdateBid, PlaceBid, GetBid } from "~/api/services/bid.service";
 
 // const userData: LoginResponse = {
-  //     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzMxMjZhZjYtM2Y0OC00ZjE1LTg3MTEtZDdiMzk0ZjQ2NjRmIiwibmJmIjoxNzEwNjIxNzA4LCJleHAiOjE3MTA2MjUzMTMsImlhdCI6MTcxMDYyMTcxMywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.-e8D8EQJ5QVTVNmw_hDDk6vpVvK7U-U3_4bGoebNbQM",
-  //     "tokenType": "Bearer",
-  //     "refreshToken": "eyJhbGci",
-  //     "expiresIn": 3600,
-  //     "user": {
-    //         "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-    //         "userName": "tangotew@gmail.com",
-    //         "email": "tangotew@gmail.com",
-    //         "firstName": "Tango",
-//         "lastName": "Tew",
-//         "roles": [
-//           "owner_operator"
-//         ]
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyOGU5N2VlZS0wODc3LTQyYzctYmE2OS1kMGRmNjk4OTkyNzAiLCJnaXZlbl9uYW1lIjoiS2VhayIsImZhbWlseV9uYW1lIjoiUHVrIiwiZW1haWwiOiJ0YW5nb3Rld0BnbWFpbC5jb20iLCJuYW1laWQiOiIyOGU5N2VlZS0wODc3LTQyYzctYmE2OS1kMGRmNjk4OTkyNzAiLCJqdGkiOiJjMTE1MDM3Yy1jOGVlLTQ3OTAtOTdkZi01MjI4ZDkxMDQwZGEiLCJuYmYiOjE3MTE4NjE3MjYsImV4cCI6MTcxMTg2NTMzMSwiaWF0IjoxNzExODYxNzMxLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.bNFG9DRhq1H1IeKPXhluNIWAXHKE-XQuPAvycQ7u4xA",
+//   "tokenType": "Bearer",
+//   "refreshToken": "eyJhbGci",
+//   "expiresIn": 3600,
+//   "user": {
+//     "id": "28e97eee-0877-42c7-ba69-d0df69899270",
+//     "userName": "tangotew@gmail.com",
+//     "email": "tangotew@gmail.com",
+//     "firstName": "Keak",
+//     "lastName": "Puk",
+//     "roles": [
+//         "owner_operator_carrier"
+//     ],
+//     "companyName": "A1 Trucking",
+//     "dotNumber": "CR12345"
 //   }
-// };
-
-// const carrier: any = {
-//   "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-//   "userName": "tangotew@gmail.com",
-//   "email": "tangotew@gmail.com",
-//   "phoneNumber": "1234567890",
-//   "firstName": "Gatluak",
-//   "lastName": "Pal",
-//   "company":"Independent shipper"
 // }
 
 export const meta: MetaFunction = () => {
@@ -62,6 +56,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user: any = session.get("user");
+
     // const user: any = userData;
 
     if (!user) {
@@ -101,17 +96,19 @@ export const action: ActionFunction = async ({ request }) => {
   }
  
   const formData = await request.formData();
-  console.log("LoadId: ", formData.get("loadId"));
-  const loadId = Number(formData.get("loadId"));
   const action = formData.get("_action");
+  let loadId = formData.get("loadId");
 
   try {
-    if (action === "contact" && loadId) {
+    if (action === "contact" && formData.get("loadId")) {
       console.log("Contacting Carrier");
+      loadId = formData.get("loadId");
       return json({"message":"contactMode"});
-    }else if (action === "bid" && loadId) {
-      console.log("In a Bid Mode");
-      return json({"message":"bidMode"});
+    }else if (action === "bid" && formData.get("bidLoadId")) {
+      const id = formData.get("bidLoadId")
+      loadId = id;
+      console.log("In a Bid Mode ", );
+      return json({"message":"bidMode", "loadId": loadId, offerAmount: formData.get("offerAmount")});
     }else if (action === 'placebid') {
       console.log("Placing Bid Section")
       console.log("Placing Bid, Load ID: ", loadId, "Bid Amount: ", formData.get("bidAmount"));
@@ -121,22 +118,27 @@ export const action: ActionFunction = async ({ request }) => {
       console.log("Formatted Date: ", formattedDate);
 
       console.log("Update the bid if it has been bid before by the same person");
-      const bids = await GetBids(user.token);
-      console.log("Bids: ", bids);
+      const bid = await GetBid(user.token, Number(loadId));
+      console.log("Bid: ", bid);
+
 
       let existedBid: any = {};
-
-      if(Object.values(bids).map(bid => bid.loadId === loadId && bid.carrierId === user.user.carrierId)){
-        existedBid = bids[0];
+      console.log()
+      if (bid !== undefined) {
+        if (bid === "404: Not Found") {
+          existedBid = undefined;
+        }
+        else {
+          existedBid = await bid;
+        }
       }
-
-      console.log("Existed Bid: ", existedBid);
 
       let bidRequest: any = {};
 
-      if (existedBid.length > 0) {
+      // If a bid hasn't been placed yet.
+      if (existedBid !== undefined) {
         console.log("Bid already existed, updating the bid");
-        bidRequest = {
+        bidRequest = JSON.parse(JSON.stringify({
           id: existedBid.id,
           loadId: existedBid.loadId,
           carrierId: existedBid.carrierId,
@@ -145,21 +147,20 @@ export const action: ActionFunction = async ({ request }) => {
           biddingTime: existedBid.biddingTime,
           updatedAt: formattedDate,
           updatedBy: user.user.id
-        };
+        }));
       }
       else{
-        bidRequest = {
-          loadId: loadId,
+        bidRequest = JSON.parse(JSON.stringify({
+          loadId: Number(formData.get("loadId")),
           carrierId: user.user.id,
           bidAmount: Number(formData.get("bidAmount")),
           bidStatus: 0,
           biddingTime: formattedDate,
           updatedAt: formattedDate,
-          updatedBy: null
-        }
+        }));
       }
 
-      if(Object.keys(existedBid).length > 0){
+      if(existedBid !== undefined){
         console.log("Updating bid");
         const resp = await UpdateBid(user.token, existedBid.id, bidRequest);
         console.log("Update Response: ", resp);
@@ -197,11 +198,6 @@ export default function ShipperViewLoads() {
   let error = "";
   let info = "";
 
-  console.log("Action Data: ", actionData); 
-  // if (actionData === undefined || Object.entries(actionData).length <= 0){
-  //   error = "Something went wrong, please try placing your bid again later";
-  // }
-
   if (loaderData && loaderData.errno) {
     if (loaderData.errno === "ENOTFOUND") {
       error =
@@ -226,19 +222,6 @@ export default function ShipperViewLoads() {
   let user: any = {};
   if (loaderData.length == 2 && error === "") {
     loads = loaderData[0];
-    // var loads = {};
-    // let i = 0;
-    // for (const load of Object.values(loaderData[0])) {
-    //   if (
-    //     load.loadStatus === "open" ||
-    //     load.loadStatus === "accepted" ||
-    //     load.loadStatus === "enroute"
-    //   ) {
-    //     loads[i] = load;
-    //     i++;
-    //   }
-    //   load.createdBy = carrier;
-    // }
     user = loaderData[1];
   }else {
     error = "No loads found, Or something went wrong, please try again later or contact support";
@@ -260,7 +243,13 @@ export default function ShipperViewLoads() {
 
   let contactMode = actionData && actionData.message === "contactMode" ? actionData.message : ""; 
   let bidMode = actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
-
+  let loadIdToBeBid= 0;
+  let currentBid = 0;
+  if (bidMode === "bidMode") {
+    loadIdToBeBid = actionData.loadId;
+    currentBid = actionData.offerAmount;
+    console.log("Load ID to be bid: ", loadIdToBeBid, "Current Bid: ", currentBid);
+  }
  
   // Function to handle bid amount change
   const handleBidChange = (event) => {
@@ -320,8 +309,8 @@ export default function ShipperViewLoads() {
                   {/* Load Overview */}
                     {bidMode && (
                       <BidAdjustmentView
-                        loadId={load.id}
-                        initialBid={load.offerAmount}
+                        loadId={ loadIdToBeBid !== 0 ? loadIdToBeBid : load.id}
+                        initialBid={ currentBid !== 0? currentBid : load.offerAmount}
                         onBidChange={handleBidChange}
                       />
                     )}
@@ -393,8 +382,9 @@ export default function ShipperViewLoads() {
                           </button>
                         </form>
                         <form method="post">
-                          <input type="hidden" name="loadId" value={load.id} />
+                          <input type="hidden" name="bidLoadId" value={load.id} />
                           <input type="hidden" name="user" value={user} />
+                          <input type="hidden" name="offerAmount" value={load.offerAmount} />
                           <button
                             // onClick={() => handleBid(load.id)}
                             type="submit"

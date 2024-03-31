@@ -36,21 +36,23 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-  //   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxN2E4NjM5Mi00ZjZiLTQ2NjItOWJhMC0wMWQ2OTcwY2YyNjciLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiMTdhODYzOTItNGY2Yi00NjYyLTliYTAtMDFkNjk3MGNmMjY3IiwianRpIjoiMzQxY2EzMjYtMzdiNS00NTRhLTkwMWEtZDBkNTFlZTU1MzM0IiwibmJmIjoxNzEwNjE0NzkyLCJleHAiOjE3MTA2MTgzOTcsImlhdCI6MTcxMDYxNDc5NywiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.NThAHoItJRv6NhQcIlI2W2MY5AMOmCy1SITOCtYh660",
-  //   "tokenType": "Bearer",
-  //   "refreshToken": "eyJhbGci",
-  //   "expiresIn": 3600,
-  //   "user": {
-    //       "id": "17a86392-4f6b-4662-9ba0-01d6970cf267",
-    //       "userName": "tangotew@gmail.com",
-    //       "email": "tangotew@gmail.com",
-    //       "firstName": "Tango",
-//       "lastName": "Tew",
+//     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyOGU5N2VlZS0wODc3LTQyYzctYmE2OS1kMGRmNjk4OTkyNzAiLCJnaXZlbl9uYW1lIjoiS2VhayIsImZhbWlseV9uYW1lIjoiUHVrIiwiZW1haWwiOiJ0YW5nb3Rld0BnbWFpbC5jb20iLCJuYW1laWQiOiIyOGU5N2VlZS0wODc3LTQyYzctYmE2OS1kMGRmNjk4OTkyNzAiLCJqdGkiOiI4MTgxMjJlZC00NGE4LTRlNzctYTI2Mi1iYzI1MmU3ODQ1ZDYiLCJuYmYiOjE3MTE4NTMwNDMsImV4cCI6MTcxMTg1NjY0OCwiaWF0IjoxNzExODUzMDQ4LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.RXLxecLODqkhrRBMHBsIxMP0e-QMy8MpigNvVtTkJOs",
+//     "tokenType": "Bearer",
+//     "refreshToken": "eyJhbGci",
+//     "expiresIn": 3600,
+//     "user": {
+//       "id": "28e97eee-0877-42c7-ba69-d0df69899270",
+//       "userName": "tangotew@gmail.com",
+//       "email": "tangotew@gmail.com",
+//       "firstName": "Keak",
+//       "lastName": "Puk",
 //       "roles": [
-//         "owner_operator"
-//       ]
+//           "owner_operator_carrier"
+//       ],
+//       "companyName": "A1 Trucking",
+//       "dotNumber": "CR12345"
+//   }
 // }
-// };
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
@@ -102,7 +104,7 @@ export default function CarrierDashboard() {
   const shipperHasAccess =
     roles.includes("support") ||
     roles.includes("admin") ||
-    roles.some((role) => role.includes("carrier")
+    roles.some((role) => role.includes("shipper")
   );
   const carrierAccess =
     roles.includes("shipper") ||
@@ -110,7 +112,8 @@ export default function CarrierDashboard() {
     roles.some((role) => role.includes("owner_operator")) ||
     roles.some((role) => role.includes("dispatcher")) ||
     roles.some((role) => role.includes("company_driver")) ||
-    roles.some((role) => role.includes("fleet_owner")
+    roles.some((role) => role.includes("fleet_owner") ||
+    roles.some((role) => role.includes("carrier"))
   );
   
   const toggleMenu = () => {
@@ -141,7 +144,7 @@ export default function CarrierDashboard() {
     useEffect(() => {
       if (shipperHasAccess && !carrierAccess) {
           console.log("redirecting to carrier dashboard");
-          navigate('/dashboard');
+          navigate('/dashboard/');
       }
   }, []);
     // return redirect("/dashboard/");
