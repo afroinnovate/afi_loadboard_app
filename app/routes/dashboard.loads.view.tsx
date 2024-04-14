@@ -21,22 +21,22 @@ import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 
 // const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Gatluak",
-//     "lastName": "Deng",
-//     "roles": [
-//         "independent_shipper"
-//     ],
-//     "companyName": "GatLuak LLCs",
-//     "dotNumber": "SH12345"
-//   }
+  //   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
+  //   tokenType: "Bearer",
+  //   refreshToken: "eyJhbGci",
+  //   expiresIn: 3600,
+  //   user: {
+    //     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
+    //     "userName": "tangogatdet76@gmail.com",
+    //     "email": "tangogatdet76@gmail.com",
+    //     "firstName": "Gatluak",
+    //     "lastName": "Deng",
+    //     "roles": [
+        //         "independent_shipper"
+    //     ],
+    //     "companyName": "GatLuak LLCs",
+    //     "dotNumber": "SH12345"
+  //   }
 // };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -216,7 +216,7 @@ export default function ViewLoads() {
   return (
     <div className="container mx-auto px-4 py-4">
       <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
-        <h1 className="text-2xl font-bold mb-4 p-4 text-center text-green-500">
+        <h1 className="text-2xl font-san font-serif mb-4 p-3 text-center text-green-700 shadow-md shadow-gray-600">
           Manage your Loads
         </h1>
       </div>
