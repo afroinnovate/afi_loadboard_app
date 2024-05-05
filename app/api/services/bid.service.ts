@@ -32,7 +32,7 @@ export async function PlaceBid(bidRequest: BidRequest, token: string) {
 
 export async function GetBids(token: string) {
     try {
-        const response = await fetch(baseUrl + "bids/", {
+        const response = await fetch(`${baseUrl}bids/`, { // Use template literals for clean concatenation
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -40,24 +40,24 @@ export async function GetBids(token: string) {
             }
         });
 
-        // Check if the response is not ok (e.g., 400 or 500 status codes)
-        if (response.status !== 200) {
-            throw new Error(`${response.status}: ${response.statusText}`);
+        // Better error handling: Check if the response is not OK (e.g., 400 or 500 status codes)
+        if (!response.ok) {
+            // Throwing an Error with a message that includes the status for clarity
+            throw new Response(`Failed to fetch bids`, { status: response.status });
         }
 
-        // Assuming the response returns a JSON object
-        const data = await response.json();
-        type bidResponses = BidResponse[];
-        const responseData: bidResponses = { ...data};
-        return responseData;
+        // Directly return the parsed JSON data if successful
+        return await response.json() as BidResponse[];
     } catch (error) {
-        throw error // Rethrow the error to be handled by the caller
+        console.error("Error fetching bids:", error);
+        // Rethrow the error to be handled by the caller
+        throw error;
     }
 }
 
 export async function GetBid(token: string, id: Number) {
     try {
-        console.log("bid service get by ID op", id)
+        console.log("bid service get by ID op", id);
         const response = await fetch(`${baseUrl}bids/load/${id}`, {
             method: 'GET',
             headers: {
@@ -65,20 +65,19 @@ export async function GetBid(token: string, id: Number) {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
-        // Check if the response is not ok (e.g., 400 or 500 status codes)
-        if (!response.ok) { // This checks for any response outside of the 2xx range.
-           return (`${response.status}: ${response.statusText}`);
+
+        if (!response.ok) {
+            // If the response is not OK, throw a new error with the status
+            throw new Response(`Error fetching bid with ID ${id}`, { status: response.status });
         }
 
-        // Here we parse the response body as JSON
         const responseData = await response.json();
         console.log("bid service get by ID op Response Data", responseData);
         return responseData;
 
     } catch (error) {
         console.log("bid service get by ID op Error", error);
-        throw error; // Rethrow the error to be handled by the caller
+        throw error;  // Rethrow the error to be handled by the caller
     }
 }
 
@@ -103,8 +102,7 @@ export async function DeleteBid(token: string, id: Number) {
         // const responseData: any  = { ...data};
         
     } catch (error) {
-        console.log("bid service delete op",error)
-        return error // Rethrow the error to be handled by the caller
+       throw new Response;// Rethrow the error to be handled by the caller
     }
 }
 

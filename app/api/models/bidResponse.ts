@@ -7,5 +7,12 @@ export interface BidResponse {
     biddingTime: string;
     updatedBy: string;
     updatedAt: string;
+    carrier: {
+        id: number;
+        companyName: string;
+        dotNumber: string;
+        email: string;
+        phoneNumber: string;
+    };
 }
 
