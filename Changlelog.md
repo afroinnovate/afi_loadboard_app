@@ -6,3 +6,4 @@
 * []: Add Carrier Dashboard Layout
 * []: View Carrier Page
 * []: Delete loads
+* []: Add bidding Dashboard for Shippers
