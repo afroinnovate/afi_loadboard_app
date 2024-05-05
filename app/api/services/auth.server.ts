@@ -90,6 +90,7 @@ export async function Register(user: User) {
 
 export async function CompleteProfile(profile: CompleteProfileRequest) {
     try {
+        // console.log("profile -->", profile);
         const response = await fetch(baseUrl+"/completeprofile", {
             method: 'POST',
             headers: {
