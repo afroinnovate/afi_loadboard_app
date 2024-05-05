@@ -34,6 +34,7 @@ export const action: ActionFunction = async ({ request }) => {
   const email = formData.get("email")?.toString().trim();
   const phone = formData.get("phone")?.toString().trim();
   const role = formData.get("role")?.toString().trim();
+  const middleName = formData.get("middleName")?.toString().trim();
 
   try {
     invariant(
@@ -57,8 +58,9 @@ export const action: ActionFunction = async ({ request }) => {
       firstName: firstName,
       lastName: lastName,
       email: email,
-      phone: phone,
-      role: role
+      phoneNumber: phone,
+      role: role,
+      middleName: middleName !== "" ? middleName : "",
     }
   
     await CompleteProfile(profile);
