@@ -22,23 +22,22 @@ import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 
 // const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
 //   tokenType: "Bearer",
 //   refreshToken: "eyJhbGci",
 //   expiresIn: 3600,
 //   user: {
-//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Gatluak",
-//     "lastName": "Deng",
-//     "roles": [
-//         "independent_shipper"
-//     ],
-//     "companyName": "GatLuak LLCs",
-//     "dotNumber": "SH12345"
-//   }
+//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Pal",
+//     lastName: "Kuoth",
+//     roles: ["shipper"],
+//     phoneNumber: "+15806471212",
+//   },
 // };
+
 
 export const action: ActionFunction = async ({ request }) => {
   try {

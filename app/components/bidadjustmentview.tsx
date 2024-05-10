@@ -1,6 +1,6 @@
 // BidAdjustmentView.jsx
 import { useNavigation } from '@remix-run/react';
-import React, { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 const BidAdjustmentView = ({ loadId, initialBid }) => {
      // Initialize the bidAmount state with the initialBid value
