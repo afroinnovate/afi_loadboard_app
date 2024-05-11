@@ -6,7 +6,10 @@ import {
   useLocation,
   NavLink,
   useNavigate,
+  useCatch,
+  useRouteError,
 } from "@remix-run/react";
+
 import type {
   MetaFunction,
   LinksFunction,
@@ -23,6 +26,7 @@ import { LoginResponse } from "~/api/models/loginResponse";
 import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
 import { checkUserRole } from "~/components/checkroles";
+import ErrorDisplay from "~/components/ErrorDisplay";
 
 export const meta: MetaFunction = () => {
   return [
@@ -234,4 +238,9 @@ export default function CarrierDashboard() {
       </>
     );
   }
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return <ErrorDisplay error={error} />;
 }

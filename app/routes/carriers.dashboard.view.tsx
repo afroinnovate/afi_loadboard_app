@@ -5,7 +5,7 @@ import {
   type ActionFunction,
   type MetaFunction,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, useNavigate } from "@remix-run/react";
+import { NavLink, useActionData, useLoaderData, useNavigate, useRouteError } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
 import { getSession } from "../api/services/session";
@@ -29,6 +29,8 @@ import {
 } from "~/api/services/bid.service";
 import { dummyData } from "~/api/dummy/dummy-data";
 import { checkUserRole } from "~/components/checkroles";
+import { manageBidProcess } from "~/api/services/bid.helper";
+import ErrorDisplay from "~/components/ErrorDisplay";
 
 const userData: LoginResponse = {
   token:
@@ -42,7 +44,7 @@ const userData: LoginResponse = {
     email: "tangotew@gmail.com",
     firstName: "Tango",
     lastName: "War",
-    roles: ["shipper"],
+    roles: ["carrier"],
     phoneNumber: "+15806471212",
   },
 };
@@ -64,7 +66,7 @@ export const loader = async ({ request }) => {
     const user: any = userData;
 
     if (!user) {
-      throw new Error("Unauthorized");
+      throw new Response("Unauthorized", { status: 401 });
     }
 
     // const response = await GetLoads(user.token);
@@ -75,136 +77,13 @@ export const loader = async ({ request }) => {
     }
 
     return json([response, user]);
-  } catch (error: any) {
-    console.error(error.message);
-    if (error.message.includes("Unauthorized")) {
-      return redirect("/login/");
+  } catch (error) {
+    if (error instanceof Response) {
+      throw error;
     }
-    throw new Error("Failed to fetch data");
+    throw new Response("Internal Server Error", { status: 500 });
   }
 };
-
-// export const action: ActionFunction = async ({ request }) => {
-//   // const session = await getSession(request.headers.get("Cookie"));
-//   // const user = session.get("user");
-
-//   const user: any = userData;
-
-//   // if (!user) {
-//   //   throw new Response("401 Unauthorized", { status: 401 });
-//   // }
-
-//   const formData = await request.formData();
-//   const action = formData.get("_action");
-//   let loadId = formData.get("loadId");
-
-//   try {
-//     if (action === "contact" && formData.get("loadId")) {
-//       console.log("Contacting Carrier");
-//       loadId = formData.get("loadId");
-//       return json({ message: "contactMode" });
-//     } else if (action === "bid" && formData.get("bidLoadId")) {
-//       const id = formData.get("bidLoadId");
-//       loadId = id;
-//       console.log("In a Bid Mode ");
-//       return json({
-//         message: "bidMode",
-//         loadId: loadId,
-//         offerAmount: formData.get("offerAmount"),
-//       });
-//     } else if (action === "placebid") {
-//       console.log("Placing Bid Section");
-//       console.log(
-//         "Placing Bid, Load ID: ",
-//         loadId,
-//         "Bid Amount: ",
-//         formData.get("bidAmount")
-//       );
-//       console.log("formatting the Date");
-
-//       const formattedDate = new Date().toISOString();
-//       console.log("Formatted Date: ", formattedDate);
-
-//       console.log(
-//         "Update the bid if it has been bid before by the same person"
-//       );
-//       const bid = await GetBid(user.token, Number(loadId));
-//       console.log("Bid: ", bid);
-
-//       let existedBid: any = {};
-//       console.log();
-//       if (bid !== undefined) {
-//         if (bid === "404: Not Found") {
-//           existedBid = undefined;
-//         } else {
-//           existedBid = await bid;
-//         }
-//       }
-
-//       let bidRequest: any = {};
-
-//       // If a bid hasn't been placed yet.
-//       if (existedBid !== undefined) {
-//         console.log("Bid already existed, updating the bid");
-//         bidRequest = JSON.parse(
-//           JSON.stringify({
-//             id: existedBid.id,
-//             loadId: existedBid.loadId,
-//             carrierId: existedBid.carrierId,
-//             bidAmount: Number(formData.get("bidAmount")),
-//             bidStatus: existedBid.bidStatus,
-//             biddingTime: existedBid.biddingTime,
-//             updatedAt: formattedDate,
-//             updatedBy: user.user.id,
-//           })
-//         );
-//       } else {
-//         bidRequest = JSON.parse(
-//           JSON.stringify({
-//             loadId: Number(formData.get("loadId")),
-//             carrierId: user.user.id,
-//             bidAmount: Number(formData.get("bidAmount")),
-//             bidStatus: 0,
-//             biddingTime: formattedDate,
-//             updatedAt: formattedDate,
-//           })
-//         );
-//       }
-
-//       if (existedBid !== undefined) {
-//         console.log("Updating bid");
-//         const resp = await UpdateBid(user.token, existedBid.id, bidRequest);
-//         console.log("Update Response: ", resp);
-//         if (resp.includes("404")) {
-//           return json({
-//             message: "bidNotPlaced",
-//             amount: bidRequest.bidAmount,
-//           });
-//         } else {
-//           return json({
-//             message: "bidUpdatePlaced",
-//             amount: bidRequest.bidAmount,
-//           });
-//         }
-//       } else {
-//         console.log("Placing bid for the first time...");
-//         const response: any = await PlaceBid(bidRequest, user.token);
-//         if (Object.keys(response).length !== 0 && response.id > 0) {
-//           return json({ message: "bidPlaced", amount: bidRequest.bidAmount });
-//         }
-//         console.log("Bid Not Placed: ", response);
-//         return json({ message: "bidNotPlaced", amount: bidRequest.bidAmount });
-//       }
-//     }
-//     return null;
-//   } catch (error: any) {
-//     if (error.message.includes(401)) {
-//       return redirect("/login/");
-//     }
-//     console.log("Error: ", error);
-//     return error;
-//   }
-// };
 
 export const action = async ({ request }) => {
   try {
@@ -219,69 +98,45 @@ export const action = async ({ request }) => {
 
     const formData = await request.formData();
     const actionType = formData.get("_action");
-    const loadId = formData.get("loadId") || formData.get("bidLoadId");
+    const loadId = formData.get("loadId") 
+    const bidLoadId = formData.get("bidLoadId")
+
+    console.log("Action Type: ", actionType, "Load ID: ", loadId, "Bid Load ID: ", bidLoadId)
 
     switch (actionType) {
       case "contact":
-        return json({ "message": "contactMode" });
+        return json({"error": "", "message": "contactMode" });
 
       case "bid":
+        console.log("Bid mode");
         return json({
+          "error": "",
           "message": "bidMode",
           "loadId": loadId,
           "offerAmount": formData.get("offerAmount")
         });
 
       case "placebid":
-        const bidDetails = await manageBidProcess(user, loadId, formData);
-        return json(bidDetails);
+        console.log("Placing bid on load id: ", bidLoadId);
+        const bidDetails = await manageBidProcess(user, bidLoadId, formData);
+        return json({"error": "", "bidDetails": bidDetails});
+      
+      case "closeContact":
+        return redirect("/carriers/dashboard/view");
 
       default:
         throw new Error("Invalid action");
     }
-  } catch (error) {
-    console.error(error);
-    if (error instanceof Response) {
-      return error;
+  } catch (error: any) {
+    if(error instanceof Response) {
+      console.log("Error: ", error);
+      throw error;
     }
-    return redirect("/error/");
+    throw new Response(error);
   }
 };
 
-async function manageBidProcess(user, loadId, formData) {
-  const bid = await GetBid(user.token, Number(loadId));
-  let bidRequest = formatBidRequest(user, bid, formData);
-  if (bid) {
-    const response = await UpdateBid(user.token, bid.id, bidRequest);
-    return handleBidResponse(response, bidRequest.bidAmount);
-  } else {
-    const response = await PlaceBid(bidRequest, user.token);
-    return handleBidResponse(response, bidRequest.bidAmount);
-  }
-}
-
-function formatBidRequest(user, existingBid, formData) {
-  const bidAmount = Number(formData.get("bidAmount"));
-  if (existingBid) {
-    return { ...existingBid, bidAmount, updatedAt: new Date().toISOString() };
-  }
-  return {
-    loadId: Number(formData.get("loadId")),
-    carrierId: user.id,
-    bidAmount,
-    bidStatus: 0, // assuming status codes need to be defined
-    updatedAt: new Date().toISOString()
-  };
-}
-
-function handleBidResponse(response, bidAmount) {
-  if (!response || response.error) {
-    return { "message": "bidNotPlaced", "amount": bidAmount };
-  }
-  return { "message": "bidPlaced", "amount": bidAmount };
-}
-
-export default function ShipperViewLoads() {
+export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
   const navigate = useNavigate();
@@ -298,7 +153,8 @@ export default function ShipperViewLoads() {
       error = "Oops! Something went wrong. Please try again.";
     }
   } else if (actionData) {
-    const { message, amount } = actionData;
+    const { actionError, message, amount } = actionData;
+    console.log("Action Data: ", actionData, actionError, message, amount);
     if (message.includes("bidMode")) {
       info = "You are in bid mode. Please place your bid.";
     } else if (message.includes("bidNotPlaced")) {
@@ -309,7 +165,12 @@ export default function ShipperViewLoads() {
     ) {
       info = `Bid placed/updated successfully. New amount: ${amount}`;
     }
+    else if (actionError !== null || actionError !== undefined) {
+      error = actionError
+    }
   }
+
+  console.log("Error: ", error);
 
   // Extract loads and user data from loader
   let loads = [];
@@ -329,8 +190,6 @@ export default function ShipperViewLoads() {
   // User roles and permission checks
   const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
 
-  console.log("Carrier Access: ", carrierAccess);
-
   // Navigate away if unauthorized
   useEffect(() => {
     console.log("Checking user access...");
@@ -340,17 +199,14 @@ export default function ShipperViewLoads() {
     } 
   }, [shipperHasAccess, carrierHasAccess, shipperAccess, carrierAccess, navigate]);
 
-  let contactMode =
-    actionData && actionData.message === "contactMode"
-      ? actionData.message
-      : "";
-  let bidMode =
-    actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
+  let contactMode = actionData && actionData.message === "contactMode" ? actionData.message : "";
+  let bidMode = actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
 
   let loadIdToBeBid = 0;
   let currentBid = 0;
   if (bidMode === "bidMode") {
     loadIdToBeBid = actionData.loadId;
+    console.log("Load ID to be bid: ", loadIdToBeBid);
     currentBid = actionData.offerAmount;
     console.log(
       "Load ID to be bid: ",
@@ -359,11 +215,6 @@ export default function ShipperViewLoads() {
       currentBid
     );
   }
-
-  // Function to handle bid amount changes
-  const handleBidChange = (event) => {
-    setCurrentBid(event.target.value);
-  };
 
   // Utility function to determine styles based on load status
   const getStatusStyles = (status) => {
@@ -409,7 +260,7 @@ export default function ShipperViewLoads() {
         </div>
       )}
       <div className="space-y-4 pt-2">
-        {loads.map((load) => (
+        {loads.map((load: any) => (
           <Disclosure
             as="div"
             key={load.id}
@@ -417,6 +268,26 @@ export default function ShipperViewLoads() {
           >
             {({ open }) => (
               <>
+                {/* Contact Shipper View */}
+                {
+                  contactMode === "contactMode" && (
+                    <ContactShipperView
+                      load={load}
+                      shipper={load.createdBy}
+                    />
+                  )
+                }
+
+                {/* Bid Adjustment View */}
+                {
+                  bidMode === "bidMode" && (
+                    <BidAdjustmentView
+                      loadId={loadIdToBeBid}
+                      initialBid={currentBid}
+                    />
+                  )
+                }
+
                 <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
                   <div className="pl-2 flex items-center space-x-3">
                     <h2 className="text-lg font-bold">{load.origin}</h2>
@@ -523,4 +394,20 @@ export default function ShipperViewLoads() {
       </div>
     </div>
   );
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  console.log(errorResponse)
+  // First, extract the JSON string from the 'data' field
+  const jsonErrorString = errorResponse.data.substring(7); 
+  // Parse the JSON string to get an object
+  const jsonError = JSON.parse(jsonErrorString);
+  // Now extract the 'message' and 'status' from the parsed JSON
+  const error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status
+  };
+
+  return <ErrorDisplay error={error} />;
 }

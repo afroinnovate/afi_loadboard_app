@@ -3,7 +3,7 @@ import { ChatBubbleLeftIcon, ClipboardIcon } from "@heroicons/react/16/solid";
 import { Form, Link } from "@remix-run/react";
 import React from "react";
 
-const ContactShipperView = ({ shipper }) => {
+const ContactShipperView = ({ shipper, load }) => {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(
       () => alert("Copied to clipboard!"),
@@ -17,8 +17,8 @@ const ContactShipperView = ({ shipper }) => {
         <h3 className="text-lg font-bold">Contact Shipper</h3>
         <div>
           <p className="font-semibold"><p>{shipper.firstName} {shipper.lastName}</p></p>
-          <span className="text-sm italic ">Company: </span><p className="text-green-500 font-semibold">{shipper.companyName}</p>    
-          <span className="text-sm italic">Registration Number: </span><p className="text-green-500 font-semibold">{shipper.dotNumber}</p>
+          <p className="text-sm italic ">Company: <span className="text-green-500 font-semibold">{shipper.companyName}</span></p>    
+          <p className="text-sm italic">Registration Number: <span className="text-green-500 font-semibold">{shipper.dotNumber}</span></p>
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">

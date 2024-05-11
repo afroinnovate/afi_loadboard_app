@@ -57,7 +57,7 @@ export async function GetBids(token: string) {
 
 export async function GetBid(token: string, id: Number) {
     try {
-        console.log("bid service get by ID op", id);
+        console.log("bid service get by ID", id);
         const response = await fetch(`${baseUrl}bids/load/${id}`, {
             method: 'GET',
             headers: {
@@ -76,8 +76,47 @@ export async function GetBid(token: string, id: Number) {
         return responseData;
 
     } catch (error) {
-        console.log("bid service get by ID op Error", error);
-        throw error;  // Rethrow the error to be handled by the caller
+        console.log("bid service get by ID Error", error);
+        switch (error.status) {
+            case 404:
+                throw new Error(JSON.stringify({
+                    data: {
+                        message: "Bid with ID 0 not found",
+                        status: 404
+                    }
+                }));
+            case 500:
+                throw new Error(JSON.stringify({
+                    data: {
+                        message: "Internal server error",
+                        status: 500
+                        }
+                    }
+                ));
+            case 400:
+                throw new Error(JSON.stringify({
+                    data: {
+                        message: "Bad request",
+                        status: 400
+                        }
+                    }
+                ));
+            case 401:
+                throw new Error(JSON.stringify({
+                    data: {
+                        message: "Unauthorized",
+                        status: 401
+                        }
+                    }
+                ));
+            default:
+                throw new Error(JSON.stringify({
+                    data: {
+                        message: "An error occurred",
+                        status: 500
+                    }
+                }));
+        }
     }
 }
 
