@@ -1,6 +1,6 @@
 // routes/dashboard/loads/view.tsx
 import { redirect, type LoaderFunction, json, type ActionFunction } from "@remix-run/node";
-import { useActionData, useLoaderData } from "@remix-run/react";
+import { NavLink, useActionData, useLoaderData, useRouteError } from "@remix-run/react";
 import type { LoadResponse } from "~/api/models/loadResponse";
 import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
@@ -19,24 +19,26 @@ import {
 } from "@heroicons/react/20/solid";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
+import { checkUserRole } from "~/components/checkroles";
+import ErrorDisplay from '~/components/ErrorDisplay';
 
 // const userData: LoginResponse = {
-  //   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
-  //   tokenType: "Bearer",
-  //   refreshToken: "eyJhbGci",
-  //   expiresIn: 3600,
-  //   user: {
-    //     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-    //     "userName": "tangogatdet76@gmail.com",
-    //     "email": "tangogatdet76@gmail.com",
-    //     "firstName": "Gatluak",
-    //     "lastName": "Deng",
-    //     "roles": [
-        //         "independent_shipper"
-    //     ],
-    //     "companyName": "GatLuak LLCs",
-    //     "dotNumber": "SH12345"
-  //   }
+//     token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiMDRhYWZhZGEtM2NlOS00YWUxLThiOTctZWIyYzhkMDE1YTUyIiwibmJmIjoxNzE1NTQzMTc3LCJleHAiOjE3MTU1NDY3ODIsImlhdCI6MTcxNTU0MzE4MiwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.s0SWf6H1Duv1861mGWz-vcrgXh9sVekiQjXzzGYS6oc",
+//     tokenType: "Bearer",
+//     refreshToken: "eyJhbGci",
+//     expiresIn: 3600,
+//     user: {
+//         "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
+//         "userName": "tangogatdet76@gmail.com",
+//         "email": "tangogatdet76@gmail.com",
+//         "firstName": "Gatluak",
+//         "lastName": "Deng",
+//         "roles": [
+//           "shipper"
+//         ],
+//         "companyName": "GatLuak LLCs",
+//         "dotNumber": "SH12345"
+//     }
 // };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -65,12 +67,13 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     return json([response, user]);
   } catch (error: any) {
-    if (error.message.includes("401")) {
+    console.error("Error: ", error);
+    if (JSON.parse(error).data.status === 401) {
       return redirect("/login/");
     }
 
     // if it's not 401, throw the error
-    return error;
+    throw error;
   }
 };
 
@@ -210,9 +213,8 @@ export default function ViewLoads() {
   if (confirm === 'confirmation') {
     loadIdToBeDeleted = actionData.loadId;
   }
-  // Check if user has 'support', 'admin' or any role containing 'shipper'
-  const shipperHasAccess = roles.includes('admin') || roles.some(role => role.includes('shipper'));
-
+  const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.roles);
+  
   return (
     <div className="container mx-auto px-4 py-4">
       <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
@@ -221,6 +223,14 @@ export default function ViewLoads() {
         </h1>
       </div>
       {error && <p className="text-center text-red-500">{error}</p>}
+      {shipperAccess && (
+        <NavLink to="/shipper/profile" className="flex justify-center bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
+          <button className="text-lg">
+            Please Complete your profile to pick up a load
+          </button>
+        </NavLink>
+      )}
+    {shipperHasAccess && (
       <div className="space-y-4 pt-2">
         {loads &&
           Object.values(loads).map((load) => (
@@ -397,6 +407,18 @@ export default function ViewLoads() {
             </Disclosure>
           ))}
       </div>
+    )}
     </div>
   );
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  const jsonError = JSON.parse(errorResponse);
+  const error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status
+  };
+
+  return <ErrorDisplay error={error} />;
 }

@@ -12,19 +12,15 @@ type BidCardProps = {
         biddingTime: string;
         updatedAt: string;
         updatedBy: string;
-        carrier: {
-            id: number;
-            companyName: string;
-            dotNumber: string;
-            email: string;
-            phoneNumber: string;
-        };
-    };
+        load: any;
+        carrier: any;
+    },
+    shipperHasAccess: boolean;
 };
 
-export const BidCard: FC<BidCardProps> = ({ bid }) => {
+export const BidCard: FC<BidCardProps> = ({ bid, shipperHasAccess }) => {
     const [isOpen, setIsOpen] = useState(false); // State to manage the open/closed state of the collapsible
-
+    
     return (
         <Disclosure as="div" className="bg-white shadow-md rounded-lg mb-4">
              {({ open }) => (
@@ -49,20 +45,22 @@ export const BidCard: FC<BidCardProps> = ({ bid }) => {
                             <p><span className="font-bold">Bid Status:</span> {['Pending', 'Accepted', 'Rejected'][bid.bidStatus]}</p>
                             <p><span className="font-bold">Bidding Time:</span> {new Date(bid.biddingTime).toLocaleString()}</p>
                         </div>
-                        <div className="flex justify-end space-x-2 pt-2">
-                            <button type="button" name="action" value="accept" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                            <CheckCircleIcon className="w-5 h-5 mr-2 inline" aria-hidden="true" />
-                            Accept
-                            </button>
-                            <button type="button" name="action" value="reject" className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                            <XCircleIcon className="w-5 h-5 mr-2 inline" aria-hidden="true" />
-                            Reject
-                            </button>
-                            <button type="button" name="action" value="abandon" className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
-                            <LockClosedIcon className="w-5 h-5 mr-2 inline" aria-hidden="true" />
-                            Abandon
-                            </button>
-                        </div>
+                        {shipperHasAccess && (
+                            <div className="flex justify-end space-x-2 pt-2">
+                                <button type="button" name="action" value="accept" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                                <CheckCircleIcon className="w-5 h-5 mr-2 inline" aria-hidden="true" />
+                                Accept
+                                </button>
+                                <button type="button" name="action" value="reject" className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                                <XCircleIcon className="w-5 h-5 mr-2 inline" aria-hidden="true" />
+                                Reject
+                                </button>
+                                <button type="button" name="action" value="abandon" className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                                <LockClosedIcon className="w-5 h-5 mr-2 inline" aria-hidden="true" />
+                                Abandon
+                                </button>
+                            </div>
+                        )}
                     </Disclosure.Panel>
                 </>
             )}

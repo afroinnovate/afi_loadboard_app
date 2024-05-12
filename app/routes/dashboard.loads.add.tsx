@@ -4,6 +4,7 @@ import {
   useAsyncError,
   useLoaderData,
   useNavigation,
+  useRouteError,
 } from "@remix-run/react";
 import {
   redirect,
@@ -20,38 +21,39 @@ import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
 import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
+import { checkUserRole } from "~/components/checkroles";
+import ErrorDisplay from "~/components/ErrorDisplay";
 
 // const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzM2Y3YmEzZi04MTE1LTQ3MmMtYjg5MS1mMmVkZjI3NjM1ZWUiLCJuYmYiOjE3MTEzMTI4MTgsImV4cCI6MTcxMTMxNjQyMywiaWF0IjoxNzExMzEyODIzLCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.qiv01-4ccgvxiJdMpvRo6vJQR6lm0SRVPXnJlvzrEAs",
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
 //   tokenType: "Bearer",
 //   refreshToken: "eyJhbGci",
 //   expiresIn: 3600,
 //   user: {
-//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Gatluak",
-//     "lastName": "Deng",
-//     "roles": [
-//         "independent_shipper"
-//     ],
-//     "companyName": "GatLuak LLCs",
-//     "dotNumber": "SH12345"
-//   }
+//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Pal",
+//     lastName: "Kuoth",
+//     roles: ["shipper"],
+//     phoneNumber: "+15806471212",
+//   },
 // };
+
 
 export const action: ActionFunction = async ({ request }) => {
   try {
-    // // Find the parent route match containing the user and token
+    // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get("user");
+
+    // const user = userData;
 
     if (!user) {
       // Handle the missing token scenario
       throw new Response("401 Unauthorized", { status: 401 });
     }
-
-    // const user = userData;
 
     const formData = await request.formData();
 
@@ -143,7 +145,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // const user = userData;
    
-    return user;
+    return json({"user": user});
   } catch (error) {
     console.log("loader error: ", error);
     return error;
@@ -159,25 +161,24 @@ export default function AddLoad() {
   const isSubmitting = navigation.state === "submitting";
 
   var roles: string[] = [""];
-  var user: LoginUser = {
-    id: "",
-    userName: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    roles: [""],
-  };
+  // var user: LoginUser = {
+  //   id: "",
+  //   userName: "",
+  //   firstName: "",
+  //   lastName: "",
+  //   email: "",
+  //   roles: [""],
+  // };
 
-  // user = userData.user;
+  var user: any = {};
   
   console.log("It got here:...");
   if (loaderData && loaderData.user) {
     user = loaderData.user;
-    roles = user.roles.map((role: string) => role.toLowerCase());
   }
-  // Check if user has 'support', 'admin' or any role containing 'shipper'
-  const shipperHasAccess =
-    roles.includes("admin") || roles.some((role) => role.includes("shipper"));
+
+  // Check if user has 'support', 'admin' or any role containing 'confirmed shipper(indenpendent, corporate, gov)'
+  const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
 
   const [offerType, setOfferType] = useState("flat");
 
@@ -198,7 +199,7 @@ export default function AddLoad() {
   if (!shipperHasAccess) {
     return (
       <AccessDenied
-        returnUrl="/dashboard/"
+        returnUrl="/dashboard/loads/view"
         message="You do not have enough access to add a load"
       />
     );
@@ -398,10 +399,18 @@ export default function AddLoad() {
             </button>
           </div>
         </Form>
-        {actionData?.error && (
-          <p className="text-red-500">{actionData.error}</p>
-        )}
       </div>
     );
   }
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  const jsonError = JSON.parse(errorResponse);
+  const error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status
+  };
+
+  return <ErrorDisplay error={error} />;
 }

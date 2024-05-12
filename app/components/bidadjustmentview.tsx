@@ -1,6 +1,6 @@
 // BidAdjustmentView.jsx
 import { useNavigation } from '@remix-run/react';
-import React, { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 const BidAdjustmentView = ({ loadId, initialBid }) => {
      // Initialize the bidAmount state with the initialBid value
@@ -22,32 +22,17 @@ const BidAdjustmentView = ({ loadId, initialBid }) => {
         <h3 className="text-lg font-bold">Adjust Your Bid</h3>
         <div>
           <input
-            type="range"
-            min={initialBid - 100}
-            max={initialBid + 1000}
+            type="number"
+            name="bidAmount"
+            min={0}
+            max={1000000}
+            step={10.0}
             value={bidAmount}
             onChange={handleBidChange}
-            className="w-full p-2"
+            placeholder={`Current Bid: $${bidAmount}`}
+            autoFocus
+            className="w-full text-center mt-2 p-2"
           />
-          {isEditing ? (
-            <input
-              type="number"
-              value={bidAmount}
-              onChange={handleBidChange}
-              onBlur={() => setIsEditing(false)}
-              onKeyPress={(event) => {
-                if (event.key === "Enter") {
-                  setIsEditing(false);
-                }
-              }}
-              autoFocus
-              className="w-full text-center mt-2 p-2"
-            />
-          ) : (
-            <div className="text-center mt-2 cursor-pointer" onClick={() => setIsEditing(true)}>
-              {`Current Bid: $${bidAmount}`}
-            </div>
-          )}
         </div>
         <div className="flex justify-between mt-4 p-2">
             <form method="post">
