@@ -4,173 +4,399 @@ import type { BidResponse } from "../models/bidResponse";
 const baseUrl = "https://api.frieght.afroinnovate.com/";
 
 export async function PlaceBid(bidRequest: BidRequest, token: string) {
-    try {
-        const response = await fetch(baseUrl + "bids/", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(bidRequest),
+  try {
+    const response = await fetch(baseUrl + "bids/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(bidRequest),
+    });
 
-        });
-        // Check if the response is not ok (e.g., 400 or 500 status codes)
-        if (response.status !== 201) {
-            throw new Error(`${response.status}: ${response.statusText}`);
-        }
-
-        // Assuming the response returns a JSON object
-        const data = await response.json();
-        const responseData: BidResponse = { ...data};
-      
-        return responseData;
-    } catch (error) {
-        console.log("bid service error:", error)
-        return error // Rethrow the error to be handled by the caller
+    // Check if the response is not ok (e.g., 400 or 500 status codes)
+    if (response.status !== 201) {
+      throw response;
     }
+
+    // Assuming the response returns a JSON object
+    const data = await response.json();
+    const responseData: BidResponse = { ...data };
+
+    return responseData;
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
+        });
+
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
+  }
 }
 
 export async function GetBids(token: string) {
-    try {
-        const response = await fetch(`${baseUrl}bids/`, { // Use template literals for clean concatenation
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
+  try {
+    const response = await fetch(`${baseUrl}bids/`, {
+      // Use template literals for clean concatenation
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // Better error handling: Check if the response is not OK (e.g., 400 or 500 status codes)
+    if (!response.ok) {
+      // Throwing an Error with a message that includes the status for clarity
+      throw response;
+    }
+
+    // Directly return the parsed JSON data if successful
+    return (await response.json()) as BidResponse[];
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
         });
 
-        // Better error handling: Check if the response is not OK (e.g., 400 or 500 status codes)
-        if (!response.ok) {
-            // Throwing an Error with a message that includes the status for clarity
-            throw new Response(`Failed to fetch bids`, { status: response.status });
-        }
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
 
-        // Directly return the parsed JSON data if successful
-        return await response.json() as BidResponse[];
-    } catch (error) {
-        console.error("Error fetching bids:", error);
-        // Rethrow the error to be handled by the caller
-        throw error;
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
     }
+  }
 }
 
 export async function GetBid(token: string, id: Number) {
-    try {
-        console.log("bid service get by ID", id);
-        const response = await fetch(`${baseUrl}bids/load/${id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
+  try {
+    const response = await fetch(`${baseUrl}bids/load/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      // If the response is not OK, throw a new error with the status
+      throw new Response(`Error fetching bid with ID ${id}`, {
+        status: response.status,
+      });
+    }
+
+    const responseData = await response.json();
+    return responseData;
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
         });
 
-        if (!response.ok) {
-            // If the response is not OK, throw a new error with the status
-            throw new Response(`Error fetching bid with ID ${id}`, { status: response.status });
-        }
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
 
-        const responseData = await response.json();
-        console.log("bid service get by ID op Response Data", responseData);
-        return responseData;
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
 
-    } catch (error) {
-        console.log("bid service get by ID Error", error);
-        switch (error.status) {
-            case 404:
-                throw new Error(JSON.stringify({
-                    data: {
-                        message: "Bid with ID 0 not found",
-                        status: 404
-                    }
-                }));
-            case 500:
-                throw new Error(JSON.stringify({
-                    data: {
-                        message: "Internal server error",
-                        status: 500
-                        }
-                    }
-                ));
-            case 400:
-                throw new Error(JSON.stringify({
-                    data: {
-                        message: "Bad request",
-                        status: 400
-                        }
-                    }
-                ));
-            case 401:
-                throw new Error(JSON.stringify({
-                    data: {
-                        message: "Unauthorized",
-                        status: 401
-                        }
-                    }
-                ));
-            default:
-                throw new Error(JSON.stringify({
-                    data: {
-                        message: "An error occurred",
-                        status: 500
-                    }
-                }));
-        }
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
     }
+  }
 }
+
+export async function GetBidByLoadIdandCarrierId(token: string, loadId: Number, carrierId: string) {
+    try {
+      const response = await fetch(`${baseUrl}bids/${loadId}/${carrierId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.status === 404) {
+        return null;
+      }
+  
+      if (!response.ok) {
+        // If the response is not OK, throw a new error with the status
+        throw new Response(`Error fetching bid with ID ${loadId}`, {
+          status: response.status,
+        });
+      }
+  
+      const responseData = await response.json();
+      return responseData;
+    } catch (error: any) {
+      switch (error.status) {
+        case 404:
+          throw JSON.stringify({
+            data: {
+              message: `Bid with ID ${loadId} and ${carrierId} not found`,
+              status: 404,
+            },
+          });
+  
+        case 500:
+          throw JSON.stringify({
+            data: {
+              message: "Internal server error",
+              status: 500,
+            },
+          });
+  
+        case 400:
+          throw JSON.stringify({
+            data: {
+              message: "Bad request",
+              status: 400,
+            },
+          });
+  
+        case 401:
+          throw JSON.stringify({
+            data: {
+              message: "Unauthorized",
+              status: 401,
+            },
+          });
+  
+        default:
+          throw JSON.stringify({
+            data: {
+              message: "An error occurred",
+              status: 500,
+            },
+          });
+      }
+    }
+  }
 
 export async function DeleteBid(token: string, id: Number) {
-    try {
-        const response = await fetch(`${baseUrl}bids/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-     
-        // Check if the response is not ok (e.g., 400 or 500 status codes)
-        if ( response.status === 500 || response.status === 400) {
-            throw new Error(`${response.status}: ${response.statusText}`);
-        }
+  try {
+    const response = await fetch(`${baseUrl}bids/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-        // Assuming the response returns a JSON object
-         const resp = await response;
-         return resp.text
-        // const responseData: any  = { ...data};
-        
-    } catch (error) {
-       throw new Response;// Rethrow the error to be handled by the caller
+    // Check if the response is not ok (e.g., 400 or 500 status codes)
+    if (response.status === 500 || response.status === 400) {
+      throw response;
     }
+
+    // Assuming the response returns a JSON object
+    const resp = await response;
+    return resp.text;
+    // const responseData: any  = { ...data};
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
+        });
+
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
+  }
 }
 
-export async function UpdateBid(token: string, id: Number, bidRequest: BidRequest) {
-    try {
-        console.log("bid serviceput op",bidRequest)
-        const url = `${baseUrl}bids/${id}`;
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(bidRequest),
+export async function UpdateBid(
+  token: string,
+  id: Number,
+  bidRequest: BidRequest
+) {
+  try {
+    const url = `${baseUrl}bids/${id}`;
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(bidRequest),
+    });
 
-        });
-        const res = await response;
-        console.log("bid serviceput res:", res)
-        // Check if the response is not ok (e.g., 400 or 500 status codes)
-        if (response.status !== 204) {
-            throw new Error(`${response.status}: ${response.statusText}`);
-        }
-
-        // Assuming the response returns a JSON object
-        const data = await response;
-        
-        return data.text();
-    } catch (error) {
-        console.log("bid serviceput error:", error)
-        return String(error) // Rethrow the error to be handled by the caller
+    // Check if the response is not ok (e.g., 400 or 500 status codes)
+    if (response.status !== 204) {
+      throw response;
     }
+
+    // Assuming the response returns a JSON object
+    const data = await response;
+    return data.text();
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
+        });
+
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
+  }
 }

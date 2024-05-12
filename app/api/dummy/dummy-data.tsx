@@ -1,6 +1,7 @@
 export const dummyData = [
   {
-    "loadId": 2,
+    "id": 1,
+    "loadId": 1,
     "shipperUserId": "4cc116f0-8f07-4305-824f-4580a23f2700",
     "createdBy": {
       "userId": "4cc116f0-8f07-4305-824f-4580a23f2700",
@@ -25,7 +26,8 @@ export const dummyData = [
     "modifiedBy": null
   },
   {
-    "loadId": 3,
+    "id": 2,
+    "loadId": 2,
     "shipperUserId": "4cc116f0-8f07-4305-824f-4580a23f2700",
     "createdBy": {
       "userId": "4cc116f0-8f07-4305-824f-4580a23f2700",

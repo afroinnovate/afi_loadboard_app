@@ -40,46 +40,46 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-const userData: LoginResponse = {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
-  "tokenType": "Bearer",
-  "refreshToken": "eyJhbGci",
-  "expiresIn": 3600,
-  "user": {
-    "id": "7c134ef0-eff8-466e-955e-e195700d8696",
-    "userName": "tangotew@gmail.com",
-    "email": "tangotew@gmail.com",
-    "firstName": "Tango",
-    "lastName": "War",
-    "roles": [
-        "carrier"
-    ],
-    "phoneNumber": "+15806471212"
-  }
-}
+// const userData: LoginResponse = {
+//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
+//   "tokenType": "Bearer",
+//   "refreshToken": "eyJhbGci",
+//   "expiresIn": 3600,
+//   "user": {
+//     "id": "7c134ef0-eff8-466e-955e-e195700d8696",
+//     "userName": "tangotew@gmail.com",
+//     "email": "tangotew@gmail.com",
+//     "firstName": "Tango",
+//     "lastName": "War",
+//     "roles": [
+//         "carrier"
+//     ],
+//     "phoneNumber": "+15806471212"
+//   }
+// }
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  // const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request.headers.get("Cookie"));
 
-  // // check if the sessoon is already set
-  // let response: any = await authenticator.isAuthenticated(request, {
-  //   failureRedirect: "/login/",
-  // // successRedirect: "/carriers/dashboard/", //for testing locally
-  // });
+  // check if the sessoon is already set
+  let response: any = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login/",
+  // successRedirect: "/carriers/dashboard/", //for testing locally
+  });
 
-  // if (response) {
-  //   // Store the token in the session
-  //   session.set("user", response);
+  if (response) {
+    // Store the token in the session
+    session.set("user", response);
         
-  //   return json(response, {
-  //     headers: {
-  //       "Set-Cookie": await commitSession(session),
-  //     },
-  //   });
-  // }
+    return json(response, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
+  }
 
-  return json(userData);
+  // return json(userData);
 
   const error = session.get("_auth_error");
   return json<any>({ error });
@@ -113,15 +113,20 @@ export default function CarrierDashboard() {
   };
 
   useEffect(() => {
+
     // Set the sidebar state based on window width after component mounts
     const handleResize = () => setSidebarOpen(window.innerWidth > 768);
     // Call handleResize immediately to set the initial state based on current window size
     handleResize();
     // Add event listener to adjust sidebar visibility on window resize
     window.addEventListener("resize", handleResize);
+    if ((shipperHasAccess || shipperAccess) && (!carrierHasAccess && !carrierAccess)) {
+      navigate("/dashboard/");
+    } 
     // Cleanup event listener on component unmount
     return () => window.removeEventListener("resize", handleResize);
-  }, []); // Empty dependency array ensures this runs once on mount
+
+  }, [carrierAccess, carrierHasAccess, navigate, shipperAccess, shipperHasAccess]); // Empty dependency array ensures this runs once on mount
   
   // check if the user is authorized to access this page
   if (!carrierAccess && !shipperAccess && !adminAccess) {

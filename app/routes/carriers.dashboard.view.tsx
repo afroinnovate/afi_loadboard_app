@@ -21,33 +21,28 @@ import { useEffect, useState } from "react";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
 import { LoginResponse } from "~/api/models/loginResponse";
-import {
-  GetBids,
-  UpdateBid,
-  PlaceBid,
-  GetBid,
-} from "~/api/services/bid.service";
 import { dummyData } from "~/api/dummy/dummy-data";
 import { checkUserRole } from "~/components/checkroles";
 import { manageBidProcess } from "~/api/services/bid.helper";
 import ErrorDisplay from "~/components/ErrorDisplay";
 
-const userData: LoginResponse = {
-  token:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    id: "7c134ef0-eff8-466e-955e-e195700d8696",
-    userName: "tangotew@gmail.com",
-    email: "tangotew@gmail.com",
-    firstName: "Tango",
-    lastName: "War",
-    roles: ["carrier"],
-    phoneNumber: "+15806471212",
-  },
-};
+// const userData: LoginResponse = {
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiOWU2ZDZhY2EtNzgyOC00Njk4LWE2YzktY2Q0YmExYmRiNTBiIiwibmJmIjoxNzE1NTM0MDk2LCJleHAiOjE3MTU1Mzc3MDEsImlhdCI6MTcxNTUzNDEwMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.VpXxBRP_cQeDuiBDie3Scu8nVWmzxRbZt5FtPh-D_Pw",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     "id": "7c134ef0-eff8-466e-955e-e195700d8696",
+//     "userName": "tangotew@gmail.com",
+//     "email": "tangotew@gmail.com",
+//     "firstName": "Tango",
+//     "lastName": "War",
+//     "roles": [
+//         "carrier"
+//     ],
+//     "phoneNumber": "+15806471212"
+//   }
+// };
 
 export const meta: MetaFunction = () => {
   return [
@@ -60,66 +55,73 @@ export const meta: MetaFunction = () => {
 
 export const loader = async ({ request }) => {
   try {
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user = session.get("user");
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get("user");
 
-    const user: any = userData;
+    // const user: any = userData;
 
     if (!user) {
-      throw new Response("Unauthorized", { status: 401 });
+      throw new Error(
+        JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        })
+      );
     }
 
-    // const response = await GetLoads(user.token);
-    const response: Response = dummyData;
+    const response = await GetLoads(user.token);
+    // const response: Response = dummyData;
     
     if (typeof response === "string") {
-      throw new Error(response);
+      throw response;
     }
 
     return json([response, user]);
-  } catch (error) {
-    if (error instanceof Response) {
-      throw error;
+  } catch (error: any) {
+    if(JSON.parse(error).data.status == 401){
+      return redirect("/login/")
     }
-    throw new Response("Internal Server Error", { status: 500 });
+    throw error;
   }
 };
 
 export const action = async ({ request }) => {
   try {
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user = session.get("user");
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get("user");
 
-    const user: any = userData;
+    // const user: any = userData;
 
     if (!user) {
-      throw new Response("Unauthorized", { status: 401 });
+      throw JSON.stringify({
+        data: {
+        message: "Unauthorized", 
+        status: 401 
+      }});
     }
 
     const formData = await request.formData();
     const actionType = formData.get("_action");
     const loadId = formData.get("loadId") 
     const bidLoadId = formData.get("bidLoadId")
-
-    console.log("Action Type: ", actionType, "Load ID: ", loadId, "Bid Load ID: ", bidLoadId)
-
+ 
     switch (actionType) {
       case "contact":
         return json({"error": "", "message": "contactMode" });
 
       case "bid":
-        console.log("Bid mode");
         return json({
           "error": "",
           "message": "bidMode",
-          "loadId": loadId,
+          "loadId":  bidLoadId,
           "offerAmount": formData.get("offerAmount")
         });
 
       case "placebid":
-        console.log("Placing bid on load id: ", bidLoadId);
-        const bidDetails = await manageBidProcess(user, bidLoadId, formData);
-        return json({"error": "", "bidDetails": bidDetails});
+        const bidDetails = await manageBidProcess(user, loadId, formData);
+        return json({"error": "", "message": bidDetails.message, "amount": bidDetails.amount});
       
       case "closeContact":
         return redirect("/carriers/dashboard/view");
@@ -128,11 +130,10 @@ export const action = async ({ request }) => {
         throw new Error("Invalid action");
     }
   } catch (error: any) {
-    if(error instanceof Response) {
-      console.log("Error: ", error);
-      throw error;
+    if(JSON.parse(error).data.status == 401){
+      return redirect("/login/")
     }
-    throw new Response(error);
+    throw error;
   }
 };
 
@@ -152,16 +153,16 @@ export default function CarrierViewLoads() {
     } else {
       error = "Oops! Something went wrong. Please try again.";
     }
-  } else if (actionData) {
+  } else if (actionData && actionData !== undefined) {
     const { actionError, message, amount } = actionData;
-    console.log("Action Data: ", actionData, actionError, message, amount);
-    if (message.includes("bidMode")) {
+    if (message !== undefined && message.includes("bidMode")) {
       info = "You are in bid mode. Please place your bid.";
-    } else if (message.includes("bidNotPlaced")) {
+    } else if (message !== undefined && message.includes("bidNotPlaced")) {
       info = `Oops! Your bid wasn't placed/updated. Please try again. Amount: ${amount}`;
     } else if (
-      message.includes("bidPlaced") ||
-      message.includes("bidUpdatePlaced")
+      message !== undefined &&
+      (message.includes("bidPlaced") ||
+      message.includes("bidUpdatePlaced"))
     ) {
       info = `Bid placed/updated successfully. New amount: ${amount}`;
     }
@@ -169,8 +170,6 @@ export default function CarrierViewLoads() {
       error = actionError
     }
   }
-
-  console.log("Error: ", error);
 
   // Extract loads and user data from loader
   let loads = [];
@@ -192,9 +191,7 @@ export default function CarrierViewLoads() {
 
   // Navigate away if unauthorized
   useEffect(() => {
-    console.log("Checking user access...");
     if ((shipperHasAccess || shipperAccess) && (!carrierHasAccess && !carrierAccess)) {
-      console.log("Navigating to the dashboard");
       navigate("/dashboard/");
     } 
   }, [shipperHasAccess, carrierHasAccess, shipperAccess, carrierAccess, navigate]);
@@ -206,14 +203,7 @@ export default function CarrierViewLoads() {
   let currentBid = 0;
   if (bidMode === "bidMode") {
     loadIdToBeBid = actionData.loadId;
-    console.log("Load ID to be bid: ", loadIdToBeBid);
     currentBid = actionData.offerAmount;
-    console.log(
-      "Load ID to be bid: ",
-      loadIdToBeBid,
-      "Current Bid: ",
-      currentBid
-    );
   }
 
   // Utility function to determine styles based on load status
@@ -282,7 +272,7 @@ export default function CarrierViewLoads() {
                 {
                   bidMode === "bidMode" && (
                     <BidAdjustmentView
-                      loadId={loadIdToBeBid}
+                      loadId={load.loadId}
                       initialBid={currentBid}
                     />
                   )
@@ -350,9 +340,9 @@ export default function CarrierViewLoads() {
                       </NavLink>
                     )}
 
-                    {carrierAccess && (
+                    {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="loadId" value={load.id} />
+                        <input type="hidden" name="loadId" value={ load.id } />
                         <button
                           type="submit"
                           name="_action"
@@ -365,9 +355,10 @@ export default function CarrierViewLoads() {
                         </button>
                       </form>
                     )}
-                    {carrierAccess && (
+                    {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="bidLoadId" value={load.id} />
+                        <input type="hidden" name="bidLoadId" value={ load.id } />
+                        <input type="hidden" name="loadIdToBeBid" value={ loadIdToBeBid } />
                         <input
                           type="hidden"
                           name="offerAmount"
@@ -398,12 +389,7 @@ export default function CarrierViewLoads() {
 
 export function ErrorBoundary() {
   const errorResponse: any = useRouteError();
-  console.log(errorResponse)
-  // First, extract the JSON string from the 'data' field
-  const jsonErrorString = errorResponse.data.substring(7); 
-  // Parse the JSON string to get an object
-  const jsonError = JSON.parse(jsonErrorString);
-  // Now extract the 'message' and 'status' from the parsed JSON
+  const jsonError = JSON.parse(errorResponse);
   const error = {
     message: jsonError.data.message,
     status: jsonError.data.status
