@@ -9,10 +9,12 @@ import { GetBids } from '~/api/services/bid.service';
 import { LoaderFunction, json, redirect } from '@remix-run/node';
 import { BidCard } from '~/components/BidCard';
 import {
-  isRouteErrorResponse,
   useRouteError,
 } from "@remix-run/react";
 import { useEffect } from 'react';
+import { checkUserRole } from '~/components/checkroles';
+import ErrorDisplay from '~/components/ErrorDisplay';
+import AccessDenied from '~/components/accessdenied';
 
 
 export const meta: MetaFunction = () => {
@@ -28,7 +30,7 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJnaXZlbl9uYW1lIjoiR2F0bHVhayIsImZhbWlseV9uYW1lIjoiRGVuZyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0Y2MxMTZmMC04ZjA3LTQzMDUtODI0Zi00NTgwYTIzZjI3MDAiLCJqdGkiOiIzZDRiYTJjYi01YjZiLTRhOTktOTFjNi1jMjcxYTdlZDk2OWUiLCJuYmYiOjE3MTMxMzExNDIsImV4cCI6MTcxMzEzNDc0NywiaWF0IjoxNzEzMTMxMTQ3LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.uBEubFPiHLvWsb9qDahhrZi_0c6CdCkknKGprO4ejGI",
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiMDRhYWZhZGEtM2NlOS00YWUxLThiOTctZWIyYzhkMDE1YTUyIiwibmJmIjoxNzE1NTQzMTc3LCJleHAiOjE3MTU1NDY3ODIsImlhdCI6MTcxNTU0MzE4MiwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.s0SWf6H1Duv1861mGWz-vcrgXh9sVekiQjXzzGYS6oc",
 //   tokenType: "Bearer",
 //   refreshToken: "eyJhbGci",
 //   expiresIn: 3600,
@@ -39,7 +41,7 @@ export const links: LinksFunction = () => [
 //     "firstName": "Gatluak",
 //     "lastName": "Deng",
 //     "roles": [
-//         "independent_shipper"
+//         "shipper"
 //     ],
 //     "companyName": "GatLuak LLCs",
 //     "dotNumber": "SH12345"
@@ -49,15 +51,19 @@ export const links: LinksFunction = () => [
 // Server-side data fetching
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-   
-    // // Find the parent route match containing the user and token
+    // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user: any = session.get("user");
 
     // const user: any = userData;
 
     if (!user) {
-      throw new Error("401 Unauthorized");
+      throw JSON.stringify({
+        data: {
+          message: "User not found",
+          status: 401
+        }
+      })
     }
 
     const bidsResponse = await GetBids(user.token);
@@ -68,27 +74,11 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Response("No bids available", { status: 404 });
     }
 
-    // Define a hardcoded carrier object
-    const hardcodedCarrier = {
-      id: 100,
-      companyName: "Carrier X",
-      dotNumber: "DOT123456",
-      email: "contact@carrierx.com",
-      phoneNumber: "555-1234-567"
-    };
-
-   // Enrich each bid with the hardcoded carrier information
-   const bids = bidsArray.map(bid => ({
-      ...bid,
-      carrier: hardcodedCarrier
-    }));
-
-    // Test each status failure
-    // throw new Response("Internal Server Error", { status: 400 });
-
-    return json({ bids, user });
+    return json({ bidsArray, user });
   } catch (error: any) {
-    console.error("Error in Dashboard: ", error);
+    if(JSON.parse(error).data.status === 401) {
+      return redirect("/login/");  // Client-side redirect
+    }
     throw error;
   }
 };
@@ -97,6 +87,16 @@ export default function BidLoads() {
   const { bids, user } = useLoaderData();
   const actionData = useActionData();
 
+  const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user.user?.roles);
+
+  if (!shipperHasAccess) {
+    return (
+      <AccessDenied
+        returnUrl="/dashboard/loads/view"
+        message="You do not have enough access to see your biddings, Click Home to complete your profile"
+      />
+    );
+  } else {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-center items-center shadow-md border-spacing-3 mb-1">
@@ -114,27 +114,24 @@ export default function BidLoads() {
         </div>
         {bids.map(bid => (
           <Form method="post" key={bid.id}>
-            <BidCard bid={bid} />
+            <BidCard bid={ bid } shipperHasAccess={ shipperHasAccess } />
           </Form>
         ))}
       </div>
     </div>
   );
+  }
 }
 
-
 export function ErrorBoundary() {
-  const error: any = useRouteError();
-  const navigate = useNavigate();
-  console.log("Error in BidsRoute: ", error.status);
+  let error: any = useRouteError();
+  console.log("Error: ", error);
+  const jsonError = JSON.parse(error);
+  error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status
+  };
 
-  useEffect(() => {
-    if (error.status === 401) {
-      console.log("redirecting to login");
-      navigate("/login/");  // Client-side redirect
-    }
-  }, [error, navigate]);
-  
   if (error.status === 404) {
     return (
       <div className="container mx-auto px-4 py-8">

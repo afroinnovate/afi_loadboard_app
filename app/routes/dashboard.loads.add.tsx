@@ -4,6 +4,7 @@ import {
   useAsyncError,
   useLoaderData,
   useNavigation,
+  useRouteError,
 } from "@remix-run/react";
 import {
   redirect,
@@ -20,6 +21,8 @@ import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
 import { getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
+import { checkUserRole } from "~/components/checkroles";
+import ErrorDisplay from "~/components/ErrorDisplay";
 
 // const userData: LoginResponse = {
 //   token:
@@ -41,16 +44,16 @@ import type { LoadResponse } from "~/api/models/loadResponse";
 
 export const action: ActionFunction = async ({ request }) => {
   try {
-    // // Find the parent route match containing the user and token
+    // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get("user");
+
+    // const user = userData;
 
     if (!user) {
       // Handle the missing token scenario
       throw new Response("401 Unauthorized", { status: 401 });
     }
-
-    // const user = userData;
 
     const formData = await request.formData();
 
@@ -142,7 +145,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // const user = userData;
    
-    return user;
+    return json({"user": user});
   } catch (error) {
     console.log("loader error: ", error);
     return error;
@@ -158,25 +161,24 @@ export default function AddLoad() {
   const isSubmitting = navigation.state === "submitting";
 
   var roles: string[] = [""];
-  var user: LoginUser = {
-    id: "",
-    userName: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    roles: [""],
-  };
+  // var user: LoginUser = {
+  //   id: "",
+  //   userName: "",
+  //   firstName: "",
+  //   lastName: "",
+  //   email: "",
+  //   roles: [""],
+  // };
 
-  // user = userData.user;
+  var user: any = {};
   
   console.log("It got here:...");
   if (loaderData && loaderData.user) {
     user = loaderData.user;
-    roles = user.roles.map((role: string) => role.toLowerCase());
   }
-  // Check if user has 'support', 'admin' or any role containing 'shipper'
-  const shipperHasAccess =
-    roles.includes("admin") || roles.some((role) => role.includes("shipper"));
+
+  // Check if user has 'support', 'admin' or any role containing 'confirmed shipper(indenpendent, corporate, gov)'
+  const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
 
   const [offerType, setOfferType] = useState("flat");
 
@@ -197,7 +199,7 @@ export default function AddLoad() {
   if (!shipperHasAccess) {
     return (
       <AccessDenied
-        returnUrl="/dashboard/"
+        returnUrl="/dashboard/loads/view"
         message="You do not have enough access to add a load"
       />
     );
@@ -397,10 +399,18 @@ export default function AddLoad() {
             </button>
           </div>
         </Form>
-        {actionData?.error && (
-          <p className="text-red-500">{actionData.error}</p>
-        )}
       </div>
     );
   }
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  const jsonError = JSON.parse(errorResponse);
+  const error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status
+  };
+
+  return <ErrorDisplay error={error} />;
 }

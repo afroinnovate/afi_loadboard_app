@@ -4,7 +4,7 @@ export const checkUserRole = (roles: string[]): boolean[] => {
   }
   const shipperAccess = roles.includes("shipper");
   const shipperHasAccess = (
-    roles.includes("indepedent_shipper") || 
+    roles.includes("independent_shipper") || 
     roles.includes("corporate_shipper") ||
     roles.includes("gov_shipper")
   )
@@ -13,7 +13,6 @@ export const checkUserRole = (roles: string[]): boolean[] => {
   const carrierHasAccess =
     roles.includes("owner_operator") ||
     roles.includes("dispatcher") ||
-    roles.includes("company_driver") ||
     roles.includes("fleet_owner");
 
   return [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess];

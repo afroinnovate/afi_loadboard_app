@@ -246,6 +246,12 @@ export default function CarrierDashboard() {
 }
 
 export function ErrorBoundary() {
-  const error = useRouteError();
+  const errorResponse: any = useRouteError();
+  const jsonError = JSON.parse(errorResponse);
+  const error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status
+  };
+
   return <ErrorDisplay error={error} />;
 }

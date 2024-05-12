@@ -27,43 +27,43 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-const userData: LoginResponse = {
-  token:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    id: "7c134ef0-eff8-466e-955e-e195700d812321",
-    userName: "tangogatdet76@gmail.com",
-    email: "tangogatdet76@gmail.com",
-    firstName: "Pal",
-    lastName: "Kuoth",
-    roles: ["shipper"],
-    phoneNumber: "+15806471212",
-  },
-};
+// const userData: LoginResponse = {
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Pal",
+//     lastName: "Kuoth",
+//     roles: ["shipper"],
+//     phoneNumber: "+15806471212",
+//   },
+// };
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  // const session = await getSession(request.headers.get("Cookie"));
-  // // check if the sessoon is already set
-  // let response: any = await authenticator.isAuthenticated(request, {
-  //   failureRedirect: "/login/",
-  // // successRedirect: "/dashboard/", //for testing locally
-  // });
+  const session = await getSession(request.headers.get("Cookie"));
+  // check if the sessoon is already set
+  let response: any = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login/",
+  // successRedirect: "/dashboard/", //for testing locally
+  });
 
-  // if (response) {
-  //   // Store the token in the session
-  //   session.set("user", response);
-  //   return json(response, {
-  //     headers: {
-  //     "Set-Cookie": await commitSession(session),
-  //     },
-  //   });
-  // }
+  if (response) {
+    // Store the token in the session
+    session.set("user", response);
+    return json(response, {
+      headers: {
+      "Set-Cookie": await commitSession(session),
+      },
+    });
+  }
   
-  return json(userData);
+  // return json(userData);
 
   const error = session.get("_auth_error");
   return json<any>({ error });
