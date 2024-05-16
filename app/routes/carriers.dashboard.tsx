@@ -111,9 +111,6 @@ export default function CarrierDashboard() {
     setIsSettingsOpen(!isSettingsOpen);
   };
 
-  const userInitials = `${loaderData.user?.firstName?.charAt(0) ?? ""}${
-    loaderData.user?.lastName?.charAt(0) ?? ""
-  }`;
   // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";
   // Check if user has 'support', 'admin' or any role containing 'carrier'
