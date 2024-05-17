@@ -245,7 +245,7 @@ export function ErrorBoundary() {
     return <ErrorDisplay error={error} />;
   } 
   return (
-    <div>
+    <div className="flex content-center bg-red-800 text-white">
       <h1>Uh oh ...</h1>
       <p>Something went wrong.</p>
       <pre>{errorResponse}</pre>

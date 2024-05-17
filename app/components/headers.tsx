@@ -1,44 +1,51 @@
-import { Form, Link, useLocation, useRouteError } from "@remix-run/react";
-import { useState } from "react";
-import {
-  XMarkIcon,
-  Bars3Icon,
-  UserIcon,
-  CogIcon,
-} from "@heroicons/react/20/solid"; // Ensure you have heroicons installed
+import { Form, Link, redirect, useLoaderData, useLocation, useRouteError } from "@remix-run/react";
+import { useState, useEffect, useRef } from "react";
+import { XMarkIcon, Bars3Icon, UserIcon, CogIcon, LifebuoyIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/20/solid";
 import getUnicodeFlagIcon from "country-flag-icons/unicode";
 
 import CarrierHeader from "./carrierheader";
 import ShipperHeader from "./shipperheader";
 import ErrorDisplay from "./ErrorDisplay";
 
+
 export default function Header({ user }) {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef();
 
+  const isLoadOperationsActive = location.pathname === "/carriers/dashboard/view/" ||
+                                 location.pathname === "/dashboard/loads/view/"
   let isAuthenticated =
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
-
-  console.log("pathname", location.pathname);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const isLoadOperationsActive =
-    location.pathname.startsWith("/carriers/dashboard/") ||
-    location.pathname.startsWith("/dashboard/loads/");
-
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
   const toggleSettings = () => {
     setIsSettingsOpen(!isSettingsOpen);
   };
 
-  const userInitials = `${user?.firstName?.charAt(0) ?? ""}${
-    user?.lastName?.charAt(0) ?? ""
-  }`;
+  const closeSettings = () => {
+    setIsSettingsOpen(false);
+  };
+
+  const userInitials = `${user?.user.firstName?.charAt(0) ?? ""}${user?.user.lastName?.charAt(0) ?? ""}`;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        closeSettings();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="sticky top-0 bg-white shadow-md z-20 font-apercu font-serif">
@@ -53,8 +60,7 @@ export default function Header({ user }) {
           </Link>
         </div>
 
-        {/* Desktop view  for carrier dashhboard*/}
-        {location.pathname.startsWith("/carriers/dashboard") && (
+        {location.pathname.startsWith("/carriers/dashboard") || location.pathname.startsWith("/dashboard/") ? (
           <div className="hidden lg:flex justify right space-x-4">
             {!isAuthenticated ? (
               <>
@@ -81,88 +87,6 @@ export default function Header({ user }) {
                     PickUp Load Now
                   </Link>
                 )}
-                <div className="flex items-center space-x-4">
-                  <Link
-                    to="/account"
-                    className="text-green-700 font-extrabold text-sm"
-                  >
-                    <div className="w-9 h-9 flex items-center justify-center bg-gray-400 rounded-full">
-                      <UserIcon className="w-6 h-6 text-green-600" />
-                      {userInitials}
-                    </div>
-                  </Link>
-                  <div className="relative">
-                    <button
-                      onClick={toggleSettings}
-                      className="text-blue-400 font-extrabold text-lg"
-                    >
-                      <div className="flex items-center">
-                        <CogIcon className="w-8 h-8 text-green-600" />
-                      </div>
-                    </button>
-                    {isSettingsOpen && (
-                      <div className="absolute right-0 mt-2 ml-2 w-40 bg-white rounded-lg shadow-lg py-2 z-50">
-                        <Link
-                          to="#"
-                          className="block px-4 py-2 text-green-700 hover:bg-gray-100"
-                        >
-                          Help
-                        </Link>
-                        <Form action="/logout/" method="post">
-                          <button
-                            type="submit"
-                            className="block px-4 py-2 text-green-700 hover:bg-gray-100"
-                          >
-                            Logout
-                          </button>
-                        </Form>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <select
-                      className="block px-4 py-2 text-gray-800 hover:bg-gray-100 bg-white text-green-900"
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                    >
-                      <option value="eng" defaultChecked>
-                        {getUnicodeFlagIcon("US")}eng
-                      </option>
-                      <option value="arb">
-                        {getUnicodeFlagIcon("SA")}arabic
-                      </option>
-                      <option value="amh">
-                        {getUnicodeFlagIcon("ET")}amharic
-                      </option>
-                      <option value="nus">
-                        {getUnicodeFlagIcon("SS")}nuer
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-        {/* Desktop view for shipper dashboard */}
-        {location.pathname.startsWith("/dashboard/") && (
-          <div className="hidden lg:flex justify right space-x-4">
-            {!isAuthenticated ? (
-              <>
-                <Link
-                  to="/login/"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-green-600 bg-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup/"
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
-                >
-                  Get Started Now
-                </Link>
-              </>
-            ) : (
-              <>
                 {location.pathname === "/dashboard/" && (
                   <Link
                     to="/dashboard/loads/view/"
@@ -171,85 +95,76 @@ export default function Header({ user }) {
                     Manage loads
                   </Link>
                 )}
-                <div className="flex items-center space-x-4">
-                  <Link
-                    to="/account"
-                    className="text-green-700 font-extrabold text-sm"
+                <div>
+                  <select
+                    className="block py-2 hover:bg-gray-100 bg-white text-green-900"
+                    onChange={(e) => handleLanguageChange(e.target.value)}
                   >
-                    <div className="w-9 h-9 flex items-center justify-center bg-gray-400 rounded-full">
-                      <UserIcon className="w-6 h-6 text-green-600" />
-                      {userInitials}
+                    <option value="eng" defaultChecked>
+                      {getUnicodeFlagIcon("US")}eng
+                    </option>
+                    <option value="arb">
+                      {getUnicodeFlagIcon("SA")}arabic
+                    </option>
+                    <option value="amh">
+                      {getUnicodeFlagIcon("ET")}amharic
+                    </option>
+                    <option value="nus">
+                      {getUnicodeFlagIcon("SS")}nuer
+                    </option>
+                  </select>
+                </div>
+                <div className="relative" ref={settingsRef}>
+                  <button
+                    onClick={toggleSettings}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-gray-400 rounded-full">
+                      <span className="text-orange-500 p-2 font-medium">{userInitials}</span>
                     </div>
-                  </Link>
-                  <div className="relative">
-                    <button
-                      onClick={toggleSettings}
-                      className="text-blue-400 font-extrabold text-lg"
-                    >
-                      <div className="flex items-center">
-                        <CogIcon className="w-8 h-8 text-green-600" />
-                      </div>
-                    </button>
-                    {isSettingsOpen && (
-                      <div className="absolute right-0 mt-2 ml-2 w-40 bg-white rounded-md shadow-lg py-2 z-50">
-                        <Link
-                          to="#"
-                          className="block px-4 py-2 text-green-700 hover:bg-gray-100"
+                  </button>
+                  {isSettingsOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                      <Link
+                        to="/account"
+                        className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
+                      >
+                        <UserIcon className="w-5 h-5 mr-2" />
+                        Account
+                      </Link>
+                      <Link
+                        to="/settings"
+                        className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
+                      >
+                        <CogIcon className="w-5 h-5 mr-2" />
+                        Settings
+                      </Link>
+                      <Link
+                        to="#"
+                        className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
+                      >
+                        <LifebuoyIcon className="w-5 h-5 mr-2" />
+                        Help
+                      </Link>
+                      <Form action="/logout/" method="post">
+                        <button
+                          type="submit"
+                          className="flex items-center w-full text-left px-4 py-2 text-green-700 hover:bg-gray-100"
                         >
-                          Help
-                        </Link>
-                        <Form action="/logout/" method="post">
-                          <button
-                            type="submit"
-                            className="block px-4 py-2 text-green-700 hover:bg-gray-100"
-                          >
-                            Logout
-                          </button>
-                        </Form>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <select
-                      className="block px-4 py-2 text-gray-800 hover:bg-gray-100 bg-white text-green-900"
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                    >
-                      <option value="eng" defaultChecked>
-                        {getUnicodeFlagIcon("US")}eng
-                      </option>
-                      <option value="arb">
-                        {getUnicodeFlagIcon("SA")}arabic
-                      </option>
-                      <option value="amh">
-                        {getUnicodeFlagIcon("ET")}amharic
-                      </option>
-                      <option value="nus">
-                        {getUnicodeFlagIcon("SS")}nuer
-                      </option>
-                    </select>
-                  </div>
+                          <ArrowRightOnRectangleIcon className="w-5 h-5 mr-2" />
+                          Logout
+                        </button>
+                      </Form>
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Hamburger button for mobile view */}
-        {location.pathname.startsWith("/carriers/dashboard") && (
-          <button
-            onClick={toggleMenu}
-            aria-label="Open Menu"
-            className="rounded focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
-          >
-            {isMenuOpen ? (
-              <XMarkIcon className="h-6 w-6 text-orange-500" />
-            ) : (
-              <Bars3Icon className="h-6 w-6 text-green-600" />
-            )}
-          </button>
-        )}
-
-        {location.pathname.startsWith("/dashboard/") && (
+        {(location.pathname.startsWith("/carriers/dashboard") || location.pathname.startsWith("/dashboard/")) && (
           <button
             onClick={toggleMenu}
             aria-label="Open Menu"
@@ -265,7 +180,7 @@ export default function Header({ user }) {
       </nav>
 
       {/* Menu overlay for mobile view */}
-      {isMenuOpen && location.pathname.startsWith("/carriers/dashboard/") && (
+      {isMenuOpen && (location.pathname.startsWith("/carriers/dashboard/") || location.pathname.startsWith("/dashboard/")) && (
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
           <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
             {location.pathname.startsWith("/carriers/dashboard") && (
@@ -275,13 +190,6 @@ export default function Header({ user }) {
                 toggleMenu={toggleMenu}
               />
             )}
-          </div>
-        </div>
-      )}
-
-      {isMenuOpen && location.pathname.startsWith("/dashboard/") && (
-        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
-          <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
             {location.pathname.startsWith("/dashboard/") && (
               <ShipperHeader
                 isAuthenticated={isAuthenticated}
@@ -298,7 +206,7 @@ export default function Header({ user }) {
 
 export function ErrorBoundary() {
   try {
-    const errorResponse: any = useRouteError();
+    const errorResponse = useRouteError();
     const jsonError = JSON.parse(errorResponse);
     const error = {
       message: jsonError.data.message,
@@ -308,6 +216,6 @@ export function ErrorBoundary() {
     return <ErrorDisplay error={error} />;
   } catch (e) {
     console.error(e);
-    return <div>Something went wrong</div>;
+    return <div className="flex content-center bg-red-800 text-white font-medium animate-bounce">Something went wrong</div>;
   }
 }

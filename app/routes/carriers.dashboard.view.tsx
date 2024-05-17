@@ -60,14 +60,12 @@ export const loader = async ({ request }) => {
 
     // const user: any = userData;
     if (!user) {
-      throw new Error(
-        JSON.stringify({
+      throw JSON.stringify({
           data: {
             message: "Unauthorized",
             status: 401,
           },
-        })
-      );
+        });
     }
 
     const response = await GetLoads(user.token);
@@ -79,6 +77,7 @@ export const loader = async ({ request }) => {
 
     return json([response, user]);
   } catch (error: any) {
+    console.error(error);
     if(JSON.parse(error).data.status == 401){
       return redirect("/login/")
     }
