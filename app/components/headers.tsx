@@ -1,8 +1,16 @@
-import { Form, Link, useLocation } from "@remix-run/react";
+import { Form, Link, useLocation, useRouteError } from "@remix-run/react";
 import { useState } from "react";
-import { XMarkIcon, Bars3Icon } from "@heroicons/react/20/solid"; // Ensure you have heroicons installed
+import {
+  XMarkIcon,
+  Bars3Icon,
+  UserIcon,
+  CogIcon,
+} from "@heroicons/react/20/solid"; // Ensure you have heroicons installed
+import getUnicodeFlagIcon from "country-flag-icons/unicode";
+
 import CarrierHeader from "./carrierheader";
 import ShipperHeader from "./shipperheader";
+import ErrorDisplay from "./ErrorDisplay";
 
 export default function Header({ user }) {
   const location = useLocation();
@@ -12,13 +20,25 @@ export default function Header({ user }) {
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
 
+  console.log("pathname", location.pathname);
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const isLoadOperationsActive = 
+  const isLoadOperationsActive =
     location.pathname.startsWith("/carriers/dashboard/") ||
     location.pathname.startsWith("/dashboard/loads/");
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const toggleSettings = () => {
+    setIsSettingsOpen(!isSettingsOpen);
+  };
+
+  const userInitials = `${user?.firstName?.charAt(0) ?? ""}${
+    user?.lastName?.charAt(0) ?? ""
+  }`;
 
   return (
     <div className="sticky top-0 bg-white shadow-md z-20 font-apercu font-serif">
@@ -53,20 +73,72 @@ export default function Header({ user }) {
               </>
             ) : (
               <>
-                <Form action="/logout/" method="post">
-                  <button
-                    type="submit"
-                    className="px-3 py-2 rounded border-black text-orange-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
+                {location.pathname === "/carriers/dashboard/" && (
+                  <Link
+                    to="/carriers/dashboard/view"
+                    className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
                   >
-                    Logout
-                  </button>
-                </Form>
-                <Link
-                  to="/carriers/dashboard/view"
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
-                >
-                  PickUp Load Now
-                </Link>
+                    PickUp Load Now
+                  </Link>
+                )}
+                <div className="flex items-center space-x-4">
+                  <Link
+                    to="/account"
+                    className="text-green-700 font-extrabold text-sm"
+                  >
+                    <div className="w-9 h-9 flex items-center justify-center bg-gray-400 rounded-full">
+                      <UserIcon className="w-6 h-6 text-green-600" />
+                      {userInitials}
+                    </div>
+                  </Link>
+                  <div className="relative">
+                    <button
+                      onClick={toggleSettings}
+                      className="text-blue-400 font-extrabold text-lg"
+                    >
+                      <div className="flex items-center">
+                        <CogIcon className="w-8 h-8 text-green-600" />
+                      </div>
+                    </button>
+                    {isSettingsOpen && (
+                      <div className="absolute right-0 mt-2 ml-2 w-40 bg-white rounded-lg shadow-lg py-2 z-50">
+                        <Link
+                          to="#"
+                          className="block px-4 py-2 text-green-700 hover:bg-gray-100"
+                        >
+                          Help
+                        </Link>
+                        <Form action="/logout/" method="post">
+                          <button
+                            type="submit"
+                            className="block px-4 py-2 text-green-700 hover:bg-gray-100"
+                          >
+                            Logout
+                          </button>
+                        </Form>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <select
+                      className="block px-4 py-2 text-gray-800 hover:bg-gray-100 bg-white text-green-900"
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                    >
+                      <option value="eng" defaultChecked>
+                        {getUnicodeFlagIcon("US")}eng
+                      </option>
+                      <option value="arb">
+                        {getUnicodeFlagIcon("SA")}arabic
+                      </option>
+                      <option value="amh">
+                        {getUnicodeFlagIcon("ET")}amharic
+                      </option>
+                      <option value="nus">
+                        {getUnicodeFlagIcon("SS")}nuer
+                      </option>
+                    </select>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -91,20 +163,72 @@ export default function Header({ user }) {
               </>
             ) : (
               <>
-                <Form action="/logout/" method="post">
-                  <button
-                    type="submit"
-                    className="px-3 py-2 rounded border-black text-orange-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
+                {location.pathname === "/dashboard/" && (
+                  <Link
+                    to="/dashboard/loads/view/"
+                    className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
                   >
-                    Logout
-                  </button>
-                </Form>
-                <Link
-                  to="/dashboard/loads/view/"
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
-                >
-                  Manage your Loads
-                </Link>
+                    Manage loads
+                  </Link>
+                )}
+                <div className="flex items-center space-x-4">
+                  <Link
+                    to="/account"
+                    className="text-green-700 font-extrabold text-sm"
+                  >
+                    <div className="w-9 h-9 flex items-center justify-center bg-gray-400 rounded-full">
+                      <UserIcon className="w-6 h-6 text-green-600" />
+                      {userInitials}
+                    </div>
+                  </Link>
+                  <div className="relative">
+                    <button
+                      onClick={toggleSettings}
+                      className="text-blue-400 font-extrabold text-lg"
+                    >
+                      <div className="flex items-center">
+                        <CogIcon className="w-8 h-8 text-green-600" />
+                      </div>
+                    </button>
+                    {isSettingsOpen && (
+                      <div className="absolute right-0 mt-2 ml-2 w-40 bg-white rounded-md shadow-lg py-2 z-50">
+                        <Link
+                          to="#"
+                          className="block px-4 py-2 text-green-700 hover:bg-gray-100"
+                        >
+                          Help
+                        </Link>
+                        <Form action="/logout/" method="post">
+                          <button
+                            type="submit"
+                            className="block px-4 py-2 text-green-700 hover:bg-gray-100"
+                          >
+                            Logout
+                          </button>
+                        </Form>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <select
+                      className="block px-4 py-2 text-gray-800 hover:bg-gray-100 bg-white text-green-900"
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                    >
+                      <option value="eng" defaultChecked>
+                        {getUnicodeFlagIcon("US")}eng
+                      </option>
+                      <option value="arb">
+                        {getUnicodeFlagIcon("SA")}arabic
+                      </option>
+                      <option value="amh">
+                        {getUnicodeFlagIcon("ET")}amharic
+                      </option>
+                      <option value="nus">
+                        {getUnicodeFlagIcon("SS")}nuer
+                      </option>
+                    </select>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -170,4 +294,20 @@ export default function Header({ user }) {
       )}
     </div>
   );
+}
+
+export function ErrorBoundary() {
+  try {
+    const errorResponse: any = useRouteError();
+    const jsonError = JSON.parse(errorResponse);
+    const error = {
+      message: jsonError.data.message,
+      status: jsonError.data.status,
+    };
+
+    return <ErrorDisplay error={error} />;
+  } catch (e) {
+    console.error(e);
+    return <div>Something went wrong</div>;
+  }
 }

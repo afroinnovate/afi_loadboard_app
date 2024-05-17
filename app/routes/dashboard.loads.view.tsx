@@ -21,30 +21,28 @@ import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from '~/components/ErrorDisplay';
+import { dummyData } from "~/api/dummy/dummy-data";
 
 // const userData: LoginResponse = {
-//     token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiMDRhYWZhZGEtM2NlOS00YWUxLThiOTctZWIyYzhkMDE1YTUyIiwibmJmIjoxNzE1NTQzMTc3LCJleHAiOjE3MTU1NDY3ODIsImlhdCI6MTcxNTU0MzE4MiwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.s0SWf6H1Duv1861mGWz-vcrgXh9sVekiQjXzzGYS6oc",
-//     tokenType: "Bearer",
-//     refreshToken: "eyJhbGci",
-//     expiresIn: 3600,
-//     user: {
-//         "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-//         "userName": "tangogatdet76@gmail.com",
-//         "email": "tangogatdet76@gmail.com",
-//         "firstName": "Gatluak",
-//         "lastName": "Deng",
-//         "roles": [
-//           "shipper"
-//         ],
-//         "companyName": "GatLuak LLCs",
-//         "dotNumber": "SH12345"
-//     }
+//   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Pal",
+//     lastName: "Kuoth",
+//     roles: ["shipper"],
+//     phoneNumber: "+15806471212",
+//   },
 // };
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
    
-    // // Find the parent route match containing the user and token
+    // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user: any = session.get("user");
 
@@ -54,7 +52,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Error("401 Unauthorized");
     }
 
-    // const response: LoadResponse = await GetLoads(userData.token);
+    // const response: LoadResponse = dummyData;
     const response: LoadResponse = await GetLoads(user.token);
   
     if (response && typeof response === "string") {

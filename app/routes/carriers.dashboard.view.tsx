@@ -27,7 +27,7 @@ import { manageBidProcess } from "~/api/services/bid.helper";
 import ErrorDisplay from "~/components/ErrorDisplay";
 
 // const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiOWU2ZDZhY2EtNzgyOC00Njk4LWE2YzktY2Q0YmExYmRiNTBiIiwibmJmIjoxNzE1NTM0MDk2LCJleHAiOjE3MTU1Mzc3MDEsImlhdCI6MTcxNTUzNDEwMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.VpXxBRP_cQeDuiBDie3Scu8nVWmzxRbZt5FtPh-D_Pw",
+//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
 //   tokenType: "Bearer",
 //   refreshToken: "eyJhbGci",
 //   expiresIn: 3600,
@@ -59,7 +59,6 @@ export const loader = async ({ request }) => {
     const user = session.get("user");
 
     // const user: any = userData;
-
     if (!user) {
       throw new Error(
         JSON.stringify({
@@ -388,12 +387,17 @@ export default function CarrierViewLoads() {
 }
 
 export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  const jsonError = JSON.parse(errorResponse);
-  const error = {
-    message: jsonError.data.message,
-    status: jsonError.data.status
-  };
+  try{
+    const errorResponse: any = useRouteError();
+    const jsonError = JSON.parse(errorResponse);
+    const error = {
+      message: jsonError.data.message,
+      status: jsonError.data.status,
+    };
 
-  return <ErrorDisplay error={error} />;
+    return <ErrorDisplay error={error} />;
+  }catch(e){
+    console.error(e);
+    return <div>Something went wrong</div>
+  }
 }
