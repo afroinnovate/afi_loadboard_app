@@ -116,45 +116,45 @@ export default function App() {
   );
 }
 
-// export function ErrorBoundary() {
-//   const errorResponse: any = useRouteError();
-//   const handleReload = () => {
-//     window.location.reload();
-//   };
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  const handleReload = () => {
+    window.location.reload();
+  };
 
-//   let error = null;
+  let error = null;
 
-//   if (typeof errorResponse === "string") {
-//     const parsedError = JSON.parse(errorResponse);
-//     error = {
-//       message: parsedError.data.message,
-//       status: parsedError.data.status,
-//     };
-//   }
+  if (typeof errorResponse === "string") {
+    const parsedError = JSON.parse(errorResponse);
+    error = {
+      message: parsedError.data.message,
+      status: parsedError.data.status,
+    };
+  }
 
-//   return (
-//     <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center z-50">
-//       <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 shadow-lg text-center animate__animated animate__fadeInDown">
-//         {error?.message && error?.status ? (
-//           <ErrorDisplay error={error} />
-//         ) : (
-//           <>
-//             <strong className="font-bold text-red-500 text-lg">Oops!</strong>
-//             <p className="text-red-700 mt-2 text-sm">
-//               Something went wrong. Please try again or visit later.
-//             </p>
-//             <div className="mt-4">
-//               <button
-//                 onClick={handleReload}
-//                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
-//               >
-//                 <FontAwesomeIcon icon={faRedo} className="mr-2" />
-//                 Try Again
-//               </button>
-//             </div>
-//           </>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
+  return (
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center z-50">
+      <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 shadow-lg text-center animate__animated animate__fadeInDown">
+        {error?.message && error?.status ? (
+          <ErrorDisplay error={error} />
+        ) : (
+          <>
+            <strong className="font-bold text-red-500 text-lg">Oops!</strong>
+            <p className="text-red-700 mt-2 text-sm">
+              Something went wrong. Please try again or visit later.
+            </p>
+            <div className="mt-4">
+              <button
+                onClick={handleReload}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
+              >
+                <FontAwesomeIcon icon={faRedo} className="mr-2" />
+                Try Again
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

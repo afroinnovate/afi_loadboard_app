@@ -20,6 +20,8 @@ export default function Header({ user }) {
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
 
+  const baseUrl = location.pathname.split("/").slice(0, -1).join("/");
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -127,7 +129,7 @@ export default function Header({ user }) {
                   {isSettingsOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
                       <Link
-                        to={location.pathname.includes("/carriers/dashboard") ? "/carriers/dashboard/account/" : "/dashboard/account/"}
+                        to={baseUrl+"/account/business"}
                         className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
                       >
                         <UserIcon className="w-5 h-5 mr-2" />
