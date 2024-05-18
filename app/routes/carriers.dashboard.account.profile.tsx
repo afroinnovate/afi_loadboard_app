@@ -1,5 +1,5 @@
 // app/routes/account/profile.tsx
-import { type MetaFunction, json, type LinksFunction } from "@remix-run/node";
+import { type MetaFunction, json, type LinksFunction, ActionFunction } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { PencilIcon } from "@heroicons/react/20/solid";
 import { Form, useLoaderData } from "@remix-run/react";
@@ -57,6 +57,24 @@ export let loader = async ({ request }) => {
   }
 };
 
+export let action: ActionFunction = async ({ request }) => {
+  // const session = await getSession(request.headers.get("Cookie"));
+  // const user = session.get("user");
+
+  const user: any = userData;
+
+  if (!user) {
+    throw JSON.stringify({
+      data: {
+      message: "Unauthorized", 
+      status: 401 
+    }});
+  }
+
+  const formData = await request.formData();
+  console.log("formData: ", formData);
+}
+
 export default function Profile() {
   const LoaderData: any = useLoaderData();
   const user = LoaderData?.user?.user;
@@ -98,7 +116,7 @@ export default function Profile() {
               <span className="rounded mt-1">{user.email}</span>
             )}
           </div>
-          <button
+          {/* <button
             type="button"
             onClick={() =>
               setIsEditingField(isEditingField === "email" ? null : "email")
@@ -106,7 +124,7 @@ export default function Profile() {
             className="text-blue-500 hover:text-blue-700"
           >
             <PencilIcon className="w-4 h-4 hover:text-orange-400" />
-          </button>
+          </button> */}
         </div>
 
         {/* Name Row */}

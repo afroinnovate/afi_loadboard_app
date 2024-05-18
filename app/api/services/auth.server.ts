@@ -111,3 +111,45 @@ export async function CompleteProfile(profile: CompleteProfileRequest) {
         throw error; // Rethrow the error to be handled by the caller
     }
 }
+
+export async function ResetPassword(email: string) {
+    try {
+      const response = await fetch(baseUrl + "/reset-password", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+  
+      // Check if the response is not ok (e.g., 400 or 500 status codes)
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+  
+      return response;
+    } catch (error) {
+      throw error; // Rethrow the error to be handled by the caller
+    }
+  }
+
+  export async function ChangePassword(email: string, password: string) {
+    try {
+      const response = await fetch(baseUrl + "/change-password", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+  
+      // Check if the response is not ok (e.g., 400 or 500 status codes)
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+  
+      return response;
+    } catch (error) {
+      throw error; // Rethrow the error to be handled by the caller
+    }
+  }

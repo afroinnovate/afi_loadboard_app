@@ -9,8 +9,8 @@ interface FloatingPasswordInputProps {
   placeholder: string;
   required?: boolean;
   onChange: (name: string, value: string, isValid: boolean) => void;
-  className?: string; // Add className prop
-  newPassword?: string; // Prop to pass the new password for confirmation matching
+  className?: string;
+  newPassword?: string;
 }
 
 export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
@@ -20,7 +20,7 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
   required,
   onChange,
   className,
-  newPassword // Include newPassword in the props destructuring
+  newPassword
 }) => {
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
@@ -64,7 +64,7 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
       "border-red-500": isFocused && !isValid,
       "border-green-500": isValid && value,
     },
-    className // Apply className prop if provided
+    className
   );
 
   const labelClasses = clsx(
@@ -88,6 +88,7 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
+        minLength={8}
         required={required}
       />
       <label htmlFor={name} className={labelClasses}>
@@ -100,6 +101,17 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
       >
         {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
       </button>
+      {isFocused && (
+        <div className="mt-2 text-sm text-gray-600">
+          Password must:
+          <ul className="list-disc pl-5">
+            <li>Be at least 8 characters long</li>
+            <li>Include both lower and upper case characters</li>
+            <li>Contain at least one number</li>
+            <li>Have at least one special character (e.g., !@#$%)</li>
+          </ul>
+        </div>
+      )}
       {name === "confirmpassword" && newPassword && (
         <p className={value !== newPassword ? "text-red-500 mt-1" : "text-green-500 mt-1"}>
           {value !== newPassword ? "Passwords do not match" : "Passwords match"}
