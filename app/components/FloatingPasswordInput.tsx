@@ -1,37 +1,45 @@
-// app/components/FloatingInput.tsx
+// app/components/FloatingPasswordInput.tsx
 import React, { useState } from 'react';
 import clsx from 'clsx';
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/20/solid";
 
-interface FloatingLabelInputProps {
+interface FloatingPasswordInputProps {
   name: string;
-  type?: string;
   defaultValue?: string;
   placeholder: string;
-  minLength?: number;
-  pattern?: string;
   required?: boolean;
   onChange: (name: string, value: string, isValid: boolean) => void;
   className?: string; // Add className prop
+  newPassword?: string; // Prop to pass the new password for confirmation matching
 }
 
-export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
+export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
   name,
-  type = "text",
   defaultValue = "",
   placeholder,
-  minLength,
-  pattern,
   required,
   onChange,
-  className // Include className in the props destructuring
+  className,
+  newPassword // Include newPassword in the props destructuring
 }) => {
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
   const [isValid, setIsValid] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const validatePassword = (password: string) => {
+    const lengthValid = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    return lengthValid && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+  };
 
   const handleBlur = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsFocused(false);
-    setIsValid(event.target.checkValidity());
+    const isValid = validatePassword(event.target.value);
+    setIsValid(isValid);
   };
 
   const handleFocus = () => {
@@ -41,9 +49,13 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
     setValue(newValue);
-    const newIsValid = event.target.checkValidity();
+    const newIsValid = validatePassword(newValue);
     setIsValid(newIsValid);
     onChange(name, newValue, newIsValid);
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   const inputClasses = clsx(
@@ -70,19 +82,29 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
       <input
         className={inputClasses}
         id={name}
-        type={type}
+        type={showPassword ? "text" : "password"}
         name={name}
         value={value}
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
-        minLength={minLength}
-        pattern={pattern}
         required={required}
       />
       <label htmlFor={name} className={labelClasses}>
         {placeholder}
       </label>
+      <button
+        type="button"
+        onClick={toggleShowPassword}
+        className="absolute right-3 top-2 text-gray-500 focus:outline-none"
+      >
+        {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+      </button>
+      {name === "confirmpassword" && newPassword && (
+        <p className={value !== newPassword ? "text-red-500 mt-1" : "text-green-500 mt-1"}>
+          {value !== newPassword ? "Passwords do not match" : "Passwords match"}
+        </p>
+      )}
     </div>
   );
 };

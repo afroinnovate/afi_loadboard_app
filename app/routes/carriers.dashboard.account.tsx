@@ -45,8 +45,10 @@ export let loader = async ({ request }) => {
 };
 
 export default function Account() {
+  console.log("logging info from the user profile page")
   const loaderData: any = useLoaderData();
   const user = loaderData?.user;
+  console.log("user: ", user);
   const [isOverlayOpen, setIsOverlayOpen] = useState(true);
   const [closedOverlay, setClosedOverlay] = useState(false);
 
@@ -54,7 +56,6 @@ export default function Account() {
   const navigate = useNavigate()
   const baseUrl = location.pathname.split("/").slice(0, -1).join("/")+"/";
 
-  console.log("base url: ", baseUrl.split("/").length);
   const closeOverlay = () => {
     setClosedOverlay(true);
     setIsOverlayOpen(false);

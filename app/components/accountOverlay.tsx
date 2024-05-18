@@ -23,25 +23,26 @@ export default function AccountOverlay({ onClose }) {
           <div className="w-1/3 bg-gray-100 p-4">
             <ul>
               <li className="mb-4">
-                <Link to={`${basePath}/profile`} className="flex items-center text-gray-700 hover:text-gray-900">
+                <Link to={`${basePath}/profile`} className="flex items-center text-green-900 hover:bg-gray-200">
                   <UserIcon className="w-5 h-5 mr-2" />
                   Profile
                 </Link>
               </li>
               <li className="mb-4">
-                <Link to={`${basePath}/subscriptions`} className="flex items-center text-gray-700 hover:text-gray-900">
+                <Link to={`${basePath}/business`} className="flex items-centertext-green-900 hover:bg-gray-200">
+                  <InformationCircleIcon className="w-5 h-5 mr-2" />
+                    Business Information
+                </Link>
+              </li>
+              <li className="mb-4">
+                <Link to={`${basePath}/subscriptions`} className="flex items-centertext-green-900 hover:bg-gray-200">
                   <CogIcon className="w-5 h-5 mr-2" />
                   Subscription
                 </Link>
               </li>
+              
               <li className="mb-4">
-                <Link to={`${basePath}/business`} className="flex items-center text-gray-700 hover:text-gray-900">
-                  <InformationCircleIcon className="w-5 h-5 mr-2" />
-                  User Information
-                </Link>
-              </li>
-              <li className="mb-4">
-                <Link to={`${basePath}/help`} className="flex items-center text-gray-700 hover:text-gray-900">
+                <Link to={`${basePath}/help`} className="flex items-centertext-green-900 hover:bg-gray-200">
                   <LifebuoyIcon className="w-5 h-5 mr-2" />
                   Help
                 </Link>

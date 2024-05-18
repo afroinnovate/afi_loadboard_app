@@ -129,7 +129,7 @@ export default function Header({ user }) {
                   {isSettingsOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
                       <Link
-                        to={baseUrl+"/account/business"}
+                        to={baseUrl+"/account/profile"}
                         className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
                       >
                         <UserIcon className="w-5 h-5 mr-2" />
