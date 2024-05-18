@@ -82,7 +82,7 @@ export default function Header({ user }) {
                 {location.pathname === "/carriers/dashboard/" && (
                   <Link
                     to="/carriers/dashboard/view"
-                    className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
+                    className="bg-green-500 text-white font-bold p-2 rounded hover:bg-orange-400 hover:animate-pulse"
                   >
                     PickUp Load Now
                   </Link>
@@ -90,27 +90,28 @@ export default function Header({ user }) {
                 {location.pathname === "/dashboard/" && (
                   <Link
                     to="/dashboard/loads/view/"
-                    className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
+                    className="bg-green-500 text-white font-bold p-2 rounded hover:bg-orange-400 hover:animate-pulse"
                   >
                     Manage loads
                   </Link>
                 )}
+                   
                 <div>
                   <select
-                    className="block py-2 hover:bg-gray-100 bg-white text-green-900"
+                    className="block p-2 font-bold rounded hover:bg-orange-400 bg-green-500 text-white focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                     onChange={(e) => handleLanguageChange(e.target.value)}
                   >
                     <option value="eng" defaultChecked>
-                      {getUnicodeFlagIcon("US")}eng
+                      {getUnicodeFlagIcon("US")} eng
                     </option>
                     <option value="arb">
-                      {getUnicodeFlagIcon("SA")}arabic
+                      {getUnicodeFlagIcon("SA")} arabic
                     </option>
                     <option value="amh">
-                      {getUnicodeFlagIcon("ET")}amharic
+                      {getUnicodeFlagIcon("ET")} amharic
                     </option>
                     <option value="nus">
-                      {getUnicodeFlagIcon("SS")}nuer
+                      {getUnicodeFlagIcon("SS")} nuer
                     </option>
                   </select>
                 </div>
@@ -119,8 +120,8 @@ export default function Header({ user }) {
                     onClick={toggleSettings}
                     className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center bg-gray-400 rounded-full">
-                      <span className="text-orange-500 p-2 font-medium">{userInitials}</span>
+                    <div className="w-10 h-10 flex items-center justify-center bg-green-500 text-white font-bold rounded-full p-2 hover:bg-orange-400">
+                      <span>{userInitials}</span>
                     </div>
                   </button>
                   {isSettingsOpen && (
