@@ -98,7 +98,7 @@ export default function Header({ user }) {
                    
                 <div>
                   <select
-                    className="block p-2 font-bold rounded hover:bg-orange-400 bg-green-500 text-white focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    className="block p-2 font-bold rounded hover:bg-orange-400 text-green-800 focus:outline-none hover:cursor-pointer"
                     onChange={(e) => handleLanguageChange(e.target.value)}
                   >
                     <option value="eng" defaultChecked>
@@ -127,7 +127,7 @@ export default function Header({ user }) {
                   {isSettingsOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
                       <Link
-                        to="/account"
+                        to={location.pathname.includes("/carriers/dashboard") ? "/carriers/dashboard/account/" : "/dashboard/account/"}
                         className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
                       >
                         <UserIcon className="w-5 h-5 mr-2" />
