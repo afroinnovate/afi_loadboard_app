@@ -10,6 +10,7 @@ import invariant from "tiny-invariant";
 import { ChangePassword } from "~/api/services/auth.server";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getSession } from "~/api/services/session";
+import { PasswordResetRequest } from "~/api/models/passwordResetRequest";
 
 export const meta: MetaFunction = () => {
   return [
@@ -87,9 +88,15 @@ export let action: ActionFunction = async ({ request }) => {
     invariant(typeof password === "string" && password.length >= 8, "Password must be at least 8 characters long");
     invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':\"\\|,.<>/?~]/), "Password must contain a special character");
     invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
+    invariant(typeof token === "string" && token.length > 0, "Invalid token");
     invariant(typeof email === "string" && email.length > 0, "Invalid email");
-
-    await ChangePassword(email, password, token);
+    
+    const request: PasswordResetRequest = {
+      email,
+      newPassword: password,
+      token,
+    };
+    await ChangePassword(request);
     return json({ success: true });
   } catch (error: any) {
     throw error;
