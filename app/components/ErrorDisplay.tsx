@@ -24,14 +24,14 @@ const ErrorDisplay: React.FC<ErrorProps> = ({ error }) => {
         { errorCode === 'ER404' && (
           <div className="border border-green-400 text-white-700 p-3 rounded relative" role="alert">
             <strong className="font-bold">Oops!</strong>
-            <span className="block sm:inline"> The Item you requested doesn't exists, call support with this code {errorCode}.</span>
+            <span className="block sm:inline"> {error.message}, or call support with this code {errorCode}.</span>
           </div>
           )
         }
         { errorCode === 'ER500' && (
           <div className="border border-red-400 text-red-700 p-3 rounded relative" role="alert">
             <strong className="font-bold">Oops!</strong>
-            <span className="block sm:inline"> Something went wrong, please try again or call support with this error code: {errorCode}</span>
+            <span className="block sm:inline"> {error.message}, please try again or call support with this error code: {errorCode}</span>
             <div className="mt-4 flex justify-center">
               {/* <img src="https://media.giphy.com/media/YTzh3zw4mj1XpjjiIb/giphy.gif" alt="Error Animation" style={{ maxWidth: '100%', height: '10%' }} /> */}
             </div>
@@ -40,7 +40,7 @@ const ErrorDisplay: React.FC<ErrorProps> = ({ error }) => {
         { errorCode === 'ER400' && (
           <div className="border border-red-400 text-green-700 p-3 rounded relative" role="alert">
             <strong className="font-bold">Oops!</strong>
-            <span className="block sm:inline"> Something went wrong. Please try again or call support with this error code: {errorCode}</span>
+            <span className="block sm:inline"> {error.message}, or call support with this error code: {errorCode}</span>
           </div>
         )}
         { errorCode === 'ER401' && (

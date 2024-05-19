@@ -1,14 +1,18 @@
-import { useNavigation, Form, useActionData, useSearchParams, Link } from "@remix-run/react";
+import { useNavigation, Form, useActionData, Link, useLoaderData, useRouteError } from "@remix-run/react";
 import {
   type MetaFunction,
   type LinksFunction,
   type ActionFunction,
   json,
+  type LoaderFunction,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import invariant from "tiny-invariant";
 import { useState } from "react";
+import { ChangePassword } from "~/api/services/auth.server";
+import ErrorDisplay from "~/components/ErrorDisplay";
+import { XMarkIcon } from "@heroicons/react/16/solid";
 
 export const meta: MetaFunction = () => {
   return [
@@ -23,6 +27,19 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token");
+  const email = url.searchParams.get("email");
+
+  if (!token || !email) {
+    throw new Response("Invalid reset link", { status: 400 });
+  }
+
+  return json({ token, email });
+};
+
 export const action: ActionFunction = async ({ request }) => {
   const body = await request.formData();
   const password = body.get("password");
@@ -32,16 +49,16 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     invariant(typeof password === "string" && password.length >= 8, "Password must be at least 8 characters long");
-    invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/), "Password must contain a special character");
+    invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':\"\\|,.<>/?~]/), "Password must contain a special character");
     invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
     invariant(typeof confirmPassword === "string" && confirmPassword === password, "Passwords must match");
     invariant(typeof token === "string" && token.length > 0, "Invalid token");
     invariant(typeof email === "string" && email.length > 0, "Invalid email");
 
-    // await UpdatePassword({ password, token, email });
+    await ChangePassword(email, password, token);
     return json({ success: true });
   } catch (error: any) {
-    return json({ error: error.message }, { status: 400 });
+    throw error;
   }
 };
 
@@ -49,7 +66,7 @@ export default function NewPasswordPage() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const actionData: any = useActionData();
-  const [searchParams] = useSearchParams();
+  const { token, email } = useLoaderData<{ token: string; email: string }>();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -61,12 +78,20 @@ export default function NewPasswordPage() {
     }
   };
 
+  const isPasswordValid = password !== "" && password === confirmPassword;
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
       <div
         className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10"
         style={{ maxWidth: "600px" }}
       >
+        <Link
+          to="/login/"
+          className="text-black--500 hover:text-gray-700 focus:outline-none flex justify-end"
+        >
+          <XMarkIcon className="h-6 w-6 ml-auto" />
+        </Link>
         <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
           Set Your New Password
         </h1>
@@ -89,12 +114,12 @@ export default function NewPasswordPage() {
           </div>
         ) : (
           <Form reloadDocument method="post" className="mb-0 space-y-6">
-            <input type="hidden" name="token" value={searchParams.get("token") || ""} />
-            <input type="hidden" name="email" value={searchParams.get("email") || ""} />
+            <input type="hidden" name="token" value={token || ""} />
+            <input type="hidden" name="email" value={email|| ""} />
             <fieldset>
               <FloatingPasswordInput
                 name="password"
-                placeholder="New Password"
+                placeholder="Password"
                 required
                 onChange={(name, value) => handlePasswordChange(name, value)}
               />
@@ -110,10 +135,12 @@ export default function NewPasswordPage() {
             </fieldset>
             <button
               type="submit"
-              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 ${
-                isSubmitting || !confirmPassword ? "hover:bg-gray-500 hover:text-white cursor-not-allowed":  "bg-green-500"
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isPasswordValid
+                  ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
+                  : "bg-gray-700 cursor-not-allowed"
               }`}
-              disabled={!confirmPassword || isSubmitting}
+              disabled={!isPasswordValid || isSubmitting}
             >
               {isSubmitting ? "Resetting Password..." : "Reset Password"}
             </button>
@@ -122,4 +149,23 @@ export default function NewPasswordPage() {
       </div>
     </div>
   );
+}
+
+export function ErrorBoundary() {
+  try{
+    const errorResponse: any = useRouteError();
+    const jsonError = JSON.parse(errorResponse);
+    const error = {
+      message: jsonError.data.message,
+      status: jsonError.data.status,
+    };
+
+    return <ErrorDisplay error={error} />;
+  }catch(e){
+    const error = {
+      message: "Something went wrong while tryig to reset the password, try again later",
+      status: 500
+    }
+    return <ErrorDisplay error={error} />
+  }
 }

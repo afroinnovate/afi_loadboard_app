@@ -20,7 +20,9 @@ export default function Header({ user }) {
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
 
-  const baseUrl = location.pathname.split("/").slice(0, -1).join("/");
+  // const baseUrl = location.pathname.split("/").slice(0, -1).join("/");
+
+  const baseUrl = location.pathname == "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

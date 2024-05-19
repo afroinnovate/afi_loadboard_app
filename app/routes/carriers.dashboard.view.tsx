@@ -38,7 +38,7 @@ import ErrorDisplay from "~/components/ErrorDisplay";
 //     "firstName": "Tango",
 //     "lastName": "War",
 //     "roles": [
-//         "owner_operator",
+//         "carrier",
 //     ],
 //     "phoneNumber": "+15806471212"
 //   }
@@ -331,7 +331,7 @@ export default function CarrierViewLoads() {
                   <div className="flex justify-end space-x-2 mt-4">
                   
                     {carrierAccess && (
-                      <NavLink to="/carriers/profile" className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
+                      <NavLink to="/carriers/dashboard/account/business/" className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
                         <button className="text-lg">
                           Please Complete your profile to pick up a load
                         </button>

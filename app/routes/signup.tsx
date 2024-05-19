@@ -101,6 +101,8 @@ export default function Signup() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
+  const isPasswordValid = password !== "" && password === confirmPassword;
+
   useEffect(() => {
     const emailValid = email.length > 6;
     const passwordValid =
@@ -148,6 +150,8 @@ export default function Signup() {
               name="email"
               placeholder="Email"
               required
+              type="email"
+              minLength={6}
               onChange={(name, value) => setEmail(value)}
             />
           </fieldset>
@@ -196,14 +200,16 @@ export default function Signup() {
             </label>
           </div>
           <button
-            type="submit"
-            id="submit-button"
-            disabled={!isFormValid || isSubmitting}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 ${
-              isFormValid ? "cursor-pointer" : "hover:bg-gray-500 hover:text-white cursor-not-allowed"
-            }`}
-          >
-            {isSubmitting ? "Signing Up..." : "Create Account"}
+              type="submit"
+              id="submit-button"
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isPasswordValid && isFormValid
+                  ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
+                  : "bg-gray-700 cursor-not-allowed"
+              }`}
+              disabled={!isPasswordValid || isSubmitting}
+            >
+              {isSubmitting ? "Signing Up..." : "Create Account"}
           </button>
         </Form>
       </div>

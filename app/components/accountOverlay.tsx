@@ -5,7 +5,8 @@ import { XMarkIcon, UserIcon, CogIcon, LifebuoyIcon, InformationCircleIcon } fro
 export default function AccountOverlay({ onClose }) {
   const location = useLocation();
   
-  const basePath = location.pathname.split("/").slice(0, -1).join("/");
+  // const basePath = location.pathname.split("/").slice(0, -1).join("/");
+  const basePath = location.pathname == "/dashboard/" ? "/dashboard/account" : "/carriers/dashboard/account";
 
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center z-50">
