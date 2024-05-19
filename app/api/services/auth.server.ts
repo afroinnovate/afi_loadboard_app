@@ -6,7 +6,8 @@ import { sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
-import { PasswordResetRequest } from "../models/passwordResetRequest";
+import type { PasswordResetRequest } from "../models/passwordResetRequest";
+import type { PasswordUpdateRequest } from "../models/paswordUpdateRequest";
 
 const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 // const baseUrl = "http://localhost:8080/auth";
@@ -216,6 +217,76 @@ export async function ChangePassword(request: PasswordResetRequest) {
           throw JSON.stringify({
             data: {
               message: "The token sent must've expired or invalid",
+              status: 400,
+            },
+          });
+  
+        case 401:
+          throw JSON.stringify({
+            data: {
+              message: "Unauthorized",
+              status: 401,
+            },
+          });
+  
+        default:
+          throw JSON.stringify({
+            data: {
+              message: "An error occurred",
+              status: 500,
+            },
+          });
+      }
+  }
+}
+
+export async function UpdatePasswordInProfile(request: PasswordUpdateRequest) {
+  try {
+    if(request.email === "" || request.currentPassword === ""){
+      throw JSON.stringify({
+        data: {
+          message: "Email and current password are required",
+          status: 400,
+        },
+      });
+    }
+
+    const response = await fetch(baseUrl + "/update-password-inprofile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    // Check if the response is not ok (e.g., 400 or 500 status codes)
+    if (response.status !== 200) {
+      throw response
+    }
+
+    return response;
+  } catch (error: any) {
+    switch (error.status) {
+        case 404:
+          throw JSON.stringify({
+            data: {
+              message: "User with the provided email does not exist, create your account or try again",
+              status: 404,
+            },
+          });
+  
+        case 500:
+          throw JSON.stringify({
+            data: {
+              message: "Internal server error",
+              status: 500,
+            },
+          });
+  
+        case 400:
+          throw JSON.stringify({
+            data: {
+              message: "Something is wrong with the request",
               status: 400,
             },
           });

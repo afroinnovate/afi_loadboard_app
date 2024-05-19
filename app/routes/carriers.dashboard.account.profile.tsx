@@ -1,16 +1,17 @@
 // app/routes/account/profile.tsx
-import { type MetaFunction, json, type LinksFunction, type ActionFunction } from "@remix-run/node";
+import { type MetaFunction, json, type LinksFunction, type ActionFunction, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { PencilIcon } from "@heroicons/react/20/solid";
-import { Form, useActionData, useLoaderData, useNavigation, useRouteError } from "@remix-run/react";
-import { useState } from "react";
+import { Form, useActionData, useLoaderData, useNavigate, useNavigation, useRouteError } from "@remix-run/react";
+import { useEffect, useState } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import invariant from "tiny-invariant";
-import { ChangePassword } from "~/api/services/auth.server";
+import { ChangePassword, UpdatePasswordInProfile } from "~/api/services/auth.server";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getSession } from "~/api/services/session";
-import { PasswordResetRequest } from "~/api/models/passwordResetRequest";
+import type { PasswordResetRequest } from "~/api/models/passwordResetRequest";
+import { PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
 
 export const meta: MetaFunction = () => {
   return [
@@ -64,44 +65,41 @@ export let loader = async ({ request }) => {
   }
 };
 
+
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get("user");
-
-  // const user: any = userData;
-  // let token = user.token;
-
-  let token: string = request.headers.get("Authorization") ? request.headers.get("Authorization") : user.token;
-
+    // const user: any = userData;
   if (!user) {
-    throw JSON.stringify({
-      data: {
-      message: "Unauthorized", 
-      status: 401 
-    }});
+    return json({ error: "Unauthorized", status: 401 }, { status: 401 });
   }
 
   const body = await request.formData();
+  const currentPassword = body.get("password");
   const password = body.get("newpassword");
   const email = body.get("email");
+
   try {
     invariant(typeof password === "string" && password.length >= 8, "Password must be at least 8 characters long");
     invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':\"\\|,.<>/?~]/), "Password must contain a special character");
     invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
-    invariant(typeof token === "string" && token.length > 0, "Invalid token");
-    invariant(typeof email === "string" && email.length > 0, "Invalid email");
-    
-    const request: PasswordResetRequest = {
-      email,
+
+    const request: PasswordUpdateRequest = {
+      email: email?.toString() || "",
+      currentPassword: currentPassword?.toString() || "",
       newPassword: password,
-      token,
     };
-    await ChangePassword(request);
-    return json({ success: true });
+
+    const response = await UpdatePasswordInProfile(request);
+    console.log("Response", response);
+    if(response.status === 200){
+      return redirect("/login/");
+    }
   } catch (error: any) {
-    throw error;
+    return json({ error: error.message }, { status: 400 });
   }
-}
+};
+
 
 export default function Profile() {
   const navigation = useNavigation();
@@ -113,8 +111,15 @@ export default function Profile() {
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // const navigate = useNavigate();
 
   const isPasswordValid = newPassword !== "" && newPassword === confirmPassword;
+
+  // useEffect(() => {
+  //   if (actionData?.success) {
+  //     navigate("/carrier/dashboard/account/profile");
+  //   }
+  // }, [actionData, navigate]);
 
   const handlePasswordChange = (name: string, value: string) => {
     if (name === "newpassword") {
@@ -253,8 +258,8 @@ export function ErrorBoundary() {
     return <ErrorDisplay error={error} />;
   }catch(e){
     const error = {
-      message: "Something went wrong while tryig to reset the password",
-      status: 500
+      message: "Your Current password is wrong or the new password does not meet the requirements. Please try again.",
+      status: 400
     }
     return <ErrorDisplay error={error} />
   }
