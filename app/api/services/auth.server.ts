@@ -6,6 +6,7 @@ import { sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
+import { PasswordResetRequest } from "../models/passwordResetRequest";
 
 const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 // const baseUrl = "http://localhost:8080/auth";
@@ -175,14 +176,15 @@ export async function RequestResetPassword(email: string) {
   }
 }
 
-export async function ChangePassword(email: string, password: string, token: string) {
+export async function ChangePassword(request: PasswordResetRequest) {
   try {
+    console.log("request: ",request);
     const response = await fetch(baseUrl + "/reset-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password, token}),
+      body: JSON.stringify(request),
     });
 
     console.log("password change response: ", response);

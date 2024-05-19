@@ -13,6 +13,7 @@ import { useState } from "react";
 import { ChangePassword } from "~/api/services/auth.server";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { XMarkIcon } from "@heroicons/react/16/solid";
+import { PasswordResetRequest } from "~/api/models/passwordResetRequest";
 
 export const meta: MetaFunction = () => {
   return [
@@ -43,7 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 export const action: ActionFunction = async ({ request }) => {
   const body = await request.formData();
   const password = body.get("password");
-  const confirmPassword = body.get("confirmPassword");
   const token = body.get("token");
   const email = body.get("email");
 
@@ -51,11 +51,15 @@ export const action: ActionFunction = async ({ request }) => {
     invariant(typeof password === "string" && password.length >= 8, "Password must be at least 8 characters long");
     invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':\"\\|,.<>/?~]/), "Password must contain a special character");
     invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
-    invariant(typeof confirmPassword === "string" && confirmPassword === password, "Passwords must match");
     invariant(typeof token === "string" && token.length > 0, "Invalid token");
     invariant(typeof email === "string" && email.length > 0, "Invalid email");
-
-    await ChangePassword(email, password, token);
+    
+    const request: PasswordResetRequest = {
+      email,
+      newPassword: password,
+      token,
+    };
+    await ChangePassword(request);
     return json({ success: true });
   } catch (error: any) {
     throw error;
@@ -92,7 +96,7 @@ export default function NewPasswordPage() {
         >
           <XMarkIcon className="h-6 w-6 ml-auto" />
         </Link>
-        <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
+        <h1 className="text-center text-2xl font-extrabold text-green-900 py-4">
           Set Your New Password
         </h1>
 
