@@ -1,3 +1,4 @@
+// app/components/FloatingInput.tsx
 import React, { useState } from 'react';
 import clsx from 'clsx';
 
@@ -9,7 +10,8 @@ interface FloatingLabelInputProps {
   minLength?: number;
   pattern?: string;
   required?: boolean;
-  onChange: (name: string, value: string, isValid: boolean) => void; // Add this line
+  onChange: (name: string, value: string, isValid: boolean) => void;
+  className?: string; // Add className prop
 }
 
 export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
@@ -20,7 +22,8 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   minLength,
   pattern,
   required,
-  onChange // Include onChange in the props destructuring
+  onChange,
+  className // Include className in the props destructuring
 }) => {
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
@@ -28,7 +31,7 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
 
   const handleBlur = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsFocused(false);
-    setIsValid(event.target.checkValidity()); // Validate on blur as well
+    setIsValid(event.target.checkValidity());
   };
 
   const handleFocus = () => {
@@ -39,8 +42,8 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
     const newValue = event.target.value;
     setValue(newValue);
     const newIsValid = event.target.checkValidity();
-    setIsValid(newIsValid); // Validate on change
-    onChange(name, newValue, newIsValid); // Call the onChange prop function
+    setIsValid(newIsValid);
+    onChange(name, newValue, newIsValid);
   };
 
   const inputClasses = clsx(
@@ -48,7 +51,8 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
     {
       "border-red-500": isFocused && !isValid,
       "border-green-500": isValid && value,
-    }
+    },
+    className // Apply className prop if provided
   );
 
   const labelClasses = clsx(
@@ -81,4 +85,4 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
       </label>
     </div>
   );
-}
+};

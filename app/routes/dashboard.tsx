@@ -136,7 +136,13 @@ export default function Dashboard() {
             >
               Load Operations
             </NavLink>
-
+            
+            <h2 className="font-bold text-xl flex justify-center items-center mx-auto text-green-800"
+              style={{
+                animation: 'bounce 2s ease-in-out 2',
+              }}>
+              Welcome to Shipper Dashboard!!! Let's Keep them Moving...
+            </h2>
           </div>
         </header>
         <div className="flex">

@@ -38,7 +38,7 @@ import ErrorDisplay from "~/components/ErrorDisplay";
 //     "firstName": "Tango",
 //     "lastName": "War",
 //     "roles": [
-//         "owner_operator",
+//         "carrier",
 //     ],
 //     "phoneNumber": "+15806471212"
 //   }
@@ -60,14 +60,12 @@ export const loader = async ({ request }) => {
 
     // const user: any = userData;
     if (!user) {
-      throw new Error(
-        JSON.stringify({
+      throw JSON.stringify({
           data: {
             message: "Unauthorized",
             status: 401,
           },
-        })
-      );
+        });
     }
 
     const response = await GetLoads(user.token);
@@ -79,6 +77,7 @@ export const loader = async ({ request }) => {
 
     return json([response, user]);
   } catch (error: any) {
+    console.error(error);
     if(JSON.parse(error).data.status == 401){
       return redirect("/login/")
     }
@@ -332,7 +331,7 @@ export default function CarrierViewLoads() {
                   <div className="flex justify-end space-x-2 mt-4">
                   
                     {carrierAccess && (
-                      <NavLink to="/carriers/profile" className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
+                      <NavLink to="/carriers/dashboard/account/business/" className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
                         <button className="text-lg">
                           Please Complete your profile to pick up a load
                         </button>

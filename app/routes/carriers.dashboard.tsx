@@ -17,19 +17,15 @@ import type {
   LinksFunction,
   LoaderFunction,
 } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
-import Sidebar from "../components/sidebar";
-import Overview from "../components/overview";
 import AccessDenied from "~/components/accessdenied";
-import { LoginResponse } from "~/api/models/loginResponse";
 import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
-import { CogIcon, UserIcon } from "@heroicons/react/20/solid";
 
 export const meta: MetaFunction = () => {
   return [
@@ -44,24 +40,23 @@ export const links: LinksFunction = () => [
 ];
 
 // const userData: LoginResponse = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   "tokenType": "Bearer",
-//   "refreshToken": "eyJhbGci",
-//   "expiresIn": 3600,
-//   "user": {
-//     "id": "7c134ef0-eff8-466e-955e-e195700d8696",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
-//     "firstName": "Tango",
-//     "lastName": "War",
-//     "roles": [
-//         "carrier"
-//     ],
-//     "phoneNumber": "+15806471212"
-//   }
-// }
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     id: "7c134ef0-eff8-466e-955e-e195700d8696",
+//     userName: "tangotew@gmail.com",
+//     email: "tangotew@gmail.com",
+//     firstName: "Tango",
+//     lastName: "War",
+//     roles: ["carrier"],
+//     phoneNumber: "+15806471212",
+//   },
+// };
 
-//protect this route with authentication
+// protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
@@ -82,11 +77,11 @@ export const loader: LoaderFunction = async ({ request }) => {
         },
       });
     }
-  
+
     // return json(userData);
 
     const error = session.get("_auth_error");
-    return json<any>({ error });
+    throw error;
   } catch (error: any) {
     // if it's not 401, throw the error
     throw error;
@@ -100,6 +95,8 @@ export default function CarrierDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const user = loaderData?.user.user;
+  console.log("User", user);
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
   );
@@ -217,8 +214,14 @@ export default function CarrierDashboard() {
             Load Operations
           </NavLink>
         </div>
+        <h2 className="font-bold text-xl flex justify-center items-center mx-auto text-green-800"
+          style={{
+            animation: 'bounce 2s ease-in-out 2',
+          }}>
+          Welcome to Carrier Dashboard Another day to keep the economy moving
+        </h2>
       </header>
-  
+
       <div className="flex">
         <div className="">
           {sidebarOpen && <SidebarCarrier activeSection={activeSection} />}
@@ -243,14 +246,12 @@ export function ErrorBoundary() {
     };
 
     return <ErrorDisplay error={error} />;
-  } 
+  }
   return (
-    <div>
+    <div className="flex content-center bg-red-800 text-white">
       <h1>Uh oh ...</h1>
       <p>Something went wrong.</p>
       <pre>{errorResponse}</pre>
     </div>
   );
 }
-
-

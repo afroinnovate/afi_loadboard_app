@@ -1,14 +1,19 @@
+// app/routes/signup.tsx
 import { useNavigation, Form, Link, useActionData } from "@remix-run/react";
 import {
   type MetaFunction,
   type LinksFunction,
   type ActionFunction,
   redirect,
+  json,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import type { User } from "~/api/models/user";
 import { Register } from "~/api/services/auth.server";
 import invariant from "tiny-invariant";
+import { useState, useEffect } from "react";
+import { FloatingLabelInput } from "~/components/FloatingInput";
+import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 
 export const meta: MetaFunction = () => {
   return [
@@ -24,8 +29,6 @@ export const links: LinksFunction = () => [
 ];
 
 export const action: ActionFunction = async ({ request }) => {
-  // invariant(params.customer, "Missing customer parameter");
-
   const body = await request.formData();
   const email = body.get("email");
   const password = body.get("password");
@@ -45,8 +48,8 @@ export const action: ActionFunction = async ({ request }) => {
       "Enter a valid email address"
     );
     invariant(
-      typeof password === "string" && password.length >= 6,
-      "Password must be at least 6 characters long"
+      typeof password === "string" && password.length >= 8,
+      "Password must be at least 8 characters long"
     );
     invariant(
       password.match(/[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/),
@@ -65,7 +68,7 @@ export const action: ActionFunction = async ({ request }) => {
     return redirect(`/registration/`);
   } catch (error: any) {
     switch (error.message) {
-      case "Invariant failed: Password must be at least 6 characters long":
+      case "Invariant failed: Password must be at least 8 characters long":
         errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       case "Invariant failed: Password must contain a special character":
@@ -81,18 +84,42 @@ export const action: ActionFunction = async ({ request }) => {
         errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       default:
-        errorMessage = "Oopse! Something went wrong. Please try again.";
+        errorMessage = "Oops! Something went wrong. Please try again.";
         break;
     }
-    return errorMessage;
+    return json({ error: errorMessage }, { status: 400 });
   }
 };
 
 export default function Signup() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`;
   const actionData: any = useActionData();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  const isPasswordValid = password !== "" && password === confirmPassword;
+
+  useEffect(() => {
+    const emailValid = email.length > 6;
+    const passwordValid =
+      password.length >= 8 &&
+      /[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/.test(password) &&
+      /[A-Z]/.test(password);
+    const passwordsMatch = password === confirmPassword;
+    setIsFormValid(emailValid && passwordValid && passwordsMatch && termsAccepted);
+  }, [email, password, confirmPassword, termsAccepted]);
+
+  const handlePasswordChange = (name: string, value: string) => {
+    if (name === "password") {
+      setPassword(value);
+    } else if (name === "confirmpassword") {
+      setConfirmPassword(value);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -103,11 +130,11 @@ export default function Signup() {
         <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
           Register for a new account
         </h1>
-        <p className="text-center text-bold text-black pb-2">
+        <p className="text-center text-bold text-black mb-2">
           Already registered?{" "}
           <Link
             to={`/login/`}
-            className="font-medium text-blue-600 hover:text-blue-500"
+            className="font-bold text-blue-600 hover:text-orange-400"
           >
             Sign in
           </Link>
@@ -117,80 +144,55 @@ export default function Signup() {
           <p className="text-red-500 text-xs italic p-2">{actionData}</p>
         )}
 
-        <Form reloadDocument method="post" className="mb-0 space-y-6">
+        <Form reloadDocument method="post" className="mb-0 space-y-2">
           <fieldset>
-            <label className="block text-sm font-medium text-gray-700">
-            <span className="text-red-500">*</span> Email
-            </label>
-            <input type="email" name="email" className={inputStyle} required />
+            <FloatingLabelInput
+              name="email"
+              placeholder="Email"
+              required
+              type="email"
+              minLength={6}
+              onChange={(name, value) => setEmail(value)}
+            />
           </fieldset>
           <fieldset>
-            <label className="block text-sm font-medium text-gray-700">
-            <span className="text-red-500">*</span> Password
-            </label>
-            <input
-              type="password"
+            <FloatingPasswordInput
               name="password"
-              id="password"
-              className={inputStyle}
+              placeholder="Password"
               required
+              onChange={(name, value) => handlePasswordChange(name, value)}
             />
           </fieldset>
-          <fieldset className="space-y-2">
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700"
-            >
-              <span className="text-red-500">*</span> Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
+          <fieldset>
+            <FloatingPasswordInput
+              name="confirmpassword"
+              placeholder="Confirm Password"
               required
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              newPassword={password}
+              onChange={(name, value) => handlePasswordChange(name, value)}
             />
           </fieldset>
-          <div className=" col-span-4 col-start-0 col-end-4 flex items-center">
+          <div className="col-span-4 col-start-0 col-end-4 flex items-center">
             <input
               id="terms-and-privacy"
               name="terms-and-privacy"
               type="checkbox"
               required
-              className="h-4 w-4 border-gray-300 rounded text-blue-700 focus:ring-orange-700"
-              onChange={() => {
-                const submitButton = document.getElementById("submit-button");
-                const isChecked =
-                  document.getElementById("terms-and-privacy").checked;
-                submitButton.disabled = !isChecked;
-                if (isChecked) {
-                  submitButton.classList.remove(
-                    "bg-gray-400",
-                    "text-gray-700",
-                    "cursor-not-allowed"
-                  );
-                } else {
-                  submitButton.classList.add(
-                    "bg-gray-400",
-                    "text-gray-700",
-                    "cursor-not-allowed"
-                  );
-                }
-              }}
+              className="h-4 w-4 border-gray-300 rounded text-green-700"
+              onChange={() => setTermsAccepted(!termsAccepted)}
             />
-
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
               I agree to the{" "}
               <Link
                 to="/terms"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                className="font-bold text-blue-600 hover:text-ornage-400"
               >
                 Terms{" "}
               </Link>
               and
               <Link
-                to="/terms"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                to="/privacy"
+                className="font-bold text-blue-600 hover:text-orange-400"
               >
                 {" "}
                 Privacy Policy
@@ -198,14 +200,16 @@ export default function Signup() {
             </label>
           </div>
           <button
-            type="submit"
-            id="submit-button"
-            disabled
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-orange-400 focus:outline-1 focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 ${
-              isSubmitting ? "" : "bg-gray-400 text-gray-700 cursor-not-allowed"
-            }`}
-          >
-            {isSubmitting ? "Signing Up..." : "Create Account"}
+              type="submit"
+              id="submit-button"
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isPasswordValid && isFormValid
+                  ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
+                  : "bg-gray-700 cursor-not-allowed"
+              }`}
+              disabled={!isPasswordValid || isSubmitting}
+            >
+              {isSubmitting ? "Signing Up..." : "Create Account"}
           </button>
         </Form>
       </div>
