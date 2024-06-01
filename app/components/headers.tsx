@@ -211,7 +211,7 @@ export default function Header({ user }) {
 
 export function ErrorBoundary() {
   try {
-    const errorResponse = useRouteError();
+    const errorResponse: any = useRouteError();
     const jsonError = JSON.parse(errorResponse);
     const error = {
       message: jsonError.data.message,

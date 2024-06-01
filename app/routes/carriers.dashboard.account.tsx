@@ -27,7 +27,7 @@ export default function Account() {
       {isOverlayOpen && !closedOverlay && (
         <AccountOverlay onClose={closeOverlay} /> // Update this line
       )}
-      <div className={`transition-opacity ${isOverlayOpen ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={`transition-opacity overflow-auto ${isOverlayOpen ? 'opacity-50 overflow-auto' : 'opacity-100'}`}>
         <Outlet />
       </div>
     </div>

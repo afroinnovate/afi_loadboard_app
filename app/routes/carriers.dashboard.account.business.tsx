@@ -15,12 +15,13 @@ import {
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { getSession } from "~/api/services/session";
 import invariant from "tiny-invariant";
 import ErrorDisplay from "~/components/ErrorDisplay";
-import { Link } from '@remix-run/react';
+import { Link } from "@remix-run/react";
+import { PencilIcon } from "@heroicons/react/16/solid";
 
 export const meta: MetaFunction = () => {
   return [
@@ -99,21 +100,16 @@ export let action: ActionFunction = async ({ request }) => {
   const firstName = body.get("firstName");
   const middleName = body.get("middleName");
   const lastName = body.get("lastName");
-  const companyDetails = body.get("companyDetails");
+  const phoneNumber = body.get("phoneNumber");
+  const email = body.get("email");
   const role = body.get("role");
   const action = body.get("_action");
 
   try {
-    if (action === "confirmAccount") {
-      return json({ message: "confirmingAccount" });
-    }
-
     invariant(typeof firstName === "string", "First name is required");
     invariant(typeof lastName === "string", "Last name is required");
-    invariant(
-      typeof companyDetails === "string",
-      "Company details are required"
-    );
+    invariant(typeof email === "string", "Email is required");
+    invariant(typeof phoneNumber === "string", "Phone number is required");
     invariant(typeof role === "string", "Role is required");
 
     // Perform the update logic here with the updated user data
@@ -132,15 +128,16 @@ export default function BusinessInformation() {
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [isEditingRole, setIsEditingRole] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
+  const [activeTab, setActiveTab] = useState("personal");
   const [showCompleteProfileForm, setShowCompleteProfileForm] = useState(false);
   const [documents, setDocuments] = useState<File[]>([]);
+
   const [vehicles, setVehicles] = useState({
     Trucks: false,
     Boats: false,
     Vans: false,
     Cargoes: false,
   });
-
 
   // Determine if the user is a Fleet Owner or Driver
   const isFleetOwner = ["fleet_owner"].includes(selectedRole);
@@ -163,191 +160,360 @@ export default function BusinessInformation() {
     setVehicles((prevVehicles) => ({ ...prevVehicles, [name]: checked }));
   };
 
+  const [fieldValues, setFieldValues] = useState({
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+  });
+
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (inputRef.current && !inputRef.current.contains(event.target)) {
+        setIsEditingField(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [inputRef]);
+
+  const handleEditClick = (field) => {
+    setIsEditingField(field);
+  };
+
+  const handleCancelClick = () => {
+    setIsEditingField(null);
+  };
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto overflow-auto h-full ${user.status === "Not Approved" ? "bg-red-500" : "bg-green-500"}`}>
+    <div className="bg-white p-6 rounded-lg shadow-lg w-full h-full flex flex-col">
       {actionData?.error && (
         <p className="text-red-500 text-xs italic p-2 m-4">
           {actionData.error}
         </p>
       )}
-      <h2 className="text-2xl font-semibold mb-4">Business Information</h2>
-      <div className="mt-6">
-   { !isEditingField && <h3 className="text-lg font-semibold">Business Profile Status</h3> }
-  {user.status === "Not Approved" && !isEditingField ? (
-    <div className="flex items-center">
-      <div className="relative group">
-        <p className="bg-red-500 text-white rounded-xl p-3 text-center">
-          {user.status}
-        </p>
-        <div className="absolute bottom-full mb-2 hidden w-max p-2 bg-gray-800 text-white text-sm rounded-md group-hover:block">
-          Please complete your business profile to start picking up some loads.
+      <h2 className="text-2xl font-semibold mb-4">My Account</h2>
+      <div className="flex flex-col w-full h-full">
+        <div className="flex justify-start border-b pb-2 mb-4">
+          <button
+            className={`text-lg font-semibold px-4 ${
+              activeTab === "personal"
+                ? "text-blue-500 border-b-2 border-blue-500"
+                : "text-gray-500"
+            }`}
+            onClick={() => setActiveTab("personal")}
+          >
+            Personal Information
+          </button>
+          <button
+            className={`text-lg font-semibold px-4 ${
+              activeTab === "business"
+                ? "text-blue-500 border-b-2 border-blue-500"
+                : "text-gray-500"
+            }`}
+            onClick={() => setActiveTab("business")}
+          >
+            Business Information
+          </button>
         </div>
-      </div>
-    </div>
-  ) : (
-    !isEditingField && 
-    <div className="flex items-center">
-      <div className="relative group">
-        <p className="bg-green-500 text-white rounded-xl p-3 text-center">
-          {user.status}
-        </p>
-        <div className="absolute bottom-full mb-2 hidden w-max p-2 bg-gray-800 text-white text-sm rounded-md group-hover:block">
-          Your business profile is complete. Start picking up some loads.
-          <Link to="/carriers/dashboard/view/" className="text-blue-400 underline ml-1">
-            View Loads
-          </Link>
-        </div>
-      </div>
-    </div>
-  )}
-</div>
 
-      <div>
-        <div className="mb-4">
-          {isEditingField === "companyDetails" ? (
-            <FloatingLabelInput
-              type="text"
-              name="companyDetails"
-              defaultValue={user.companyDetails}
-              required
-              placeholder="Company Details"
-              onChange={() => {}}
-            />
-          ) : (
-            user.companyDetails !== "" ? <span>Company Name: {user.companyDetails}</span>
-            : ""
-          )}
-        </div>
-        <div className="mb-4">
-          {isEditingRole ? (
-            <select
-              name="role"
-              className={inputStyle}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              required
-            >
-              <option defaultChecked value="">
-                Select Role
-              </option>
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "personal" && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Personal Information
+              </h3>
 
-              {Object.entries(roles).map(([name, value]) => (
-                <option key={value as string} value={value as string}>
-                  {name}
-                </option>
+              {[
+                "firstName",
+                "middleName",
+                "lastName",
+                "email",
+                "phoneNumber",
+              ].map((field, index) => (
+                <div
+                  key={index}
+                  className="mb-6 flex justify-between items-center border-t-2 py-2"
+                >
+                  <div className="flex-1">
+                    {isEditingField === field ? (
+                      <Form method="post" className="flex w-full">
+                        <input
+                          type="text"
+                          name={field}
+                          defaultValue={user[field]}
+                          required
+                          placeholder={
+                            field.charAt(0).toUpperCase() + field.slice(1)
+                          }
+                          className="flex-1 border border-gray-300 rounded py-2 px-3"
+                          ref={inputRef}
+                        />
+                        <input
+                          type="hidden"
+                          name="_action"
+                          value={`update${field}`}
+                        />
+                        <div className="flex space-x-2 ml-4">
+                          <button
+                            type="submit"
+                            className="text-blue-500 hover:underline"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelClick}
+                            className="text-blue-500 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </Form>
+                    ) : (
+                      <div className="flex items-center w-full">
+                        <label className="block text-gray-700 font-semibold">
+                          {field.charAt(0).toUpperCase() +
+                            field.slice(1).replace(/([A-Z])/g, " $1")}
+                        </label>
+                        <span className="ml-20 flex-1">{user[field]}</span>
+                      </div>
+                    )}
+                  </div>
+                  {isEditingField !== field && (
+                    <button
+                      type="button"
+                      onClick={() => handleEditClick(field)}
+                      className="text-blue-500 hover:underline"
+                    >
+                      <PencilIcon className="w-4 h-4 hover:text-orange-400" />
+                    </button>
+                  )}
+                </div>
               ))}
-            </select>
-          ) : (
-            <span>Current Role: {user.roles[0]}</span>
+            </div>
           )}
-        </div>
 
-        {/* Conditional Vehicle Type and Quantity Inputs */}
-        {isOwnerOperator && (
-          <div className="col-span-2 flex flex-wrap gap-4">
-            {["Trucks", "Boats", "Vans", "Cargoes"].map((vehicle) => (
-              <div key={vehicle}>
-                <label className="px-4">
-                  <input
-                    type="checkbox"
-                    name={vehicle}
-                    onChange={handleVehicleChange}
-                  />
-                  {vehicle}
-                </label>
-                {vehicles[vehicle as keyof typeof vehicles] && (
-                  <input
-                    type="number"
-                    name={`${vehicle.toLowerCase()}Quantity`}
-                    className="w-20"
-                    placeholder="Qty"
-                  />
+          {activeTab === "business" && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Business Information
+              </h3>
+              <div className="mt-6">
+                {!showCompleteProfileForm && (
+                  <>
+                    <div className="flex items-center mb-4">
+                      <h3 className="font-semibold mr-2">
+                        Business Profile Status:
+                      </h3>
+                      {user.status === "Approved" ? (
+                        <div className="relative group">
+                          <span className="inline-block bg-green-500 text-white rounded-full p-2 text-center">
+                            ✔
+                          </span>
+                          <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
+                            Your business profile is complete. Start picking up
+                            loads.
+                            <Link
+                              to="/carriers/dashboard/view/"
+                              className="text-blue-400 underline ml-1"
+                            >
+                              View Loads
+                            </Link>
+                          </label>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block font-semibold">
+                        Current Role:{" "}
+                        <span className="font-normal">{user.roles[0]}</span>
+                      </label>
+                    </div>
+
+                    {user.status === "Approved" && user.companyDetails && (
+                      <div className="mb-4">
+                        <span className="block font-semibold">
+                          Company Name: {user.companyDetails}
+                        </span>
+                      </div>
+                    )}
+
+                    {user.status === "Not Approved" && (
+                      <button
+                        className="bg-orange-500 text-white px-4 py-2 rounded mt-4"
+                        onClick={() => setShowCompleteProfileForm(true)}
+                      >
+                        Complete your Profile
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {showCompleteProfileForm && (
+                  <Form method="post" encType="multipart/form-data">
+                    <div className="mb-4">
+                      <FloatingLabelInput
+                        type="text"
+                        name="companyDetails"
+                        defaultValue={user.companyDetails}
+                        required
+                        placeholder="Company Details"
+                        className="block w-full mt-1 rounded-md border-gray-300"
+                        onChange={function (
+                          name: string,
+                          value: string,
+                          isValid: boolean
+                        ): void {
+                          throw new Error("Function not implemented.");
+                        }}
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <select
+                        name="role"
+                        className="block w-full mt-1 rounded-md border-gray-300"
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        required
+                      >
+                        <option defaultChecked value="">
+                          Select Role
+                        </option>
+                        {Object.entries(roles).map(([name, value]) => (
+                          <option key={value as string} value={value as string}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {isOwnerOperator && (
+                      <div className="col-span-2 flex flex-wrap gap-4">
+                        {["Trucks", "Boats", "Vans", "Cargoes"].map(
+                          (vehicle) => (
+                            <div key={vehicle}>
+                              <label className="px-4">
+                                <input
+                                  type="checkbox"
+                                  name={vehicle}
+                                  onChange={handleVehicleChange}
+                                />
+                                {vehicle}
+                              </label>
+                              {vehicles[vehicle as keyof typeof vehicles] && (
+                                <input
+                                  type="number"
+                                  name={`${vehicle.toLowerCase()}Quantity`}
+                                  className="w-20"
+                                  placeholder="Qty"
+                                />
+                              )}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+                    {isFleetOwner && (
+                      <div className="col-span-2 pb-3">
+                        <p className="font-medium">Fleet:</p>
+                        <label className="px-1">
+                          <input
+                            type="checkbox"
+                            name="vehicleType"
+                            value="Trucks"
+                          />{" "}
+                          Trucks
+                        </label>
+                        <label className="px-1">
+                          <input
+                            type="checkbox"
+                            name="vehicleType"
+                            value="Boats"
+                          />{" "}
+                          Boats
+                        </label>
+                        <label className="px-1">
+                          <input
+                            type="checkbox"
+                            name="vehicleType"
+                            value="Vans"
+                          />{" "}
+                          Vans
+                        </label>
+                        <label className="px-1">
+                          <input
+                            type="checkbox"
+                            name="vehicleType"
+                            value="Cargoes"
+                          />{" "}
+                          Cargoes
+                        </label>
+                      </div>
+                    )}
+                    {selectedRole === "fleet_owner" && (
+                      <div className="col-span-2">
+                        <p className="font-medium">Fleet Size:</p>
+                        <label className="px-2">
+                          <input type="radio" name="fleetSize" value="1-2" />{" "}
+                          1-2
+                        </label>
+                        <label className="px-2">
+                          <input type="radio" name="fleetSize" value="3-10" />{" "}
+                          3-10
+                        </label>
+                        <label className="px-2">
+                          <input type="radio" name="fleetSize" value="11-25" />{" "}
+                          11-25
+                        </label>
+                        <label className="px-2">
+                          <input type="radio" name="fleetSize" value="26-50" />{" "}
+                          26-50
+                        </label>
+                        <label className="px-2">
+                          <input type="radio" name="fleetSize" value="50+" />{" "}
+                          50+
+                        </label>
+                      </div>
+                    )}
+                    <div className="mb-4">
+                      <label className="block text-gray-700">
+                        Upload Documents
+                      </label>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="block w-full mt-1 rounded-md border-gray-300"
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCompleteProfileForm(false);
+                          setIsEditingField(null);
+                        }}
+                        className="bg-gray-500 text-white px-4 py-2 rounded"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="bg-green-500 text-white px-4 py-2 rounded"
+                      >
+                        Update
+                      </button>
+                    </div>
+                  </Form>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-
-        {isFleetOwner && (
-          <div className="col-span-2 pb-3">
-            <p className="font-medium tooltip:'Tjos os '">Fleet:</p>
-            <label className="px-1">
-              <input type="checkbox" name="vehicleType" value="Trucks" /> Trucks
-            </label>
-            <label className="px-1">
-              <input type="checkbox" name="vehicleType" value="Boats" /> Boats
-            </label>
-            <label className="px-1">
-              <input type="checkbox" name="vehicleType" value="Vans" /> Vans
-            </label>
-            <label className="px-1">
-              <input type="checkbox" name="vehicleType" value="Cargoes" />{" "}
-              Cargoes
-            </label>
-          </div>
-        )}
-
-        {/* Conditional Fleet Size Radios */}
-        {selectedRole === "fleet_owner" && (
-          <div className="col-span-2">
-            <p className="font-medium">Fleet Size:</p>
-            <label className="px-2">
-              <input type="radio" name="fleetSize" value="1-2" /> 1-2
-            </label>
-            <label className="px-2">
-              <input type="radio" name="fleetSize" value="3-10" /> 3-10
-            </label>
-            <label className="px-2">
-              <input type="radio" name="fleetSize" value="11-25" /> 11-25
-            </label>
-            <label className="px-2">
-              <input type="radio" name="fleetSize" value="26-50" /> 26-50
-            </label>
-            <label className="px-2">
-              <input type="radio" name="fleetSize" value="50+" /> 50+
-            </label>
-          </div>
-        )}
-
-        {!showCompleteProfileForm && user.status === "Not Approved" && (
-          <button
-            className="bg-orange-500 text-white px-4 py-2 rounded mt-4"
-            onClick={() => {
-              setIsEditingField("companyDetails");
-              setShowCompleteProfileForm(true);
-              setIsEditingRole(true);
-            }}
-          >
-            Complete your Profile
-          </button>
-        )}
-        {showCompleteProfileForm && (
-          <Form method="post" encType="multipart/form-data">
-            <div className="mb-4">
-              <label className="block text-gray-700">Upload Documents</label>
-              <input
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="block w-full mt-1 rounded-md border-gray-300"
-              />
             </div>
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="bg-green-500 text-white px-4 py-2 rounded mr-4"
-              >
-                Update
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCompleteProfileForm(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded"
-              >
-                Cancel
-              </button>
-            </div>
-          </Form>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
