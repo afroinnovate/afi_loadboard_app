@@ -136,10 +136,10 @@ export default function Profile() {
           {actionData.error}
         </p>
       )}
-      <h2 className="text-2xl font-semibold mb-4">Profile</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-green-700">Profile</h2>
       <Form method="post">
         {/* Email Row */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between text-green-700">
           <div>
             <input type="hidden" name="email" value={user.email} />
             {isEditingField === "email" ? (
@@ -153,7 +153,7 @@ export default function Profile() {
                 onChange={() => {}}
               />
             ) : (
-              <span className="rounded mt-1">{user.email}</span>
+              <span className="rounded mt-1 text-green-700">{user.email}</span>
             )}
           </div>
         </div>
@@ -161,18 +161,18 @@ export default function Profile() {
         {/* Name Row */}
         <div className="mb-4 flex items-center justify-between border-w-full">
           <div>
-            <label className="block text-gray-700">
+            <label className="block text-green-700">
               {user.firstName} {user.lastName}
             </label>
           </div>
         </div>
 
         {/* Password Row */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between text-green-700">
           <div>
             {isEditingPassword ? (
               <div>
-                <span className="block text-gray-700">
+                <span className="block text-green-700">
                   <FloatingPasswordInput
                     name="password"
                     placeholder="Current Password"
@@ -180,7 +180,7 @@ export default function Profile() {
                     onChange={() => {}}
                   />
                 </span>
-                <span className="block text-gray-700 mt-7">
+                <span className="block text-green-700 mt-7">
                   <FloatingPasswordInput
                     name="newpassword"
                     placeholder="New Password"
@@ -188,7 +188,7 @@ export default function Profile() {
                     onChange={handlePasswordChange}
                   />
                 </span>
-                <span className="block text-gray-700 mt-7">
+                <span className="block text-green-700 mt-7">
                   <FloatingPasswordInput
                     name="confirmpassword"
                     placeholder="Confirm Password"
@@ -199,7 +199,7 @@ export default function Profile() {
                 </span>
               </div>
             ) : (
-              <span className="rounded">********</span>
+              <span className="rounded text-green-700">********</span>
             )}
           </div>
           {!isEditingPassword && (
@@ -235,7 +235,7 @@ export default function Profile() {
                 setNewPassword("");
                 setConfirmPassword("");
               }}
-              className="ml-4 bg-gray-500 text-white px-4 py-2 rounded"
+              className="ml-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-orange-400"
             >
               Cancel
             </button>

@@ -10,7 +10,9 @@ import customStyles from "../styles/global.css";
 import {
   Form,
   useActionData,
+  useFetcher,
   useLoaderData,
+  useNavigate,
   useRouteError,
 } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
@@ -57,8 +59,10 @@ const userData = {
 
 export let loader: LoaderFunction = async ({ request }) => {
   try {
-    const user: any = userData;
+    // const session = await getSession(request.headers.get("Cookie"));
+    // const user = session.get("user");
 
+    const user: any = userData;
     if (!user) {
       throw JSON.stringify({
         data: {
@@ -90,30 +94,53 @@ export let loader: LoaderFunction = async ({ request }) => {
 };
 
 export let action: ActionFunction = async ({ request }) => {
+  // const session = await getSession(request.headers.get("Cookie"));
+  // const userData = session.get("user");
+  const url = request.url;
+  const currentUrl = url.split("/").slice(0, -1).join("/profile");
+  console.log("currentUrl", currentUrl.split("/").slice(0, -1).join("/"));
+
   const user: any = userData;
   if (!user) {
     return json({ error: "Unauthorized", status: 401 }, { status: 401 });
   }
 
   const body = await request.formData();
-  const firstName = body.get("firstName");
-  const middleName = body.get("middleName");
-  const lastName = body.get("lastName");
-  const phoneNumber = body.get("phoneNumber");
-  const email = body.get("email");
-  const role = body.get("role");
   const action = body.get("_action");
 
   try {
-    invariant(typeof firstName === "string", "First name is required");
-    invariant(typeof lastName === "string", "Last name is required");
-    invariant(typeof email === "string", "Email is required");
-    invariant(typeof phoneNumber === "string", "Phone number is required");
-    invariant(typeof role === "string", "Role is required");
+    if (action === "personal") {
+      const firstName = body.get("firstName");
+      const middleName = body.get("middleName");
+      const lastName = body.get("lastName");
+      const phoneNumber = body.get("phoneNumber");
+      const email = body.get("email");
 
-    // Perform the update logic here with the updated user data
+      console.log("firstName", firstName, "middleName", middleName, "lastName", lastName, "phoneNumber", phoneNumber, "email", email);
 
-    return redirect("/account/information");
+      invariant(typeof firstName === "string", "First name is required");
+      invariant(typeof lastName === "string", "Last name is required");
+      invariant(typeof email === "string", "Email is required");
+      invariant(typeof phoneNumber === "string", "Phone number is required");
+
+      // await updateUserProfile(user.id, { firstName, middleName, lastName, email, phoneNumber });
+
+      return json({ success: true });
+    } else if (action === "business") {
+      const companyDetails = body.get("companyDetails");
+      const vehicleTypes = JSON.parse(body.get("vehicleTypes") as string); // Assuming vehicleTypes is a JSON string
+      const fleetSize = body.get("fleetSize");
+
+      invariant(typeof companyDetails === "string", "Company details are required");
+      invariant(Array.isArray(vehicleTypes), "Vehicle types are required");
+      invariant(typeof fleetSize === "string", "Fleet size is required");
+
+      // await updateBusinessInformation(user.id, { companyDetails, vehicleTypes, fleetSize });
+
+      return json({ success: true });
+    } else {
+      return json({ error: "Invalid action" }, { status: 400 });
+    }
   } catch (error: any) {
     return json({ error: error.message }, { status: 400 });
   }
@@ -122,17 +149,18 @@ export let action: ActionFunction = async ({ request }) => {
 export default function BusinessInformation() {
   const LoaderData: any = useLoaderData();
   const actionData: any = useActionData();
+  const navigation = useNavigate();
+  const isSubmitting = navigation.state === "submitting";
   const user = LoaderData?.user?.user;
   const roles = LoaderData?.roles;
-
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
-  const [isEditingRole, setIsEditingRole] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [activeTab, setActiveTab] = useState("personal");
   const [showCompleteProfileForm, setShowCompleteProfileForm] = useState(false);
   const [documents, setDocuments] = useState<File[]>([]);
   const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
   const [fleetSize, setFleetSize] = useState("");
+  const fetcher = useFetcher();
 
   const [vehicleTypes, setVehicleTypes] = useState({
     Trucks: { selected: false, quantity: 0 },
@@ -140,8 +168,6 @@ export default function BusinessInformation() {
     Vans: { selected: false, quantity: 0 },
     Cargoes: { selected: false, quantity: 0 },
   });
-
-  const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`;
 
   console.log("selectedRole", selectedRole);
 
@@ -176,15 +202,30 @@ export default function BusinessInformation() {
     setFleetSize(e.target.value);
   };
 
-  const [fieldValues, setFieldValues] = useState({
-    firstName: user.firstName,
-    middleName: user.middleName,
-    lastName: user.lastName,
-    email: user.email,
-    phoneNumber: user.phoneNumber,
+  const [formValues, setFormValues] = useState({
+    firstName: user.firstName || '',
+    middleName: user.middleName || '',
+    lastName: user.lastName || '',
+    email: user.email || '',
+    phoneNumber: user.phoneNumber || '',
   });
+  
+  const isFormValid = () => {
+    return (
+      formValues.firstName &&
+      formValues.lastName &&
+      formValues.email &&
+      formValues.phoneNumber
+    );
+  };
 
-  const inputRef = useRef(null);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues({
+      ...formValues,
+      [name]: value,
+    });
+  };
 
   useEffect(() => {
     const requiredDocs = documents;
@@ -193,7 +234,7 @@ export default function BusinessInformation() {
         (v) => v.selected && v.quantity > 0
       );
       const requiredDocCount = requiredDocs.length >= 2;
-      const isValid = isVehicleSelected && requiredDocCount;
+      const isValid = (isVehicleSelected && requiredDocCount) || isSubmitting;
       setIsUpdateEnabled(isValid);
     } else if (selectedRole === "fleet_owner") {
       const isVehicleSelected = Object.values(vehicleTypes).some(
@@ -202,12 +243,16 @@ export default function BusinessInformation() {
       const isFleetSizeSelected = fleetSize !== "";
       const requiredDocCount = requiredDocs.length >= 2;
       const isValid =
-        isVehicleSelected && isFleetSizeSelected && requiredDocCount;
+        (isVehicleSelected && isFleetSizeSelected && requiredDocCount) || isSubmitting;
       setIsUpdateEnabled(isValid);
     } else {
       setIsUpdateEnabled(false);
     }
-  }, [selectedRole, vehicleTypes, fleetSize, documents]);
+
+    if (fetcher.data && fetcher.data.success) {
+      window.location.reload();
+    }
+  }, [selectedRole, vehicleTypes, fleetSize, documents, isSubmitting, fetcher.data]);
 
   const handleEditClick = (field) => {
     setIsEditingField(field);
@@ -251,78 +296,96 @@ export default function BusinessInformation() {
 
         <div className="flex-1 overflow-y-auto">
           {activeTab === "personal" && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4">
-                Personal Information
-              </h3>
-
-              {[
-                "firstName",
-                "middleName",
-                "lastName",
-                "email",
-                "phoneNumber",
-              ].map((field, index) => (
-                <div
-                  key={index}
-                  className="mb-6 flex justify-between items-center border-t-2 py-2"
-                >
-                  <div className="flex-1">
-                    {isEditingField === field ? (
-                      <Form method="post" className="flex w-full">
-                        <input
-                          type="text"
-                          name={field}
-                          defaultValue={user[field]}
-                          required
-                          placeholder={
-                            field.charAt(0).toUpperCase() + field.slice(1)
-                          }
-                          className="flex-1 border border-gray-300 rounded py-2 px-3"
-                          ref={inputRef}
-                        />
-                        <input
-                          type="hidden"
-                          name="_action"
-                          value={`update${field}`}
-                        />
-                        <div className="flex space-x-2 ml-4">
-                          <button
-                            type="submit"
-                            className="text-blue-500 hover:underline"
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCancelClick}
-                            className="text-blue-500 hover:underline"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </Form>
-                    ) : (
-                      <div className="flex items-center w-full">
-                        <label className="block text-gray-700 font-semibold">
-                          {field.charAt(0).toUpperCase() +
-                            field.slice(1).replace(/([A-Z])/g, " $1")}
-                        </label>
-                        <span className="ml-20 flex-1">{user[field]}</span>
-                      </div>
-                    )}
-                  </div>
-                  {isEditingField !== field && (
+              <div>
+                <div className="flex justify-between items-center mb-4 py-2">
+                  <h3 className="text-lg font-semibold text-green-700">
+                    Personal Information
+                  </h3>
+                { isEditingField !== "personal" && (
+                  <>
                     <button
                       type="button"
-                      onClick={() => handleEditClick(field)}
-                      className="text-blue-500 hover:underline"
+                      onClick={() => handleEditClick("personal")}
+                      className="flex items-center text-green-700 hover:text-orange-400 transition duration-200 mr-4 bg-gray-100"
                     >
-                      <PencilIcon className="w-4 h-4 hover:text-orange-400" />
+                      <span className="mr-2 p-2">Edit</span>
+                      <PencilIcon className="w-6 h-6" />
                     </button>
-                  )}
-                </div>
-              ))}
+                  </>
+                )}
+              </div>
+
+              {isEditingField !== "personal" ? (
+                <div className="space-y-6 text-green-700">
+                {[
+                  { name: "firstName", label: "First Name" },
+                  { name: "middleName", label: "Middle Name" },
+                  { name: "lastName", label: "Last Name" },
+                  { name: "email", label: "Email" },
+                  { name: "phoneNumber", label: "Phone Number" },
+                ].map((field, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center border-t-1 py-1"
+                  >
+                    <label className="w-1/3 font-semibold text-green-700">
+                      {field.label}
+                    </label>
+                    <span className="w-2/3">{user[field.name]}</span>
+                  </div>
+                ))}
+              </div>
+              ) : (
+                <Form method="post" className="space-y-6">
+                  {[
+                    { name: "firstName", label: "First Name" },
+                    { name: "middleName", label: "Middle Name" },
+                    { name: "lastName", label: "Last Name" },
+                    { name: "email", label: "Email" },
+                    { name: "phoneNumber", label: "Phone Number" },
+                  ].map((field, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center border-t-1 py-1"
+                    >
+                      <label className="w-1/3 text-green-700 font-semibold">
+                        {field.label}
+                      </label>
+                      <input
+                        type="text"
+                        name={field.name}
+                        defaultValue={formValues[field.name]}
+                        required
+                        placeholder={field.label}
+                        className="w-2/3 border border-gray-300 rounded py-2 px-3"
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={handleCancelClick}
+                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-orange-400"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      name="_action"
+                      value="personal"
+                      className={`px-4 py-2 rounded ${
+                        isSubmitting || !isFormValid()
+                          ? "bg-gray-500 text-black cursor-not-allowed"
+                          : "bg-green-500 text-white cursor-pointer hover:bg-orange-400"
+                      }`}
+                      disabled={isSubmitting || !isFormValid()}
+                    >
+                      Update
+                    </button>
+                  </div>
+                </Form>
+              )}
             </div>
           )}
 
@@ -578,6 +641,8 @@ export default function BusinessInformation() {
                       </button>
                       <button
                         type="submit"
+                        name="_action"
+                        value="business"
                         className={`px-4 py-2 rounded ${
                           isUpdateEnabled
                             ? "bg-green-500 text-white cursor-pointer hover:bg-orange-400"

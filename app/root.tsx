@@ -72,7 +72,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 }
 
-export default function App() {  
+export default function BusinessInformation() {  
   const loaderData: any = useLoaderData();
   const location = useLocation();
   let user = null;
