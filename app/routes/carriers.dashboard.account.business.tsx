@@ -1,18 +1,16 @@
 import {
-  MetaFunction,
+  type MetaFunction,
   json,
-  LinksFunction,
-  ActionFunction,
+  type LinksFunction,
+  type ActionFunction,
   redirect,
-  LoaderFunction,
+  type LoaderFunction,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import {
   Form,
   useActionData,
   useLoaderData,
-  useNavigate,
-  useNavigation,
   useRouteError,
 } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +20,7 @@ import invariant from "tiny-invariant";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { Link } from "@remix-run/react";
 import { PencilIcon } from "@heroicons/react/16/solid";
+import DocumentUpload from "~/components/documentupload";
 
 export const meta: MetaFunction = () => {
   return [
@@ -50,7 +49,7 @@ const userData = {
     middleName: "Alpha",
     lastName: "War",
     roles: ["carrier"],
-    companyDetails: "",
+    companyDetails: "CA1247",
     phoneNumber: "+15806471212",
     status: "Not Approved",
   },
@@ -125,24 +124,22 @@ export default function BusinessInformation() {
   const actionData: any = useActionData();
   const user = LoaderData?.user?.user;
   const roles = LoaderData?.roles;
+
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [isEditingRole, setIsEditingRole] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [activeTab, setActiveTab] = useState("personal");
   const [showCompleteProfileForm, setShowCompleteProfileForm] = useState(false);
   const [documents, setDocuments] = useState<File[]>([]);
+  const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
+  const [fleetSize, setFleetSize] = useState("");
 
-  const [vehicles, setVehicles] = useState({
-    Trucks: false,
-    Boats: false,
-    Vans: false,
-    Cargoes: false,
+  const [vehicleTypes, setVehicleTypes] = useState({
+    Trucks: { selected: false, quantity: 0 },
+    Boats: { selected: false, quantity: 0 },
+    Vans: { selected: false, quantity: 0 },
+    Cargoes: { selected: false, quantity: 0 },
   });
-
-  // Determine if the user is a Fleet Owner or Driver
-  const isFleetOwner = ["fleet_owner"].includes(selectedRole);
-  const isOwnerOperator = ["owner_operator"].includes(selectedRole);
-  const isDispatcher = ["dispatcher"].includes(selectedRole);
 
   const inputStyle = `border border-slate-400 rounded py-2 px-3 inline-block w-full`;
 
@@ -151,13 +148,32 @@ export default function BusinessInformation() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      setDocuments(Array.from(files));
+      setDocuments((prevDocs) => [...prevDocs, ...Array.from(files)]);
     }
+  };
+
+  const handleRemoveFile = (index) => {
+    setDocuments((prevDocs) => prevDocs.filter((_, i) => i !== index));
   };
 
   const handleVehicleChange = (e) => {
     const { name, checked } = e.target;
-    setVehicles((prevVehicles) => ({ ...prevVehicles, [name]: checked }));
+    setVehicleTypes((prevVehicles) => ({
+      ...prevVehicles,
+      [name]: { ...prevVehicles[name], selected: checked },
+    }));
+  };
+
+  const handleVehicleQuantityChange = (e, vehicle) => {
+    const { value } = e.target;
+    setVehicleTypes((prevVehicles) => ({
+      ...prevVehicles,
+      [vehicle]: { ...prevVehicles[vehicle], quantity: parseInt(value, 10) },
+    }));
+  };
+
+  const handleFleetSizeChange = (e) => {
+    setFleetSize(e.target.value);
   };
 
   const [fieldValues, setFieldValues] = useState({
@@ -171,16 +187,27 @@ export default function BusinessInformation() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (inputRef.current && !inputRef.current.contains(event.target)) {
-        setIsEditingField(null);
-      }
+    const requiredDocs = documents;
+    if (selectedRole === "owner_operator") {
+      const isVehicleSelected = Object.values(vehicleTypes).some(
+        (v) => v.selected && v.quantity > 0
+      );
+      const requiredDocCount = requiredDocs.length >= 2;
+      const isValid = isVehicleSelected && requiredDocCount;
+      setIsUpdateEnabled(isValid);
+    } else if (selectedRole === "fleet_owner") {
+      const isVehicleSelected = Object.values(vehicleTypes).some(
+        (v) => v.selected
+      );
+      const isFleetSizeSelected = fleetSize !== "";
+      const requiredDocCount = requiredDocs.length >= 2;
+      const isValid =
+        isVehicleSelected && isFleetSizeSelected && requiredDocCount;
+      setIsUpdateEnabled(isValid);
+    } else {
+      setIsUpdateEnabled(false);
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [inputRef]);
+  }, [selectedRole, vehicleTypes, fleetSize, documents]);
 
   const handleEditClick = (field) => {
     setIsEditingField(field);
@@ -189,6 +216,7 @@ export default function BusinessInformation() {
   const handleCancelClick = () => {
     setIsEditingField(null);
   };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg w-full h-full flex flex-col">
       {actionData?.error && (
@@ -196,7 +224,7 @@ export default function BusinessInformation() {
           {actionData.error}
         </p>
       )}
-      <h2 className="text-2xl font-semibold mb-4">My Account</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-green-800">My Account</h2>
       <div className="flex flex-col w-full h-full">
         <div className="flex justify-start border-b pb-2 mb-4">
           <button
@@ -299,58 +327,67 @@ export default function BusinessInformation() {
           )}
 
           {activeTab === "business" && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4">
-                Business Information
-              </h3>
+            <div className="text-lg font-semibold mb-4 text-green-800">
+              <h3 className="border-b-1">Business Information</h3>
               <div className="mt-6">
                 {!showCompleteProfileForm && (
                   <>
                     <div className="flex items-center mb-4">
-                      <h3 className="font-semibold mr-2">
-                        Business Profile Status:
-                      </h3>
                       {user.status === "Approved" ? (
-                        <div className="relative group">
-                          <span className="inline-block bg-green-500 text-white rounded-full p-2 text-center">
-                            ✔
-                          </span>
-                          <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
-                            Your business profile is complete. Start picking up
-                            loads.
-                            <Link
-                              to="/carriers/dashboard/view/"
-                              className="text-blue-400 underline ml-1"
-                            >
-                              View Loads
-                            </Link>
-                          </label>
-                        </div>
+                        <>
+                          <h3 className="mr-2">Business Profile Status:</h3>
+                          <div className="relative group">
+                            <span className="inline-block bg-green-500 text-white rounded-full p-2 text-center">
+                              ✔
+                            </span>
+                            <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
+                              Your business profile is complete. Start picking
+                              up loads.
+                              <Link
+                                to="/carriers/dashboard/view/"
+                                className="text-blue-400 underline ml-1"
+                              >
+                                View Loads
+                              </Link>
+                            </label>
+                          </div>
+                        </>
                       ) : null}
                     </div>
 
-                    <div className="mb-4">
+                    <div className="mb-4 border border-gray-300">
                       <label className="block font-semibold">
                         Current Role:{" "}
-                        <span className="font-normal">{user.roles[0]}</span>
+                        <span className="font-normal px-9">
+                          {user.roles[0]}
+                        </span>
                       </label>
                     </div>
 
                     {user.status === "Approved" && user.companyDetails && (
-                      <div className="mb-4">
-                        <span className="block font-semibold">
-                          Company Name: {user.companyDetails}
-                        </span>
+                      <div className="mb-4 border border-gray-300">
+                        <label className="block font-semibold">
+                          Company Name:
+                          <span className="font-normal px-6">
+                            {user.companyDetails}
+                          </span>
+                        </label>
                       </div>
                     )}
 
                     {user.status === "Not Approved" && (
-                      <button
-                        className="bg-orange-500 text-white px-4 py-2 rounded mt-4"
-                        onClick={() => setShowCompleteProfileForm(true)}
-                      >
-                        Complete your Profile
-                      </button>
+                      <>
+                        <p className="mb-4">
+                          Your business profile is not complete. Please complete
+                          your profile to start picking up loads.
+                        </p>
+                        <button
+                          className="bg-orange-500 text-white px-4 py-2 rounded"
+                          onClick={() => setShowCompleteProfileForm(true)}
+                        >
+                          Complete your Profile
+                        </button>
+                      </>
                     )}
                   </>
                 )}
@@ -377,7 +414,7 @@ export default function BusinessInformation() {
                     <div className="mb-4">
                       <select
                         name="role"
-                        className="block w-full mt-1 rounded-md border-gray-300"
+                        className="block w-full mt-1 rounded-md border-gray-300 mb-4"
                         onChange={(e) => setSelectedRole(e.target.value)}
                         required
                       >
@@ -391,7 +428,7 @@ export default function BusinessInformation() {
                         ))}
                       </select>
                     </div>
-                    {isOwnerOperator && (
+                    {selectedRole === "owner_operator" && (
                       <div className="col-span-2 flex flex-wrap gap-4">
                         {["Trucks", "Boats", "Vans", "Cargoes"].map(
                           (vehicle) => (
@@ -404,12 +441,17 @@ export default function BusinessInformation() {
                                 />
                                 {vehicle}
                               </label>
-                              {vehicles[vehicle as keyof typeof vehicles] && (
+                              {vehicleTypes[vehicle].selected && (
                                 <input
                                   type="number"
+                                  required
                                   name={`${vehicle.toLowerCase()}Quantity`}
                                   className="w-20"
                                   placeholder="Qty"
+                                  value={vehicleTypes[vehicle].quantity}
+                                  onChange={(e) =>
+                                    handleVehicleQuantityChange(e, vehicle)
+                                  }
                                 />
                               )}
                             </div>
@@ -417,78 +459,111 @@ export default function BusinessInformation() {
                         )}
                       </div>
                     )}
-                    {isFleetOwner && (
+                    {selectedRole === "fleet_owner" && (
                       <div className="col-span-2 pb-3">
                         <p className="font-medium">Fleet:</p>
-                        <label className="px-1">
-                          <input
-                            type="checkbox"
-                            name="vehicleType"
-                            value="Trucks"
-                          />{" "}
-                          Trucks
-                        </label>
-                        <label className="px-1">
-                          <input
-                            type="checkbox"
-                            name="vehicleType"
-                            value="Boats"
-                          />{" "}
-                          Boats
-                        </label>
-                        <label className="px-1">
-                          <input
-                            type="checkbox"
-                            name="vehicleType"
-                            value="Vans"
-                          />{" "}
-                          Vans
-                        </label>
-                        <label className="px-1">
-                          <input
-                            type="checkbox"
-                            name="vehicleType"
-                            value="Cargoes"
-                          />{" "}
-                          Cargoes
-                        </label>
+                        {["Trucks", "Boats", "Vans", "Cargoes"].map(
+                          (vehicle) => (
+                            <label key={vehicle} className="px-1">
+                              <input
+                                type="checkbox"
+                                name="vehicleType"
+                                value={vehicle}
+                                onChange={handleVehicleChange}
+                              />{" "}
+                              {vehicle}
+                            </label>
+                          )
+                        )}
                       </div>
                     )}
                     {selectedRole === "fleet_owner" && (
                       <div className="col-span-2">
                         <p className="font-medium">Fleet Size:</p>
-                        <label className="px-2">
-                          <input type="radio" name="fleetSize" value="1-2" />{" "}
-                          1-2
-                        </label>
-                        <label className="px-2">
-                          <input type="radio" name="fleetSize" value="3-10" />{" "}
-                          3-10
-                        </label>
-                        <label className="px-2">
-                          <input type="radio" name="fleetSize" value="11-25" />{" "}
-                          11-25
-                        </label>
-                        <label className="px-2">
-                          <input type="radio" name="fleetSize" value="26-50" />{" "}
-                          26-50
-                        </label>
-                        <label className="px-2">
-                          <input type="radio" name="fleetSize" value="50+" />{" "}
-                          50+
-                        </label>
+                        {["1-2", "3-10", "11-25", "26-50", "50+"].map(
+                          (size) => (
+                            <label key={size} className="px-2">
+                              <input
+                                type="radio"
+                                name="fleetSize"
+                                value={size}
+                                onChange={handleFleetSizeChange}
+                              />{" "}
+                              {size}
+                            </label>
+                          )
+                        )}
                       </div>
                     )}
-                    <div className="mb-4">
-                      <label className="block text-gray-700">
-                        Upload Documents
+                    <div className="mb-4 mt-6">
+                      <label className="block text-green-700">
+                        Upload Required Documents
                       </label>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        className="block w-full mt-1 rounded-md border-gray-300"
-                      />
+                      <p className="text-gray-500 text-sm">
+                        Upload the following documents to complete your profile
+                        <br />
+                        {selectedRole === "owner_operator" && (
+                          <>
+                            <span className="text-red-700 italic">
+                              * Driver's License,{" "}
+                            </span>
+                            <span className="text-red-700">
+                              * Vehicle Registration,{" "}
+                            </span>
+                          </>
+                        )}
+                        {selectedRole === "fleet_owner" && (
+                          <>
+                            <span className="text-red-700 italic">
+                              * Company's License,{" "}
+                            </span>
+                            <span className="text-red-700">* ID, </span>
+                          </>
+                        )}
+                        and any other relevant documents.
+                      </p>
+                      {selectedRole && (
+                        <div className="mt-4">
+                          <input
+                            type="file"
+                            onChange={handleFileChange}
+                            multiple
+                            name="documents"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="block w-full mt-1 rounded-md border-gray-300 p-2"
+                          />
+                          <ul className="mt-2">
+                            {documents.map((file, index) => (
+                              <li
+                                key={index}
+                                className="flex space-x-10 items-center mt-2"
+                              >
+                                <span className="text-sm">{file.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveFile(index)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <svg
+                                    className="w-4 h-4 font-bold hover:text-red-800"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M6 18L18 6M6 6l12 12"
+                                    ></path>
+                                  </svg>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                     <div className="flex justify-end space-x-4">
                       <button
@@ -497,13 +572,18 @@ export default function BusinessInformation() {
                           setShowCompleteProfileForm(false);
                           setIsEditingField(null);
                         }}
-                        className="bg-gray-500 text-white px-4 py-2 rounded"
+                        className="bg-gray-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-orange-400"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="bg-green-500 text-white px-4 py-2 rounded"
+                        className={`px-4 py-2 rounded ${
+                          isUpdateEnabled
+                            ? "bg-green-500 text-white cursor-pointer hover:bg-orange-400"
+                            : "bg-gray-500 text-black cursor-not-allowed"
+                        }`}
+                        disabled={!isUpdateEnabled}
                       >
                         Update
                       </button>
