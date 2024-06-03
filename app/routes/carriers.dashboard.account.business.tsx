@@ -7,13 +7,16 @@ import {
   type LoaderFunction,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
+// ...
 import {
   Form,
   useActionData,
   useFetcher,
   useLoaderData,
   useNavigate,
+  useNavigation,
   useRouteError,
+  useTransition
 } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
@@ -21,8 +24,9 @@ import { getSession } from "~/api/services/session";
 import invariant from "tiny-invariant";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { Link } from "@remix-run/react";
-import { PencilIcon } from "@heroicons/react/16/solid";
+import { PencilIcon, TruckIcon } from "@heroicons/react/16/solid";
 import DocumentUpload from "~/components/documentupload";
+import { Loader } from "~/components/loader";
 
 export const meta: MetaFunction = () => {
   return [
@@ -33,10 +37,11 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const links: LinksFunction = () => [
-  ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
-];
-
+export const links = () => {
+  return [
+    { rel: "stylesheet", href: customStyles }
+  ];
+};
 const userData = {
   token:
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYWZpbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
@@ -62,7 +67,7 @@ export let loader: LoaderFunction = async ({ request }) => {
     // const session = await getSession(request.headers.get("Cookie"));
     // const user = session.get("user");
 
-    const user: any = userData;
+    let user: any = userData;
     if (!user) {
       throw JSON.stringify({
         data: {
@@ -83,6 +88,8 @@ export let loader: LoaderFunction = async ({ request }) => {
           "Government Shipper": "government_shipper",
           "Corporate Shipper": "corporate_shipper",
         };
+
+    // user = null
 
     return json({ user, roles });
   } catch (e: any) {
@@ -149,7 +156,7 @@ export let action: ActionFunction = async ({ request }) => {
 export default function BusinessInformation() {
   const LoaderData: any = useLoaderData();
   const actionData: any = useActionData();
-  const navigation = useNavigate();
+  const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const user = LoaderData?.user?.user;
   const roles = LoaderData?.roles;
@@ -161,6 +168,9 @@ export default function BusinessInformation() {
   const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
   const [fleetSize, setFleetSize] = useState("");
   const fetcher = useFetcher();
+
+  // Refresh page if the actionData returns success
+
 
   const [vehicleTypes, setVehicleTypes] = useState({
     Trucks: { selected: false, quantity: 0 },
@@ -203,11 +213,11 @@ export default function BusinessInformation() {
   };
 
   const [formValues, setFormValues] = useState({
-    firstName: user.firstName || '',
-    middleName: user.middleName || '',
-    lastName: user.lastName || '',
-    email: user.email || '',
-    phoneNumber: user.phoneNumber || '',
+    firstName: user?.firstName || '',
+    middleName: user?.middleName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phoneNumber: user?.phoneNumber || '',
   });
   
   const isFormValid = () => {
@@ -248,10 +258,11 @@ export default function BusinessInformation() {
     } else {
       setIsUpdateEnabled(false);
     }
-
+    
     if (fetcher.data && fetcher.data.success) {
       window.location.reload();
     }
+    
   }, [selectedRole, vehicleTypes, fleetSize, documents, isSubmitting, fetcher.data]);
 
   const handleEditClick = (field) => {
@@ -261,6 +272,12 @@ export default function BusinessInformation() {
   const handleCancelClick = () => {
     setIsEditingField(null);
   };
+
+  if(!user || isSubmitting) {
+    return (
+     <Loader />
+    );
+  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg w-full h-full flex flex-col">
@@ -315,7 +332,7 @@ export default function BusinessInformation() {
                 )}
               </div>
 
-              {isEditingField !== "personal" ? (
+              {isEditingField !== "personal" && LoaderData.user !== null ? (
                 <div className="space-y-6 text-green-700">
                 {[
                   { name: "firstName", label: "First Name" },
@@ -336,7 +353,7 @@ export default function BusinessInformation() {
                 ))}
               </div>
               ) : (
-                <Form method="post" className="space-y-6">
+                <fetcher.Form method="post" className="space-y-6" >
                   {[
                     { name: "firstName", label: "First Name" },
                     { name: "middleName", label: "Middle Name" },
@@ -381,10 +398,14 @@ export default function BusinessInformation() {
                       }`}
                       disabled={isSubmitting || !isFormValid()}
                     >
-                      Update
+                      {isSubmitting ? (
+                        <>Submitting<span className="animate-ping font-bold"> ..</span><span className="animate-bounce font-extrabold">.</span></>
+                      ) : (
+                        "Update"
+                      )}
                     </button>
                   </div>
-                </Form>
+                </fetcher.Form>
               )}
             </div>
           )}

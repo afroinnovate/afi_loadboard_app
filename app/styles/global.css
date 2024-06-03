@@ -184,3 +184,29 @@ input[type="radio"] {
 .required-asterisk {
   color: red;
 }
+
+@keyframes moveInCircle {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  animation: moveInCircle 2s linear infinite;
+}
+
+.loader-truck {
+  position: absolute;
+  top: -10px; /* Adjust to align truck correctly */
+  left: 50%;
+  transform: translateX(10%);
+}
+
+
+

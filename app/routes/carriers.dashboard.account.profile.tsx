@@ -12,6 +12,7 @@ import ErrorDisplay from "~/components/ErrorDisplay";
 import { getSession } from "~/api/services/session";
 import type { PasswordResetRequest } from "~/api/models/passwordResetRequest";
 import { PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
+import { Loader } from "~/components/loader";
 
 export const meta: MetaFunction = () => {
   return [
@@ -45,7 +46,7 @@ export let loader = async ({ request }) => {
   try {
     // const session = await getSession(request.headers.get("Cookie"));
     // const user = session.get("user");
-    const user: any = userData;
+    let user: any = userData;
 
     if (!user) {
       throw JSON.stringify({
@@ -55,6 +56,8 @@ export let loader = async ({ request }) => {
         },
       });
     }
+
+    // user = null
 
     return json({ user });
   } catch (e: any) {
@@ -115,12 +118,6 @@ export default function Profile() {
 
   const isPasswordValid = newPassword !== "" && newPassword === confirmPassword;
 
-  // useEffect(() => {
-  //   if (actionData?.success) {
-  //     navigate("/carrier/dashboard/account/profile");
-  //   }
-  // }, [actionData, navigate]);
-
   const handlePasswordChange = (name: string, value: string) => {
     if (name === "newpassword") {
       setNewPassword(value);
@@ -128,6 +125,12 @@ export default function Profile() {
       setConfirmPassword(value);
     }
   };
+
+  if(!user || isSubmitting) {
+    return (
+     <Loader />
+    );
+  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto">
@@ -225,7 +228,11 @@ export default function Profile() {
               }`}
               disabled={!isPasswordValid || isSubmitting}
             >
-              Save Changes
+            {isSubmitting ? (
+                <>Submitting<span className="animate-ping font-bold"> ..</span><span className="animate-bounce font-extrabold">.</span></>
+              ) : (
+                " Save Changes"
+            )}
             </button>
             <button
               type="button"
