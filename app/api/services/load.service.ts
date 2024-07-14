@@ -2,6 +2,7 @@ import type { LoadRequest } from "../models/loadRequest";
 import type { Load, LoadResponse } from "../models/loadResponse";
 
 const baseUrl = "https://api.frieght.afroinnovate.com/";
+// const baseUrl = "http://localhost:8080/auth";
 
 export async function AddLoads(loadRequest: LoadRequest, token: string) {
   try {

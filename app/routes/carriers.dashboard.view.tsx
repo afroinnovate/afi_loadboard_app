@@ -8,7 +8,7 @@ import {
 import { NavLink, useActionData, useLoaderData, useNavigate, useRouteError } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
-import { getSession } from "../api/services/session";
+import { commitSession, getSession } from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
@@ -20,28 +20,29 @@ import AccessDenied from "~/components/accessdenied";
 import { useEffect, useState } from "react";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
-import { LoginResponse } from "~/api/models/loginResponse";
-import { dummyData } from "~/api/dummy/dummy-data";
+// import { dummyData } from "~/api/dummy/dummy-data";
 import { checkUserRole } from "~/components/checkroles";
 import { manageBidProcess } from "~/api/services/bid.helper";
 import ErrorDisplay from "~/components/ErrorDisplay";
+import { authenticator } from "~/api/services/auth.server";
 
-// const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
+// const userData = {
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MTdjNjBiZi0xNDk1LTQ3OWMtOWFjMS1mMTA5MTlhNWNhNjYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0MTdjNjBiZi0xNDk1LTQ3OWMtOWFjMS1mMTA5MTlhNWNhNjYiLCJqdGkiOiIyNzgwZDk4Zi1lNjJjLTRlOGQtODY1ZS0yZGM5MzY1MWI2MWMiLCJuYmYiOjE3MjA5ODI2NTMsImV4cCI6MTcyMDk4NjI1OCwiaWF0IjoxNzIwOTgyNjU4LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.e91eHO7Te3a_aG7u21fGRs47akjRqMYFpzfcvtT8R8E",
 //   tokenType: "Bearer",
 //   refreshToken: "eyJhbGci",
 //   expiresIn: 3600,
 //   user: {
-//     "id": "7c134ef0-eff8-466e-955e-e195700d8696",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
-//     "firstName": "Tango",
-//     "lastName": "War",
-//     "roles": [
-//         "carrier",
-//     ],
-//     "phoneNumber": "+15806471212"
-//   }
+//     id: "417c60bf-1495-479c-9ac1-f10919a5ca66",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Tango",
+//     lastName: "Tew",
+//     roles: ["carrier"],
+//     // companyDetails: "CA1247",
+//     phoneNumber: "+15806471212",
+//     // status: "Not Approved",
+//   },
 // };
 
 export const meta: MetaFunction = () => {
@@ -56,16 +57,14 @@ export const meta: MetaFunction = () => {
 export const loader = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
+    const user = session.get(authenticator.sessionKey);
 
-    // const user: any = userData;
-    if (!user) {
-      throw JSON.stringify({
-          data: {
-            message: "Unauthorized",
-            status: 401,
-          },
-        });
+    if (user) {
+      json(user, {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
 
     const response = await GetLoads(user.token);
@@ -88,7 +87,7 @@ export const loader = async ({ request }) => {
 export const action = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
+    const user = session.get(authenticator.sessionKey);
 
     // const user: any = userData;
 
@@ -104,7 +103,7 @@ export const action = async ({ request }) => {
     const actionType = formData.get("_action");
     const loadId = formData.get("loadId") 
     const bidLoadId = formData.get("bidLoadId")
- 
+
     switch (actionType) {
       case "contact":
         return json({"error": "", "message": "contactMode" });

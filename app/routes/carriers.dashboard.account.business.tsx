@@ -27,6 +27,8 @@ import { Link } from "@remix-run/react";
 import { PencilIcon, TruckIcon } from "@heroicons/react/16/solid";
 import DocumentUpload from "~/components/documentupload";
 import { Loader } from "~/components/loader";
+import { updateUserProfile } from "~/api/services/user.service";
+import { authenticator } from "~/api/services/auth.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -42,32 +44,31 @@ export const links = () => {
     { rel: "stylesheet", href: customStyles }
   ];
 };
-const userData = {
-  token:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYWZpbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    id: "7c134ef0-eff8-466e-955e-e195700d8696",
-    userName: "tangotew@gmail.com",
-    email: "tangotew@gmail.com",
-    firstName: "Tango",
-    middleName: "Alpha",
-    lastName: "War",
-    roles: ["carrier"],
-    companyDetails: "CA1247",
-    phoneNumber: "+15806471212",
-    status: "Not Approved",
-  },
-};
+// const userData = {
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MTdjNjBiZi0xNDk1LTQ3OWMtOWFjMS1mMTA5MTlhNWNhNjYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0MTdjNjBiZi0xNDk1LTQ3OWMtOWFjMS1mMTA5MTlhNWNhNjYiLCJqdGkiOiIyNzgwZDk4Zi1lNjJjLTRlOGQtODY1ZS0yZGM5MzY1MWI2MWMiLCJuYmYiOjE3MjA5ODI2NTMsImV4cCI6MTcyMDk4NjI1OCwiaWF0IjoxNzIwOTgyNjU4LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.e91eHO7Te3a_aG7u21fGRs47akjRqMYFpzfcvtT8R8E",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     id: "417c60bf-1495-479c-9ac1-f10919a5ca66",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Tango",
+//     lastName: "Tew",
+//     roles: ["carrier"],
+//     // companyDetails: "CA1247",
+//     phoneNumber: "+15806471212",
+//     // status: "Not Approved",
+//   },
+// };
 
 export let loader: LoaderFunction = async ({ request }) => {
   try {
-    // const session = await getSession(request.headers.get("Cookie"));
-    // const user = session.get("user");
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
 
-    let user: any = userData;
+    // let user: any = userData;
     if (!user) {
       throw JSON.stringify({
         data: {
@@ -101,14 +102,15 @@ export let loader: LoaderFunction = async ({ request }) => {
 };
 
 export let action: ActionFunction = async ({ request }) => {
-  // const session = await getSession(request.headers.get("Cookie"));
-  // const userData = session.get("user");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get(authenticator.sessionKey);
+
   const url = request.url;
   const currentUrl = url.split("/").slice(0, -1).join("/profile");
   console.log("currentUrl", currentUrl.split("/").slice(0, -1).join("/"));
 
-  const user: any = userData;
-  if (!user) {
+  // const user: any = userData;
+  if (!user.user) {
     return json({ error: "Unauthorized", status: 401 }, { status: 401 });
   }
 
@@ -130,7 +132,19 @@ export let action: ActionFunction = async ({ request }) => {
       invariant(typeof email === "string", "Email is required");
       invariant(typeof phoneNumber === "string", "Phone number is required");
 
-      // await updateUserProfile(user.id, { firstName, middleName, lastName, email, phoneNumber });
+      var userInfo = {
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName,
+        email: email,
+        phoneNumber: phoneNumber,
+      };
+
+      console.log("user info: ", userInfo, user.user.id, user.token);
+
+      var response = await updateUserProfile(user.user.id, userInfo, user.token);
+      
+      console.log("Response", response);
 
       return json({ success: true });
     } else if (action === "business") {
@@ -149,7 +163,10 @@ export let action: ActionFunction = async ({ request }) => {
       return json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (error: any) {
-    return json({ error: error.message }, { status: 400 });
+    // if (JSON.parse(error).data.status == 401) {
+    //   return redirect("/login/");
+    // }
+    throw error;
   }
 };
 
@@ -687,19 +704,11 @@ export default function BusinessInformation() {
 
 export function ErrorBoundary() {
   const errorResponse: any = useRouteError();
-  try {
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  } catch (e) {
-    const error = {
-      message: "There was an error processing your request. Please try again.",
-      status: 400,
-    };
-    return <ErrorDisplay error={error} />;
-  }
+  console.log("Error response", errorResponse);
+  const jsonError = JSON.parse(errorResponse);
+  const error = {
+    message: jsonError.data.message,
+    status: jsonError.data.status,
+  };
+  return <ErrorDisplay error={error} />;
 }

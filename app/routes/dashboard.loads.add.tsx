@@ -19,7 +19,7 @@ import type { LoginUser } from "~/api/models/loginResponseUser";
 import { useState } from "react";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
-import { getSession } from "~/api/services/session";
+import { commitSession, getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
@@ -46,7 +46,7 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
+    const user = session.get(authenticator.sessionKey);
 
     // const user = userData;
 
@@ -139,12 +139,17 @@ export const action: ActionFunction = async ({ request }) => {
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    var user: any = await authenticator.isAuthenticated(request, {
-      failureRedirect: '/login/'
-    });
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
 
-    // const user = userData;
-   
+    if (!user) {
+      throw JSON.stringify({
+        data: {
+          message: "User not found",
+          status: 401,
+        },
+      });
+    }
     return json({"user": user});
   } catch (error) {
     console.log("loader error: ", error);

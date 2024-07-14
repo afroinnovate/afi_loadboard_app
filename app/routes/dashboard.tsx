@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet, useLoaderData, useLocation, NavLink, useNavigate } from "@remix-run/react";
+import { Link, Outlet, useLoaderData, useLocation, NavLink, useNavigate, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
@@ -14,6 +14,7 @@ import Overview from '../components/overview';
 import AccessDenied from '~/components/accessdenied';
 import { LoginResponse } from '~/api/models/loginResponse';
 import { checkUserRole } from '~/components/checkroles';
+import ErrorDisplay from '~/components/ErrorDisplay';
 
 export const meta: MetaFunction = () => {
   return [
@@ -44,28 +45,57 @@ export const links: LinksFunction = () => [
 // };
 
 //protect this route with authentication
-export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  // check if the sessoon is already set
-  let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-  // successRedirect: "/dashboard/", //for testing locally
-  });
+const session_expires = process.env.SESSION_EXPIRATION;
+const EXPIRES_IN = Number(session_expires) * 1000; // Convert seconds to milliseconds
 
-  if (response) {
-    // Store the token in the session
-    session.set("user", response);
-    return json(response, {
+if (isNaN(EXPIRES_IN)) {
+  throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+}
+
+export const loader: LoaderFunction = async ({ request }) => {
+  try {
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
+
+    if (!user) {
+      return redirect("/login/");
+    }
+
+    // Refresh the session expiration time to make sure the session is alive long as the user is active.
+    // const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 1 day expiration
+    const expires = new Date(Date.now() + EXPIRES_IN);
+
+    if (user) {
+      const [
+        shipperAccess,
+        shipperHasAccess,
+        adminAccess,
+        carrierAccess,
+        carrierHasAccess,
+      ] = checkUserRole(user.user.roles);
+
+      if (
+        user.user.roles &&
+        !user.roles !== shipperAccess &&
+        !user.roles !== shipperHasAccess
+      ) {
+        return redirect("/carriers/dashboard/", {
+          headers: {
+            "Set-Cookie": await commitSession(session, { expires }),
+          },
+        });
+      }
+    }
+
+    return json(user, {
       headers: {
-      "Set-Cookie": await commitSession(session),
+        "Set-Cookie": await commitSession(session, { expires }),
       },
     });
+  } catch (error) {
+    console.error("Error during authentication", error);
+    throw error
   }
-  
-  // return json(userData);
-
-  const error = session.get("_auth_error");
-  return json<any>({ error });
 };
 
 export default function Dashboard() {
@@ -156,4 +186,25 @@ export default function Dashboard() {
         </div>
       </>
     );
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  console.log("Error response", errorResponse);
+  if (isRouteErrorResponse(errorResponse)) {
+    // const jsonError = JSON.parse(errorResponse);
+    const error = {
+      message: errorResponse.data.message,
+      status: errorResponse.data.status,
+    };
+
+    return <ErrorDisplay error={error} />;
+  }
+  return (
+    <div className="flex content-center bg-red-800 text-white">
+      <h1>Uh oh ...</h1>
+      <p>Something went wrong.</p>
+      <pre>{errorResponse}</pre>
+    </div>
+  );
 }

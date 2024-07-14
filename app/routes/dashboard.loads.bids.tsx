@@ -6,7 +6,7 @@ import { BidRequest } from '~/api/models/bidRequest';
 import customStyles from "../styles/global.css";
 import type { BidResponse } from '~/api/models/bidResponse';
 import { GetBids } from '~/api/services/bid.service';
-import { LoaderFunction, json, redirect } from '@remix-run/node';
+import { LinksFunction, LoaderFunction, json, redirect } from '@remix-run/node';
 import { BidCard } from '~/components/BidCard';
 import {
   useRouteError,
@@ -53,7 +53,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
+    const user: any = session.get(authenticator.sessionKey);
 
     // const user: any = userData;
 

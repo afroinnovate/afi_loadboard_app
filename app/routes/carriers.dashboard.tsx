@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  Link,
   Outlet,
   useLoaderData,
   useLocation,
   NavLink,
   useNavigate,
-  useCatch,
   useRouteError,
-  Form,
   isRouteErrorResponse,
 } from "@remix-run/react";
 
@@ -17,7 +14,7 @@ import type {
   LinksFunction,
   LoaderFunction,
 } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
@@ -39,51 +36,74 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-const userData: LoginResponse = {
-  token:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-  tokenType: "Bearer",
-  refreshToken: "eyJhbGci",
-  expiresIn: 3600,
-  user: {
-    id: "7c134ef0-eff8-466e-955e-e195700d8696",
-    userName: "tangotew@gmail.com",
-    email: "tangotew@gmail.com",
-    firstName: "Tango",
-    lastName: "War",
-    roles: ["carrier"],
-    phoneNumber: "+15806471212",
-  },
-};
+// const userData = {
+//   token:
+//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MTdjNjBiZi0xNDk1LTQ3OWMtOWFjMS1mMTA5MTlhNWNhNjYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IlRldyIsImVtYWlsIjoidGFuZ29nYXRkZXQ3NkBnbWFpbC5jb20iLCJuYW1laWQiOiI0MTdjNjBiZi0xNDk1LTQ3OWMtOWFjMS1mMTA5MTlhNWNhNjYiLCJqdGkiOiIyNzgwZDk4Zi1lNjJjLTRlOGQtODY1ZS0yZGM5MzY1MWI2MWMiLCJuYmYiOjE3MjA5ODI2NTMsImV4cCI6MTcyMDk4NjI1OCwiaWF0IjoxNzIwOTgyNjU4LCJpc3MiOiJhZnJvaW5ub3ZhdGUuY29tIiwiYXVkIjoiYXBwLmxvYWRib2FyZC5hZnJvaW5ub3ZhdGUuY29tIn0.e91eHO7Te3a_aG7u21fGRs47akjRqMYFpzfcvtT8R8E",
+//   tokenType: "Bearer",
+//   refreshToken: "eyJhbGci",
+//   expiresIn: 3600,
+//   user: {
+//     id: "417c60bf-1495-479c-9ac1-f10919a5ca66",
+//     userName: "tangogatdet76@gmail.com",
+//     email: "tangogatdet76@gmail.com",
+//     firstName: "Tango",
+//     lastName: "Tew",
+//     roles: ["carrier"],
+//     // companyDetails: "CA1247",
+//     phoneNumber: "+15806471212",
+//     // status: "Not Approved",
+//   },
+// };
 
 // protect this route with authentication
+const session_expires = process.env.SESSION_EXPIRATION;
+const EXPIRES_IN = Number(session_expires) * 1000; // Convert seconds to milliseconds
+
+if (isNaN(EXPIRES_IN)) {
+  throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+}
+
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-  //   const session = await getSession(request.headers.get("Cookie"));
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
 
-  //   // check if the sessoon is already set
-  //   let response: any = await authenticator.isAuthenticated(request, {
-  //     failureRedirect: "/login/",
-  //     // successRedirect: "/carriers/dashboard/", //for testing locally
-  //   });
+    if (!user) {
+      return redirect("/login/");
+    }
 
-  //   if (response) {
-  //     // Store the token in the session
-  //     session.set("user", response);
+    const expires = new Date(Date.now() + EXPIRES_IN);
 
-  //     return json(response, {
-  //       headers: {
-  //         "Set-Cookie": await commitSession(session),
-  //       },
-  //     });
-  //   }
+    if (user) {
+      const [
+        shipperAccess,
+        shipperHasAccess,
+        adminAccess,
+        carrierAccess,
+        carrierHasAccess,
+      ] = checkUserRole(user.user.roles);
 
-    return json(userData);
+      if (user.user.roles && !user.roles !== carrierAccess && !user.roles !== carrierHasAccess) {
+        return redirect("/dashboard/", {
+          headers: {
+            "Set-Cookie": await commitSession(session, { expires }),
+          },
+        });
+      }
+    }
 
-    // const error = session.get("_auth_error");
-    // throw error;
+    return json({ user }, {
+      headers: {
+        "Set-Cookie": await commitSession(session, { expires }),
+      },
+    });
+
+    const error = session.get(authenticator.sessionErrorKey);
+    throw error;
   } catch (error: any) {
-    // if it's not 401, throw the error
+    if (JSON.parse(error).data.status === 401) {
+      redirect("/login/");
+    }
     throw error;
   }
 };
@@ -95,13 +115,13 @@ export default function CarrierDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const user = loaderData?.user.user;
-  console.log("User", user);
+  const user = loaderData?.user;
+  
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
   );
   const roles: string[] =
-    loaderData?.user?.roles.map((role: string) => role.toLowerCase()) || [];
+    user?.user.roles.map((role: string) => role.toLowerCase()) || [];
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const toggleSettings = () => {

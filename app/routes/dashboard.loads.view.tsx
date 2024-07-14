@@ -21,7 +21,8 @@ import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from '~/components/ErrorDisplay';
-import { dummyData } from "~/api/dummy/dummy-data";
+import { authenticator } from "~/api/services/auth.server";
+// import { dummyData } from "~/api/dummy/dummy-data";
 
 // const userData: LoginResponse = {
 //   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
@@ -44,14 +45,20 @@ export const loader: LoaderFunction = async ({ request }) => {
    
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
+    const user: any = session.get(authenticator.sessionKey);
 
     // const user: any = userData;
-    
-    if(!user) {
-      throw new Error("401 Unauthorized");
+    if (!user) {
+      throw JSON.stringify({
+        data: {
+          message: "User not found",
+          status: 401,
+        },
+      });
     }
-
+    else if (!user.user.roles.includes("shipper")) {
+      return redirect("/carriers/dashboard/");
+    }
     // const response: LoadResponse = dummyData;
     const response: LoadResponse = await GetLoads(user.token);
   
@@ -77,12 +84,17 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get("user");
+  const user = session.get(authenticator.sessionKey);
 
   // const user: any = userData;
 
   if (!user) {
-    throw new Response("401 Unauthorized", { status: 401 });
+    throw JSON.stringify({
+      data: {
+        message: "User not found",
+        status: 401,
+      },
+    });
   }
 
   const formData = await request.formData();
@@ -147,7 +159,7 @@ export const action: ActionFunction = async ({ request }) => {
     }else if( action === "cancel" ){
       return redirect("/dashboard/loads/view/");
     }else {
-      throw new Error({"status":"Invalid action"});
+      throw new Error("Invalid action");
     }
   } catch (error: any) {
     if (error.message.includes(401)){

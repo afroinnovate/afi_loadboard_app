@@ -15,7 +15,7 @@ export default function Header({ user }) {
   const settingsRef = useRef();
 
   const isLoadOperationsActive = location.pathname === "/carriers/dashboard/view/" ||
-                                 location.pathname === "/dashboard/loads/view/"
+  location.pathname === "/dashboard/loads/view/"
   let isAuthenticated =
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
@@ -36,7 +36,7 @@ export default function Header({ user }) {
     setIsSettingsOpen(false);
   };
 
-  const userInitials = `${user?.user.firstName?.charAt(0) ?? ""}${user?.user.lastName?.charAt(0) ?? ""}`;
+  const userInitials = `${user?.firstName?.charAt(0) ?? ""}${user?.lastName?.charAt(0) ?? ""}`;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
