@@ -11,31 +11,16 @@ import {
   useLoaderData,
   useLocation,
   useRouteError,
+  isRouteErrorResponse,
 } from "@remix-run/react";
 import rootStyle from './tailwindcss.css';
 import ErrorDisplay from "./components/ErrorDisplay";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRedo } from "@fortawesome/free-solid-svg-icons";
-import { getSession } from "./api/services/session";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faRedo } from "@fortawesome/free-solid-svg-icons";
+import { commitSession, getSession } from "./api/services/session";
 import Header from "./components/headers";
+import { authenticator } from "./api/services/auth.server";
 
-// const userData = {
-//   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   "tokenType": "Bearer",
-//   "refreshToken": "eyJhbGci",
-//   "expiresIn": 3600,
-//   "user": {
-//     "id": "7c134ef0-eff8-466e-955e-e195700d8696",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
-//     "firstName": "Tango",
-//     "lastName": "War",
-//     "roles": [
-//         "carrier"
-//     ],
-//     "phoneNumber": "+15806471212"
-//   }
-// };
 
 export const meta: MetaFunction = () => {
   return [
@@ -53,16 +38,22 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   try{
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
-    // const user: any = userData;
-    if (!user) {
-      throw JSON.stringify({
-          data: {
-            message: "Unauthorized",
-            status: 401,
-          },
-        })
+    const user = session.get(authenticator.sessionKey);
+
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
     }
+
+    if (!user) {
+      return "/";
+    }
+
+    const expires = new Date(Date.now() + EXPIRES_IN);
+    session.set(authenticator.sessionKey, user);
+    await commitSession(session, { expires});
+
     return json({ user });
   } catch (e: any) {
     if(JSON.parse(e).data.status === 401){
@@ -75,7 +66,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function App() {  
   const loaderData: any = useLoaderData();
   const location = useLocation();
-  let user = null;
+  let user = loaderData?.user;
   if(loaderData === "/" || location.pathname === "/"){
     user = null;
   }else{
@@ -115,6 +106,26 @@ export default function App() {
         <LiveReload />
       </body>
     </html>
+  );
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  if (isRouteErrorResponse(errorResponse)) {
+    // const jsonError = JSON.parse(errorResponse);
+    const error = {
+      message: errorResponse.data.message,
+      status: errorResponse.data.status,
+    };
+
+    return <ErrorDisplay error={error} />;
+  }
+  return (
+    <div className="flex content-center bg-red-800 text-white">
+      <h1>Uh oh ...</h1>
+      <p>Something went wrong.</p>
+      <pre>{errorResponse}</pre>
+    </div>
   );
 }
 

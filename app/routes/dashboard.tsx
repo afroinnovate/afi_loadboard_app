@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useLoaderData, useLocation, NavLink, useNavigate } from "@remix-run/react";
+import { Outlet, useLoaderData, useLocation, NavLink, useNavigate, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
@@ -14,6 +14,7 @@ import Overview from '../components/overview';
 import AccessDenied from '~/components/accessdenied';
 import { checkUserRole } from '~/components/checkroles';
 import { redirectUser } from '~/components/redirectUser';
+import ErrorDisplay from '~/components/ErrorDisplay';
 
 export const meta: MetaFunction = () => {
   return [
@@ -148,4 +149,24 @@ export default function Dashboard() {
         </div>
       </>
     );
+}
+
+export function ErrorBoundary() {
+  const errorResponse: any = useRouteError();
+  if (isRouteErrorResponse(errorResponse)) {
+    // const jsonError = JSON.parse(errorResponse);
+    const error = {
+      message: errorResponse.data.message,
+      status: errorResponse.data.status,
+    };
+
+    return <ErrorDisplay error={error} />;
+  }
+  return (
+    <div className="flex content-center bg-red-800 text-white">
+      <h1>Uh oh ...</h1>
+      <p>Something went wrong.</p>
+      <pre>{errorResponse}</pre>
+    </div>
+  );
 }

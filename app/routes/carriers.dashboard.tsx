@@ -241,7 +241,6 @@ export default function CarrierDashboard() {
 
 export function ErrorBoundary() {
   const errorResponse: any = useRouteError();
-  console.log("Error response", errorResponse);
   if (isRouteErrorResponse(errorResponse)) {
     // const jsonError = JSON.parse(errorResponse);
     const error = {
