@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, Outlet, useLoaderData, useLocation, NavLink, useNavigate } from "@remix-run/react";
+import { useState } from 'react';
+import { Outlet, useLoaderData, useLocation, NavLink, useNavigate } from "@remix-run/react";
 import type {
   MetaFunction,
   LinksFunction,
@@ -12,7 +12,6 @@ import { commitSession, getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from '../components/overview';
 import AccessDenied from '~/components/accessdenied';
-import { LoginResponse } from '~/api/models/loginResponse';
 import { checkUserRole } from '~/components/checkroles';
 
 export const meta: MetaFunction = () => {
@@ -27,45 +26,59 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// const userData: LoginResponse = {
-//   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
-//     userName: "tangogatdet76@gmail.com",
-//     email: "tangogatdet76@gmail.com",
-//     firstName: "Pal",
-//     lastName: "Kuoth",
-//     roles: ["shipper"],
-//     phoneNumber: "+15806471212",
-//   },
-// };
+const session_expiration: any = process.env.SESSION_EXPIRATION;
+
+const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+
+if (isNaN(EXPIRES_IN)) {
+  throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+}
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  // check if the sessoon is already set
-  let response: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login/",
-  // successRedirect: "/dashboard/", //for testing locally
-  });
+  try {
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
 
-  if (response) {
-    // Store the token in the session
-    session.set("user", response);
-    return json(response, {
+    if (!user) {
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
+    const expires = new Date(Date.now() + EXPIRES_IN);
+
+    const [
+      shipperAccess,
+      shipperHasAccess,
+      adminAccess,
+      carrierAccess,
+      carrierHasAccess,
+    ] = checkUserRole(user.user.roles);
+    if (
+      user.user.roles &&
+      !user.roles !== shipperAccess &&
+      !user.roles !== shipperHasAccess
+    ) {
+      return redirect("/carriers/dashboard/", {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
+    }
+    return json(user, {
       headers: {
-      "Set-Cookie": await commitSession(session),
+        "Set-Cookie": await commitSession(session, { expires }),
       },
     });
+  } catch (error: any) {
+    if (error.status === 401) {
+      return redirect("/login/");
+    }
+    throw error;
   }
-  
-  // return json(userData);
-
-  const error = session.get("_auth_error");
-  return json<any>({ error });
 };
 
 export default function Dashboard() {
@@ -88,17 +101,6 @@ export default function Dashboard() {
   
   // User roles and permission checks
   const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.roles);
-
-  console.log("Carrier Access: ", carrierAccess);
-
-  // Navigate away if unauthorized
-  useEffect(() => {
-    console.log("Checking user access...");
-    if ((carrierHasAccess || carrierAccess) && (!shipperHasAccess && !shipperAccess)) {
-      console.log("Navigating to the dashboard");
-      navigate("/carriers/dashboard/");
-    } 
-  }, [shipperHasAccess, carrierHasAccess, shipperAccess, carrierAccess, navigate]);
 
   if (!shipperHasAccess && !shipperAccess && !carrierHasAccess && !adminAccess && !carrierAccess) {
     return (
