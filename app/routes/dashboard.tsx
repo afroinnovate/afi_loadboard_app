@@ -13,6 +13,7 @@ import Sidebar from "../components/sidebar";
 import Overview from '../components/overview';
 import AccessDenied from '~/components/accessdenied';
 import { checkUserRole } from '~/components/checkroles';
+import { redirectUser } from '~/components/redirectUser';
 
 export const meta: MetaFunction = () => {
   return [
@@ -26,19 +27,17 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-const session_expiration: any = process.env.SESSION_EXPIRATION;
-
-const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
-
-if (isNaN(EXPIRES_IN)) {
-  throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
-}
-
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
+
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+    }
 
     if (!user) {
       return redirect("/login/", {
@@ -50,31 +49,23 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
-    const [
-      shipperAccess,
-      shipperHasAccess,
-      adminAccess,
-      carrierAccess,
-      carrierHasAccess,
-    ] = checkUserRole(user.user.roles);
-    if (
-      user.user.roles &&
-      !user.roles !== shipperAccess &&
-      !user.roles !== shipperHasAccess
-    ) {
+    // Redirect to the appropriate dashboard based on the user role    
+    const shipperDashboard = await redirectUser(user?.user);
+    if (!shipperDashboard) {
       return redirect("/carriers/dashboard/", {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
       });
-    }
+    } 
+
     return json(user, {
       headers: {
         "Set-Cookie": await commitSession(session, { expires }),
       },
     });
   } catch (error: any) {
-    if (error.status === 401) {
+    if (JSON.parse(error).data.status == 401) {
       return redirect("/login/");
     }
     throw error;
@@ -86,7 +77,6 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen); 
   const location = useLocation();
-  const navigate = useNavigate();
   
   const isLoadOperationsActive = location.pathname.startsWith('/dashboard/loads/');
   

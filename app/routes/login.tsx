@@ -58,9 +58,12 @@ export const action: ActionFunction = async ({ request }) => {
 
   if (user) {
     const session = await getSession(request.headers.get("Cookie"));
-    session.flash(authenticator.sessionErrorKey, null);
-    await commitSession(session);
-    return redirect("/dashboard/");
+    return redirect("/dashboard/", {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    }
+    );
   }
   return "Invalid username or password";
 };
