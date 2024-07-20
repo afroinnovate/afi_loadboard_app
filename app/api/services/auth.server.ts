@@ -8,6 +8,8 @@ import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
 import type { PasswordUpdateRequest } from "../models/paswordUpdateRequest";
+import { LoadRequest } from "../models/loadRequest";
+import { UserUpdateRequest } from "../models/userUpdateRequest";
 
 // const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 const baseUrl = "http://localhost:8080/auth";
@@ -97,13 +99,53 @@ export async function CompleteProfile(profile: CompleteProfileRequest) {
     });
 
     // Check if the response is not ok (e.g., 400 or 500 status codes)
-    if (!response.ok) {
-      throw new Error(`${response.status}: ${response.statusText}`);
+    if (response.status !== 200) {
+      throw response;
     }
 
     return response;
-  } catch (error) {
-    throw error; // Rethrow the error to be handled by the caller
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "User with the provided email does not exist, create your account or try again",
+            status: 404,
+          },
+        });
+
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
   }
 }
 
@@ -300,4 +342,5 @@ export async function UpdatePasswordInProfile(request: PasswordUpdateRequest) {
       }
   }
 }
+
 
