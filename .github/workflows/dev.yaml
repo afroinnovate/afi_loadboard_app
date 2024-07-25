@@ -9,7 +9,6 @@ on:
       tag:
         description: 'Tag for the release'
         required: false
-        default: 'dev'
       deploy_description:
         description: 'Description for the release'
         required: false
