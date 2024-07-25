@@ -5,6 +5,15 @@ on:
     branches:
       - develop
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for the release'
+        required: false
+        default: 'dev'
+      deploy_description:
+        description: 'Description for the release'
+        required: false
+        default: 'Changes in this Release\n- Added Automation for docker build and push\n- Added autodeployment pipeline'
     
 env:
   REPOSITORY: 'tangotew/afi-load-board-app'
@@ -309,6 +318,7 @@ jobs:
         continue-on-error: true
 
       - name: Deploy to Droplet
+        id: deploy
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -329,8 +339,20 @@ jobs:
             docker run -d -e "SECRET_KEY_DEV=$SECRET_KEY_DEV" -e SESSION_EXPIRATION=600 -e "SECRET_KEY_PROD=$SECRET_KEY_PROD" -p 3000:3000 $RELEASE_TAG
             
           EOF
-
-
+      - name: Post Deployment Notice
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "::notice title=Deployment::Deployed ${{ env.RELEASE_TAG }} to Droplet with status ${{ steps.deploy.conclusion }}"
+          echo "::notice Title=Deployment for ${{ inputs.deploy_description }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
+      
+      - name: Post Deployment Notice on Push
+        if: github.event_name == 'push'
+        run: |
+          echo 
+          echo "::notice title=Deployment::Deployed ${{ env.RELEASE_TAG }} to Droplet with status ${{ steps.deploy.conclusion }}"
+          echo "::notice Title=Deployment for UI changes in ${{ env.RELEASE_TAG }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
+        
+         
             
             
             
