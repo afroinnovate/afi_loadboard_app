@@ -7,12 +7,9 @@ import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
-import type { PasswordUpdateRequest } from "../models/paswordUpdateRequest";
-import { LoadRequest } from "../models/loadRequest";
-import { UserUpdateRequest } from "../models/userUpdateRequest";
 
-// const baseUrl = 'https://api.auth.afroinnovate.com/auth';
-const baseUrl = "http://localhost:8080/auth";
+const baseUrl = 'https://api.auth.afroinnovate.com/auth';
+// const baseUrl = "http://localhost:8080/auth";
 
 export let authenticator = new Authenticator<LoginResponse>(sessionStorage, {
   sessionKey: "_auth_data",
