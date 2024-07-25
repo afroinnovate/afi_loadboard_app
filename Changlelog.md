@@ -7,3 +7,5 @@
 * []: View Carrier Page
 * []: Delete loads
 * []: Add bidding Dashboard for Shippers
+* []: Add capability for the user to update their personal information(email, phonenumber, names, etc)
+* []: Make the session retention a configured environment variable
