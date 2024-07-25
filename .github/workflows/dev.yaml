@@ -337,6 +337,10 @@ jobs:
 
             docker pull $RELEASE_TAG
             docker run -d -e "SECRET_KEY_DEV=$SECRET_KEY_DEV" -e SESSION_EXPIRATION=600 -e "SECRET_KEY_PROD=$SECRET_KEY_PROD" -p 3000:3000 $RELEASE_TAG
+
+            # perform cleanup by running cleanup-image.sh file
+            ./cleanup.sh
+            ./cleanup-image.sh
             
           EOF
       - name: Post Deployment Notice
