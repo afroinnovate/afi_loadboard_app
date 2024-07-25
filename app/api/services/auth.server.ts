@@ -7,7 +7,6 @@ import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
-import type { PasswordUpdateRequest } from "../models/paswordUpdateRequest";
 
 const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 // const baseUrl = "http://localhost:8080/auth";
@@ -57,7 +56,6 @@ export async function Login(email: string, password: string) {
 
     // Assuming the response returns a JSON object
     const data = await response.json();
-    // console.log("data -->", data);
 
     const responseData: LoginResponse = { ...data };
     return responseData;
@@ -78,20 +76,17 @@ export async function Register(user: User) {
 
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (!response.ok) {
-      // console.log(response.status, response.statusText);
       throw new Error(`${response.status}: ${response.statusText}`);
     }
 
     return response;
   } catch (error) {
-    // console.error(`Error during registration: ${error}`);
     throw error; // Rethrow the error to be handled by the caller
   }
 }
 
 export async function CompleteProfile(profile: CompleteProfileRequest) {
   try {
-    // console.log("profile -->", profile);
     const response = await fetch(baseUrl + "/completeprofile", {
       method: "POST",
       headers: {
@@ -101,15 +96,53 @@ export async function CompleteProfile(profile: CompleteProfileRequest) {
     });
 
     // Check if the response is not ok (e.g., 400 or 500 status codes)
-    if (!response.ok) {
-      // console.log(response.status, response.statusText);
-      throw new Error(`${response.status}: ${response.statusText}`);
+    if (response.status !== 200) {
+      throw response;
     }
 
     return response;
-  } catch (error) {
-    // console.error(`Error during registration: ${error}`);
-    throw error; // Rethrow the error to be handled by the caller
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "User with the provided email does not exist, create your account or try again",
+            status: 404,
+          },
+        });
+
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
   }
 }
 
@@ -125,7 +158,6 @@ export async function RequestResetPassword(email: string) {
       }
     );
 
-    console.log("password request response: ", response);
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 200) {
       throw response;
@@ -179,7 +211,6 @@ export async function RequestResetPassword(email: string) {
 
 export async function ChangePassword(request: PasswordResetRequest) {
   try {
-    console.log("request: ",request);
     const response = await fetch(baseUrl + "/reset-password", {
       method: "POST",
       headers: {
@@ -188,7 +219,6 @@ export async function ChangePassword(request: PasswordResetRequest) {
       body: JSON.stringify(request),
     });
 
-    console.log("password change response: ", response);
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 200) {
       throw response
@@ -309,4 +339,5 @@ export async function UpdatePasswordInProfile(request: PasswordUpdateRequest) {
       }
   }
 }
+
 

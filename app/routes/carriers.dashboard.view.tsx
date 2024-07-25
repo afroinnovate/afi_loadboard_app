@@ -5,10 +5,10 @@ import {
   type ActionFunction,
   type MetaFunction,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, useNavigate, useRouteError } from "@remix-run/react";
+import { NavLink, useActionData, useLoaderData, useRouteError } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
-import { getSession } from "../api/services/session";
+import { commitSession, getSession } from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
@@ -17,32 +17,13 @@ import {
   ChatBubbleLeftIcon,
 } from "@heroicons/react/20/solid";
 import AccessDenied from "~/components/accessdenied";
-import { useEffect, useState } from "react";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
-import { LoginResponse } from "~/api/models/loginResponse";
-import { dummyData } from "~/api/dummy/dummy-data";
 import { checkUserRole } from "~/components/checkroles";
 import { manageBidProcess } from "~/api/services/bid.helper";
 import ErrorDisplay from "~/components/ErrorDisplay";
-
-// const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     "id": "7c134ef0-eff8-466e-955e-e195700d8696",
-//     "userName": "tangotew@gmail.com",
-//     "email": "tangotew@gmail.com",
-//     "firstName": "Tango",
-//     "lastName": "War",
-//     "roles": [
-//         "carrier",
-//     ],
-//     "phoneNumber": "+15806471212"
-//   }
-// };
+import { authenticator } from "~/api/services/auth.server";
+import { redirectUser } from "~/components/redirectUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -53,31 +34,49 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader = async ({ request }) => {
+export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
+    const user = session.get(authenticator.sessionKey);
 
-    // const user: any = userData;
-    if (!user) {
-      throw JSON.stringify({
-          data: {
-            message: "Unauthorized",
-            status: 401,
-          },
-        });
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
     }
 
-    const response = await GetLoads(user.token);
-    // const response: Response = dummyData;
+    if (!user) {
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
+    const expires = new Date(Date.now() + EXPIRES_IN);
+
+    // check if the user is authorized to access this page, else redircdt them the appropriate page
+    const shipperDashboard = await redirectUser(user?.user);
+    if (shipperDashboard) {
+      return redirect("/dashboard/", {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
+    } 
     
+    // Get the loads
+    const response = await GetLoads(user.token);
     if (typeof response === "string") {
       throw response;
     }
 
-    return json([response, user]);
+    return json([response, user], {
+      headers: {
+        "Set-Cookie": await commitSession(session, { expires }),
+      },
+    });
   } catch (error: any) {
-    console.error(error);
     if(JSON.parse(error).data.status == 401){
       return redirect("/login/")
     }
@@ -85,24 +84,22 @@ export const loader = async ({ request }) => {
   }
 };
 
-export const action = async ({ request }) => {
+export const action: ActionFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
-
-    // const user: any = userData;
+    const user = session.get(authenticator.sessionKey);
 
     if (!user) {
-      throw JSON.stringify({
-        data: {
-        message: "Unauthorized", 
-        status: 401 
-      }});
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
 
     const formData = await request.formData();
     const actionType = formData.get("_action");
-    const loadId = formData.get("loadId") 
+    const loadId: any = formData.get("loadId") 
     const bidLoadId = formData.get("bidLoadId")
  
     switch (actionType) {
@@ -138,7 +135,6 @@ export const action = async ({ request }) => {
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
-  const navigate = useNavigate();
 
   let error = "";
   let info = "";
@@ -185,14 +181,7 @@ export default function CarrierViewLoads() {
   }
 
   // User roles and permission checks
-  const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
-
-  // Navigate away if unauthorized
-  useEffect(() => {
-    if ((shipperHasAccess || shipperAccess) && (!carrierHasAccess && !carrierAccess)) {
-      navigate("/dashboard/");
-    } 
-  }, [shipperHasAccess, carrierHasAccess, shipperAccess, carrierAccess, navigate]);
+  const [shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
 
   let contactMode = actionData && actionData.message === "contactMode" ? actionData.message : "";
   let bidMode = actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation

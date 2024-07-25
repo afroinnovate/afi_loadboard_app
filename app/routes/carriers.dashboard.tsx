@@ -17,7 +17,7 @@ import type {
   LinksFunction,
   LoaderFunction,
 } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
@@ -26,6 +26,7 @@ import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
+import { redirectUser } from "~/components/redirectUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -39,51 +40,54 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// const userData: LoginResponse = {
-//   token:
-//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     id: "7c134ef0-eff8-466e-955e-e195700d8696",
-//     userName: "tangotew@gmail.com",
-//     email: "tangotew@gmail.com",
-//     firstName: "Tango",
-//     lastName: "War",
-//     roles: ["carrier"],
-//     phoneNumber: "+15806471212",
-//   },
-// };
-
 // protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
 
-    // check if the sessoon is already set
-    let response: any = await authenticator.isAuthenticated(request, {
-      failureRedirect: "/login/",
-      // successRedirect: "/carriers/dashboard/", //for testing locally
-    });
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
 
-    if (response) {
-      // Store the token in the session
-      session.set("user", response);
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
 
-      return json(response, {
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+    }
+
+    if (!user) {
+      return redirect("/login/", {
         headers: {
           "Set-Cookie": await commitSession(session),
         },
       });
     }
 
-    // return json(userData);
+    const shipperDashboard = await redirectUser(user?.user);
+    if (shipperDashboard) {
+      return redirect("/dashboard/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
+    if (user) {
+      // Store the token in the session
+      session.set("user", user);
+      const expires = new Date(Date.now() + EXPIRES_IN);
+      return json(user, {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
+    }
 
     const error = session.get("_auth_error");
     throw error;
   } catch (error: any) {
-    // if it's not 401, throw the error
+    if (JSON.parse(error).data.status == 401) {
+      return redirect("/login/");
+    }
     throw error;
   }
 };
@@ -237,7 +241,6 @@ export default function CarrierDashboard() {
 
 export function ErrorBoundary() {
   const errorResponse: any = useRouteError();
-  console.log("Error response", errorResponse);
   if (isRouteErrorResponse(errorResponse)) {
     // const jsonError = JSON.parse(errorResponse);
     const error = {

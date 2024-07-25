@@ -1,4 +1,4 @@
-import { GetBid, GetBidByLoadIdandCarrierId, PlaceBid, UpdateBid } from "./bid.service";
+import { GetBidByLoadIdandCarrierId, PlaceBid, UpdateBid } from "./bid.service";
 
 export async function manageBidProcess(user: any, loadId: number, formData: FormData) {
   try{
