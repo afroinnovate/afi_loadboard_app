@@ -339,7 +339,7 @@ jobs:
 
             # perform cleanup by running cleanup-image.sh file
             ./cleanup.sh
-            ./cleanup-image.sh
+            ./clean-image.sh
             
           EOF
       - name: Post Deployment Notice
