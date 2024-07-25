@@ -1,8 +1,8 @@
 import type { LoadRequest } from "../models/loadRequest";
 import type { Load, LoadResponse } from "../models/loadResponse";
 
-// const baseUrl = "https://api.frieght.afroinnovate.com/";
-const baseUrl = "http://localhost:7070/";
+const baseUrl = "https://api.frieght.afroinnovate.com/";
+// const baseUrl = "http://localhost:7070/";
 
 export async function AddLoads(loadRequest: LoadRequest, token: string) {
   try {
