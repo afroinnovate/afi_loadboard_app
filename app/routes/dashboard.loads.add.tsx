@@ -41,7 +41,6 @@ import ErrorDisplay from "~/components/ErrorDisplay";
 //   },
 // };
 
-
 export const action: ActionFunction = async ({ request }) => {
   try {
     // Find the parent route match containing the user and token
@@ -88,15 +87,15 @@ export const action: ActionFunction = async ({ request }) => {
     ).toISOString();
 
     const formattedDate = new Date().toISOString();
-    
+
     const shipper = {
       userId: user.user.id,
       firstName: user.user.firstName,
       lastName: user.user.lastName,
       email: user.user.email,
       companyName: user.user.companyName,
-      dotNumber: user.user.dotNumber
-    }
+      dotNumber: user.user.dotNumber,
+    };
     // Create a new load request
     const loadRequest: LoadRequest = {
       loadDetails: formData.get("loadDetails") as string,
@@ -113,7 +112,7 @@ export const action: ActionFunction = async ({ request }) => {
       shipperUserId: user.user.id,
       created: formattedDate,
       loadStatus: "open",
-      createdBy: shipper
+      createdBy: shipper,
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
@@ -140,12 +139,12 @@ export const action: ActionFunction = async ({ request }) => {
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     var user: any = await authenticator.isAuthenticated(request, {
-      failureRedirect: '/login/'
+      failureRedirect: "/login/",
     });
 
     // const user = userData;
-   
-    return json({"user": user});
+
+    return json({ user: user });
   } catch (error) {
     console.log("loader error: ", error);
     return error;
@@ -171,14 +170,20 @@ export default function AddLoad() {
   // };
 
   var user: any = {};
-  
+
   console.log("It got here:...");
   if (loaderData && loaderData.user) {
     user = loaderData.user;
   }
 
   // Check if user has 'support', 'admin' or any role containing 'confirmed shipper(indenpendent, corporate, gov)'
-  const [shipperAccess, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
+  const [
+    shipperAccess,
+    shipperHasAccess,
+    adminAccess,
+    carrierAccess,
+    carrierHasAccess,
+  ] = checkUserRole(user?.user.roles);
 
   const [offerType, setOfferType] = useState("flat");
 
@@ -190,8 +195,7 @@ export default function AddLoad() {
         "Oopse!, you seem to have connectivity issue, please connect to a reliable internet.";
     } else if (actionData.errno === "ECONNREFUSED") {
       error = "Oops!, Connection refused, please try again.";
-    }
-    else {
+    } else {
       error = "Oops!, Something Went wrong, please try again.";
     }
   }
@@ -409,7 +413,7 @@ export function ErrorBoundary() {
   const jsonError = JSON.parse(errorResponse);
   const error = {
     message: jsonError.data.message,
-    status: jsonError.data.status
+    status: jsonError.data.status,
   };
 
   return <ErrorDisplay error={error} />;

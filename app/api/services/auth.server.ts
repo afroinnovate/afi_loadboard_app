@@ -8,8 +8,8 @@ import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
 
-const baseUrl = 'https://api.auth.afroinnovate.com/auth';
-// const baseUrl = "http://localhost:8080/auth";
+// const baseUrl = 'https://api.auth.afroinnovate.com/auth';
+const baseUrl = "http://localhost:8080/auth";
 
 export let authenticator = new Authenticator<LoginResponse>(sessionStorage, {
   sessionKey: "_auth_data",
@@ -18,22 +18,25 @@ export let authenticator = new Authenticator<LoginResponse>(sessionStorage, {
 
 // Tell the Authenticator to use the form strategy
 authenticator.use(
-  new FormStrategy(async ({ form, context }) => {
-    let email = form.get("email") as string;
+  new FormStrategy(async ({ form }) => {
+    let username = form.get("email") as string;
     let password = form.get("password") as string;
 
-    invariant(email, "Missing email parameter");
+    invariant(username, "Missing email parameter");
     invariant(password, "Missing password parameter");
 
     try {
-      let loginResponse = await Login(email, password);
+      // console.log("Attempting login with", username);
+      let loginResponse = await Login(username, password);
 
       if (loginResponse instanceof Error) {
         throw loginResponse;
       }
 
+      // console.log("Login successful", loginResponse);
       return loginResponse;
     } catch (error) {
+      console.error("Error during authentication", error);
       throw error;
     }
   }),

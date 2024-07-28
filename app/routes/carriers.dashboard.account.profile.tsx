@@ -1,13 +1,29 @@
 // app/routes/account/profile.tsx
-import { type MetaFunction, json, type LinksFunction, type ActionFunction, redirect } from "@remix-run/node";
+import {
+  type MetaFunction,
+  json,
+  type LinksFunction,
+  type ActionFunction,
+  redirect,
+} from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { PencilIcon } from "@heroicons/react/20/solid";
-import { Form, useActionData, useLoaderData, useNavigate, useNavigation, useRouteError } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useNavigate,
+  useNavigation,
+  useRouteError,
+} from "@remix-run/react";
 import { useEffect, useState } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import invariant from "tiny-invariant";
-import { ChangePassword, UpdatePasswordInProfile } from "~/api/services/auth.server";
+import {
+  ChangePassword,
+  UpdatePasswordInProfile,
+} from "~/api/services/auth.server";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getSession } from "~/api/services/session";
 import type { PasswordResetRequest } from "~/api/models/passwordResetRequest";
@@ -65,11 +81,10 @@ export let loader = async ({ request }) => {
   }
 };
 
-
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get("user");
-    // const user: any = userData;
+  // const user: any = userData;
   if (!user) {
     return json({ error: "Unauthorized", status: 401 }, { status: 401 });
   }
@@ -80,9 +95,18 @@ export let action: ActionFunction = async ({ request }) => {
   const email = body.get("email");
 
   try {
-    invariant(typeof password === "string" && password.length >= 8, "Password must be at least 8 characters long");
-    invariant(password.match(/[ `!@#$%^&*()_+\-=[\]{};':\"\\|,.<>/?~]/), "Password must contain a special character");
-    invariant(/[A-Z]/.test(password), "Password must contain at least one uppercase letter");
+    invariant(
+      typeof password === "string" && password.length >= 8,
+      "Password must be at least 8 characters long"
+    );
+    invariant(
+      password.match(/[ `!@#$%^&*()_+\-=[\]{};':\"\\|,.<>/?~]/),
+      "Password must contain a special character"
+    );
+    invariant(
+      /[A-Z]/.test(password),
+      "Password must contain at least one uppercase letter"
+    );
 
     const request: PasswordUpdateRequest = {
       email: email?.toString() || "",
@@ -92,14 +116,13 @@ export let action: ActionFunction = async ({ request }) => {
 
     const response = await UpdatePasswordInProfile(request);
     console.log("Response", response);
-    if(response.status === 200){
+    if (response.status === 200) {
       return redirect("/login/");
     }
   } catch (error: any) {
     return json({ error: error.message }, { status: 400 });
   }
 };
-
 
 export default function Profile() {
   const navigation = useNavigation();
@@ -248,7 +271,7 @@ export default function Profile() {
 
 export function ErrorBoundary() {
   const errorResponse: any = useRouteError();
-  try{
+  try {
     const jsonError = JSON.parse(errorResponse);
     const error = {
       message: jsonError.data.message,
@@ -256,11 +279,12 @@ export function ErrorBoundary() {
     };
 
     return <ErrorDisplay error={error} />;
-  }catch(e){
+  } catch (e) {
     const error = {
-      message: "Your Current password is wrong or the new password does not meet the requirements. Please try again.",
-      status: 400
-    }
-    return <ErrorDisplay error={error} />
+      message:
+        "Your Current password is wrong or the new password does not meet the requirements. Please try again.",
+      status: 400,
+    };
+    return <ErrorDisplay error={error} />;
   }
 }

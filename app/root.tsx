@@ -63,7 +63,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 }
 
-export default function App() {  
+export default function BusinessInformation() {  
   const loaderData: any = useLoaderData();
   const location = useLocation();
   let user = loaderData?.user;
@@ -82,13 +82,13 @@ export default function App() {
         <Links />
       </head>
       <body className="bg-gray-100 text-gray-800">
-        <header className="top-0 left-0 right-0 z-10 bg-white shadow-md">
+        <header className="top-0 left-0 right-0 z-10 bg-white shadow-md overflow-hidden">
           <Header user={ user } />
         </header>
         <main className="flex-grow">
           <Outlet />
         </main>
-        <footer className="bg-gray-800 text-white py-6">
+        <footer className="fixed left-0 right-0 bottom-0 bg-gray-800 text-white py-6">
           <div className="container mx-auto text-center">
             <nav className="flex justify-center space-x-4">
               <Link to="/features" className="hover:text-blue-400">Features</Link>

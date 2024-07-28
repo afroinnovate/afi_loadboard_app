@@ -1,8 +1,8 @@
 import type { BidRequest } from "../models/bidRequest";
 import type { BidResponse } from "../models/bidResponse";
 
-const baseUrl = "https://api.frieght.afroinnovate.com/";
-// const baseUrl = "http://localhost:7070/";
+// const baseUrl = "https://api.frieght.afroinnovate.com/";
+const baseUrl = "http://localhost:8080/auth";
 
 export async function PlaceBid(bidRequest: BidRequest, token: string) {
   try {

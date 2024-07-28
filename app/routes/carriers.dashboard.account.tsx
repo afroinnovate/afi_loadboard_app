@@ -7,9 +7,9 @@ export default function Account() {
   const [closedOverlay, setClosedOverlay] = useState(false);
 
   const location = useLocation();
-  const navigate = useNavigate()
-  // const baseUrl = location.pathname.split("/").slice(0, -1).join("/")+"/";
-  const baseUrl = location.pathname == "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
+  const navigate = useNavigate();
+  const baseUrl =
+    location.pathname == "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
   const closeOverlay = () => {
     setClosedOverlay(true);
     setIsOverlayOpen(false);
@@ -17,18 +17,24 @@ export default function Account() {
 
   useEffect(() => {
     if (closedOverlay) {
-      const goBack = baseUrl.split("/").length >= 5 ? baseUrl.split("/").slice(0, -2).join("/") : baseUrl
-      navigate(goBack+"/");
+      const goBack =
+        baseUrl.split("/").length >= 5
+          ? baseUrl.split("/").slice(0, -2).join("/")
+          : baseUrl;
+      navigate(goBack + "/");
     }
-  },[baseUrl, closedOverlay, navigate]);
+  }, [baseUrl, closedOverlay, navigate]);
 
   return (
-    <div className="relative">
+    <div className="flex h-screen w-full bg-gray-100">
       {isOverlayOpen && !closedOverlay && (
-        <AccountOverlay onClose={closeOverlay} /> // Update this line
+        <AccountOverlay onClose={closeOverlay} />
       )}
-      <div className={`transition-opacity ${isOverlayOpen ? 'opacity-50' : 'opacity-100'}`}>
-        <Outlet />
+      <div
+        className={`flex-1 transition-opacity ${
+          isOverlayOpen ? "opacity-50" : "opacity-100"
+        }`}
+      >
       </div>
     </div>
   );

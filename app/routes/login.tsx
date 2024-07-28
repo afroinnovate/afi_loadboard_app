@@ -62,8 +62,7 @@ export const action: ActionFunction = async ({ request }) => {
       headers: {
         "Set-Cookie": await commitSession(session),
       },
-    }
-    );
+    });
   }
   return "Invalid username or password";
 };

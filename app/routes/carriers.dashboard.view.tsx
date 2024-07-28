@@ -5,7 +5,12 @@ import {
   type ActionFunction,
   type MetaFunction,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, useRouteError } from "@remix-run/react";
+import {
+  NavLink,
+  useActionData,
+  useLoaderData,
+  useRouteError,
+} from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
 import { commitSession, getSession } from "../api/services/session";
@@ -63,8 +68,8 @@ export const loader: LoaderFunction = async ({ request }) => {
           "Set-Cookie": await commitSession(session, { expires }),
         },
       });
-    } 
-    
+    }
+
     // Get the loads
     const response = await GetLoads(user.token);
     if (typeof response === "string") {
@@ -77,8 +82,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       },
     });
   } catch (error: any) {
-    if(JSON.parse(error).data.status == 401){
-      return redirect("/login/")
+    if (JSON.parse(error).data.status == 401) {
+      return redirect("/login/");
     }
     throw error;
   }
@@ -99,25 +104,29 @@ export const action: ActionFunction = async ({ request }) => {
 
     const formData = await request.formData();
     const actionType = formData.get("_action");
-    const loadId: any = formData.get("loadId") 
-    const bidLoadId = formData.get("bidLoadId")
- 
+    const loadId: any = formData.get("loadId");
+    const bidLoadId = formData.get("bidLoadId");
+
     switch (actionType) {
       case "contact":
-        return json({"error": "", "message": "contactMode" });
+        return json({ error: "", message: "contactMode" });
 
       case "bid":
         return json({
-          "error": "",
-          "message": "bidMode",
-          "loadId":  bidLoadId,
-          "offerAmount": formData.get("offerAmount")
+          error: "",
+          message: "bidMode",
+          loadId: bidLoadId,
+          offerAmount: formData.get("offerAmount"),
         });
 
       case "placebid":
         const bidDetails = await manageBidProcess(user, loadId, formData);
-        return json({"error": "", "message": bidDetails.message, "amount": bidDetails.amount});
-      
+        return json({
+          error: "",
+          message: bidDetails.message,
+          amount: bidDetails.amount,
+        });
+
       case "closeContact":
         return redirect("/carriers/dashboard/view");
 
@@ -125,8 +134,8 @@ export const action: ActionFunction = async ({ request }) => {
         throw new Error("Invalid action");
     }
   } catch (error: any) {
-    if(JSON.parse(error).data.status == 401){
-      return redirect("/login/")
+    if (JSON.parse(error).data.status == 401) {
+      return redirect("/login/");
     }
     throw error;
   }
@@ -155,13 +164,11 @@ export default function CarrierViewLoads() {
       info = `Oops! Your bid wasn't placed/updated. Please try again. Amount: ${amount}`;
     } else if (
       message !== undefined &&
-      (message.includes("bidPlaced") ||
-      message.includes("bidUpdatePlaced"))
+      (message.includes("bidPlaced") || message.includes("bidUpdatePlaced"))
     ) {
       info = `Bid placed/updated successfully. New amount: ${amount}`;
-    }
-    else if (actionError !== null || actionError !== undefined) {
-      error = actionError
+    } else if (actionError !== null || actionError !== undefined) {
+      error = actionError;
     }
   }
 
@@ -181,10 +188,15 @@ export default function CarrierViewLoads() {
   }
 
   // User roles and permission checks
-  const [shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
+  const [shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
+    checkUserRole(user?.user.roles);
 
-  let contactMode = actionData && actionData.message === "contactMode" ? actionData.message : "";
-  let bidMode = actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
+  let contactMode =
+    actionData && actionData.message === "contactMode"
+      ? actionData.message
+      : "";
+  let bidMode =
+    actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
 
   let loadIdToBeBid = 0;
   let currentBid = 0;
@@ -208,14 +220,19 @@ export default function CarrierViewLoads() {
   };
 
   // Conditional rendering for access denied or valid dashboard
-  if (!shipperHasAccess && !carrierHasAccess && !adminAccess && !carrierAccess) {
+  if (
+    !shipperHasAccess &&
+    !carrierHasAccess &&
+    !adminAccess &&
+    !carrierAccess
+  ) {
     return (
       <AccessDenied
         returnUrl="/"
         message="You do not have access to the carrier dashboard."
       />
     );
-  } 
+  }
 
   return (
     <div
@@ -246,24 +263,17 @@ export default function CarrierViewLoads() {
             {({ open }) => (
               <>
                 {/* Contact Shipper View */}
-                {
-                  contactMode === "contactMode" && (
-                    <ContactShipperView
-                      load={load}
-                      shipper={load.createdBy}
-                    />
-                  )
-                }
+                {contactMode === "contactMode" && (
+                  <ContactShipperView load={load} shipper={load.createdBy} />
+                )}
 
                 {/* Bid Adjustment View */}
-                {
-                  bidMode === "bidMode" && (
-                    <BidAdjustmentView
-                      loadId={load.loadId}
-                      initialBid={currentBid}
-                    />
-                  )
-                }
+                {bidMode === "bidMode" && (
+                  <BidAdjustmentView
+                    loadId={load.loadId}
+                    initialBid={currentBid}
+                  />
+                )}
 
                 <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
                   <div className="pl-2 flex items-center space-x-3">
@@ -318,9 +328,11 @@ export default function CarrierViewLoads() {
 
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-2 mt-4">
-                  
                     {carrierAccess && (
-                      <NavLink to="/carriers/dashboard/account/business/" className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
+                      <NavLink
+                        to="/carriers/dashboard/account/business/"
+                        className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10"
+                      >
                         <button className="text-lg">
                           Please Complete your profile to pick up a load
                         </button>
@@ -329,7 +341,7 @@ export default function CarrierViewLoads() {
 
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="loadId" value={ load.id } />
+                        <input type="hidden" name="loadId" value={load.id} />
                         <button
                           type="submit"
                           name="_action"
@@ -344,8 +356,12 @@ export default function CarrierViewLoads() {
                     )}
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="bidLoadId" value={ load.id } />
-                        <input type="hidden" name="loadIdToBeBid" value={ loadIdToBeBid } />
+                        <input type="hidden" name="bidLoadId" value={load.id} />
+                        <input
+                          type="hidden"
+                          name="loadIdToBeBid"
+                          value={loadIdToBeBid}
+                        />
                         <input
                           type="hidden"
                           name="offerAmount"
@@ -375,7 +391,7 @@ export default function CarrierViewLoads() {
 }
 
 export function ErrorBoundary() {
-  try{
+  try {
     const errorResponse: any = useRouteError();
     const jsonError = JSON.parse(errorResponse);
     const error = {
@@ -384,8 +400,8 @@ export function ErrorBoundary() {
     };
 
     return <ErrorDisplay error={error} />;
-  }catch(e){
+  } catch (e) {
     console.error(e);
-    return <div>Something went wrong</div>
+    return <div>Something went wrong</div>;
   }
 }

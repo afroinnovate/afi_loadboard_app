@@ -1,12 +1,25 @@
-import { Form, Link, redirect, useLoaderData, useLocation, useRouteError } from "@remix-run/react";
+import {
+  Form,
+  Link,
+  redirect,
+  useLoaderData,
+  useLocation,
+  useRouteError,
+} from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
-import { XMarkIcon, Bars3Icon, UserIcon, CogIcon, LifebuoyIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/20/solid";
+import {
+  XMarkIcon,
+  Bars3Icon,
+  UserIcon,
+  CogIcon,
+  LifebuoyIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/20/solid";
 import getUnicodeFlagIcon from "country-flag-icons/unicode";
 
 import CarrierHeader from "./carrierheader";
 import ShipperHeader from "./shipperheader";
 import ErrorDisplay from "./ErrorDisplay";
-
 
 export default function Header({ user }) {
   const location = useLocation();
@@ -14,15 +27,17 @@ export default function Header({ user }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef();
 
-  const isLoadOperationsActive = location.pathname === "/carriers/dashboard/view/" ||
-                                 location.pathname === "/dashboard/loads/view/"
+  const isLoadOperationsActive =
+    location.pathname === "/carriers/dashboard/view/" ||
+    location.pathname === "/dashboard/loads/view/";
   let isAuthenticated =
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
 
   // const baseUrl = location.pathname.split("/").slice(0, -1).join("/");
 
-  const baseUrl = location.pathname == "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
+  const baseUrl =
+    location.pathname == "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -36,7 +51,9 @@ export default function Header({ user }) {
     setIsSettingsOpen(false);
   };
 
-  const userInitials = `${user?.user.firstName?.charAt(0) ?? ""}${user?.user.lastName?.charAt(0) ?? ""}`;
+  const userInitials = `${user?.user.firstName?.charAt(0) ?? ""}${
+    user?.user.lastName?.charAt(0) ?? ""
+  }`;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -52,7 +69,7 @@ export default function Header({ user }) {
   }, []);
 
   return (
-    <div className="sticky top-0 bg-white shadow-md z-20 font-apercu font-serif">
+    <div className="fixed left-0 top-0 right-0 bg-white shadow-md z-20 font-apercu font-serif">
       <nav className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         <div className="hidden lg:flex justify-center flex-grow">
           <Link to="/" className="flex items-center">
@@ -64,7 +81,8 @@ export default function Header({ user }) {
           </Link>
         </div>
 
-        {location.pathname.startsWith("/carriers/dashboard") || location.pathname.startsWith("/dashboard/") ? (
+        {location.pathname.startsWith("/carriers/dashboard") ||
+        location.pathname.startsWith("/dashboard/") ? (
           <div className="hidden lg:flex justify right space-x-4">
             {!isAuthenticated ? (
               <>
@@ -99,7 +117,7 @@ export default function Header({ user }) {
                     Manage loads
                   </Link>
                 )}
-                   
+
                 <div>
                   <select
                     className="block p-2 font-bold rounded hover:bg-orange-400 text-green-800 focus:outline-none hover:cursor-pointer"
@@ -114,9 +132,7 @@ export default function Header({ user }) {
                     <option value="amh">
                       {getUnicodeFlagIcon("ET")} amharic
                     </option>
-                    <option value="nus">
-                      {getUnicodeFlagIcon("SS")} nuer
-                    </option>
+                    <option value="nus">{getUnicodeFlagIcon("SS")} nuer</option>
                   </select>
                 </div>
                 <div className="relative" ref={settingsRef}>
@@ -131,7 +147,7 @@ export default function Header({ user }) {
                   {isSettingsOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
                       <Link
-                        to={baseUrl+"/account/profile"}
+                        to={baseUrl + "/account/profile"}
                         className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
                       >
                         <UserIcon className="w-5 h-5 mr-2" />
@@ -169,7 +185,8 @@ export default function Header({ user }) {
         ) : null}
 
         {/* Hamburger button for mobile view */}
-        {(location.pathname.startsWith("/carriers/dashboard") || location.pathname.startsWith("/dashboard/")) && (
+        {(location.pathname.startsWith("/carriers/dashboard") ||
+          location.pathname.startsWith("/dashboard/")) && (
           <button
             onClick={toggleMenu}
             aria-label="Open Menu"
@@ -185,26 +202,28 @@ export default function Header({ user }) {
       </nav>
 
       {/* Menu overlay for mobile view */}
-      {isMenuOpen && (location.pathname.startsWith("/carriers/dashboard/") || location.pathname.startsWith("/dashboard/")) && (
-        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
-          <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
-            {location.pathname.startsWith("/carriers/dashboard") && (
-              <CarrierHeader
-                isAuthenticated={isAuthenticated}
-                isLoadOperationsActive={isLoadOperationsActive}
-                toggleMenu={toggleMenu}
-              />
-            )}
-            {location.pathname.startsWith("/dashboard/") && (
-              <ShipperHeader
-                isAuthenticated={isAuthenticated}
-                isLoadOperationsActive={isLoadOperationsActive}
-                toggleMenu={toggleMenu}
-              />
-            )}
+      {isMenuOpen &&
+        (location.pathname.startsWith("/carriers/dashboard/") ||
+          location.pathname.startsWith("/dashboard/")) && (
+          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
+            <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
+              {location.pathname.startsWith("/carriers/dashboard") && (
+                <CarrierHeader
+                  isAuthenticated={isAuthenticated}
+                  isLoadOperationsActive={isLoadOperationsActive}
+                  toggleMenu={toggleMenu}
+                />
+              )}
+              {location.pathname.startsWith("/dashboard/") && (
+                <ShipperHeader
+                  isAuthenticated={isAuthenticated}
+                  isLoadOperationsActive={isLoadOperationsActive}
+                  toggleMenu={toggleMenu}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
@@ -221,6 +240,10 @@ export function ErrorBoundary() {
     return <ErrorDisplay error={error} />;
   } catch (e) {
     console.error(e);
-    return <div className="flex content-center bg-red-800 text-white font-medium animate-bounce">Something went wrong</div>;
+    return (
+      <div className="flex content-center bg-red-800 text-white font-medium animate-bounce">
+        Something went wrong
+      </div>
+    );
   }
 }

@@ -32,7 +32,7 @@ export const meta: MetaFunction = () => {
   return [
     {
       title: "Loadboard | Carrier dashboard",
-      description: "Dashboard for carrierss",
+      description: "Dashboard for carriers",
     },
   ];
 };
@@ -40,7 +40,6 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
@@ -184,7 +183,7 @@ export default function CarrierDashboard() {
   return (
     <>
       {/* Desktop view on setup  */}
-      <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 lg:w-auto md:w-auto">
+      <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 fixed top-16 left-0 right-0">
         <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
@@ -218,19 +217,21 @@ export default function CarrierDashboard() {
             Load Operations
           </NavLink>
         </div>
-        <h2 className="font-bold text-xl flex justify-center items-center mx-auto text-green-800"
+        <h2
+          className="font-bold text-xl flex justify-center items-center mx-auto text-green-800"
           style={{
-            animation: 'bounce 2s ease-in-out 2',
-          }}>
+            animation: "bounce 2s ease-in-out 2",
+          }}
+        >
           Welcome to Carrier Dashboard Another day to keep the economy moving
         </h2>
       </header>
 
-      <div className="flex">
-        <div className="">
+      <div className="flex pt-16 mt-14">
+        <div className="top-40">
           {sidebarOpen && <SidebarCarrier activeSection={activeSection} />}
         </div>
-        <main className="w-full flex justify-center content-center p-5 shadow-lg">
+        <main className="w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto">
           {location.pathname === "/carriers/dashboard/" && <CarrierOverview />}
           <Outlet />
         </main>
@@ -242,7 +243,6 @@ export default function CarrierDashboard() {
 export function ErrorBoundary() {
   const errorResponse: any = useRouteError();
   if (isRouteErrorResponse(errorResponse)) {
-    // const jsonError = JSON.parse(errorResponse);
     const error = {
       message: errorResponse.data.message,
       status: errorResponse.data.status,
