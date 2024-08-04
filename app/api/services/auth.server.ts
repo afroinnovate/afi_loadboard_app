@@ -7,6 +7,7 @@ import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
+import { PasswordUpdateRequest } from "../models/paswordUpdateRequest";
 
 // const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 const baseUrl = "http://localhost:8080/auth";

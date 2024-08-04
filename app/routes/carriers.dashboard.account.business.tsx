@@ -44,6 +44,10 @@ export let loader: LoaderFunction = async ({ request }) => {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
 
+    const carrierProfile = session.get("carrier");
+    const shipperProfile = session.get("shipper");
+    console.log("profiles", carrierProfile, shipperProfile);
+
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
     if (isNaN(EXPIRES_IN)) {
@@ -159,9 +163,6 @@ export let action: ActionFunction = async ({ request }) => {
              : 0,
          role,
        };
-
-       console.log("business_req", business_req);
-
 
       return json({ success: true });
     } else if (action === "updated") {
@@ -471,7 +472,7 @@ export default function BusinessInformation() {
                 {!showCompleteProfileForm && (
                   <>
                     <div className="flex items-center mb-4">
-                      {user.status === "Approved" ? (
+                      {user.status === true ? (
                         <>
                           <h3 className="mr-2">Business Profile Status:</h3>
                           <div className="relative group">

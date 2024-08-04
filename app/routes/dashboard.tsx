@@ -23,6 +23,8 @@ import AccessDenied from "~/components/accessdenied";
 import { checkUserRole } from "~/components/checkroles";
 import { redirectUser } from "~/components/redirectUser";
 import ErrorDisplay from "~/components/ErrorDisplay";
+import { getUserInfo } from "~/api/services/user.service";
+import { type ShipperUser } from '../api/models/shipperUser';
 
 export const meta: MetaFunction = () => {
   return [
@@ -39,6 +41,10 @@ export const links: LinksFunction = () => [
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   try {
+    await authenticator.isAuthenticated(request, {
+      failureRedirect: "/login/",
+    });
+
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
 
@@ -68,12 +74,47 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    return json(user, {
-      headers: {
-        "Set-Cookie": await commitSession(session, { expires }),
-      },
-    });
+    // hydrate session user with shipper data
+    var userBusinessInfo = await getUserInfo(user?.user?.id, user?.token);
+
+    if (userBusinessInfo) {
+      const shipperUser: ShipperUser = {
+        id: user.id,
+        token: user.token,
+        user: {
+          firstName: userBusinessInfo.firstName,
+          middleName: userBusinessInfo.middleName,
+          lastName: userBusinessInfo.lastName,
+          email: userBusinessInfo.email,
+          phone: userBusinessInfo.phone,
+          userType: userBusinessInfo.userType,
+          roles: user.roles,
+          confirmed: user.confirmed,
+          status: user.status,
+          businessProfile: {
+            companyName: userBusinessInfo.businessProfile.companyName,
+            businessType: userBusinessInfo.businessProfile.businessType,
+            businessRegistrationNumber: userBusinessInfo.businessProfile.businessRegistrationNumber,
+            shipperRole: userBusinessInfo.businessProfile.shipperRole,
+          },
+        }
+      };
+      session.set("shipper", shipperUser);
+      return json(shipperUser, {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
+    } else {
+      session.set(authenticator.sessionKey, user);
+      return json({user, shipperDashboard}, {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
+    }
   } catch (error: any) {
+    console.log("Dashboard login Error", error);
     if (JSON.parse(error).data.status == 401) {
       return redirect("/login/");
     }
@@ -100,20 +141,8 @@ export default function Dashboard() {
   const activeSection = location.pathname.split("/")[2] || "home";
 
   // User roles and permission checks
-  const [
-    shipperAccess,
-    shipperHasAccess,
-    adminAccess,
-    carrierAccess,
-    carrierHasAccess,
-  ] = checkUserRole(user?.roles);
-
   if (
-    !shipperHasAccess &&
-    !shipperAccess &&
-    !carrierHasAccess &&
-    !adminAccess &&
-    !carrierAccess
+   loaderData?.shipperDashboard === false
   ) {
     return (
       <AccessDenied
@@ -126,7 +155,7 @@ export default function Dashboard() {
   return (
     <>
       {/* Desktop view setup */}
-      <header className="hidden lg:flex w-full justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200">
+      <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 fixed top-16 left-0 right-0">
         <div className="items-center space-x-4">
           <button
             onClick={toggleSidebar}
@@ -161,7 +190,7 @@ export default function Dashboard() {
           </NavLink>
 
           <h2
-            className="font-bold text-xl flex justify-center items-center mx-auto text-green-800"
+            className="font-bold text-xl flex justify-center items-center xmx-auto text-green-800"
             style={{
               animation: "bounce 2s ease-in-out 2",
             }}
@@ -170,11 +199,11 @@ export default function Dashboard() {
           </h2>
         </div>
       </header>
-      <div className="flex">
+      <div className="flex pt-14 mt-14">
         <div className="hidden lg:flex">
           {sidebarOpen && <Sidebar activeSection={activeSection} />}
         </div>
-        <main className="w-full flex justify-center content-center p-3 shadow-lg">
+        <main className="w-full flex justify-center content-center p-3 shadow-lg mt-20">
           {location.pathname === "/dashboard/" && <Overview />}
           <Outlet />
         </main>

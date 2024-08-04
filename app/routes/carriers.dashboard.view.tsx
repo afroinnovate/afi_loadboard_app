@@ -44,6 +44,8 @@ export const loader: LoaderFunction = async ({ request }) => {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
 
+    const carrierProfile = session.get("carrier");
+
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
     if (isNaN(EXPIRES_IN)) {
@@ -209,13 +211,13 @@ export default function CarrierViewLoads() {
   const getStatusStyles = (status) => {
     switch (status) {
       case "open":
-        return "bg-orange-500";
+        return "bg-green-600";
       case "accepted":
-        return "bg-blue-500";
-      case "enroute":
-        return "bg-yellow-500";
-      default:
         return "bg-gray-500";
+      case "enroute":
+        return "bg-red-500";
+      default:
+        return "bg-orange-500";
     }
   };
 
@@ -233,6 +235,8 @@ export default function CarrierViewLoads() {
       />
     );
   }
+
+  const currency = "ETB";
 
   return (
     <div
@@ -289,7 +293,7 @@ export default function CarrierViewLoads() {
                         : ""}
                     </span>
                     <span className="text-lg font-semibold text-blue-400">
-                      ${load.offerAmount}
+                      {currency} {load.offerAmount}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -317,12 +321,12 @@ export default function CarrierViewLoads() {
                       {new Date(load.pickupDate).toLocaleDateString()}
                     </p>
                     <p>
-                      Delivery Date:{" "}
+                      Estimated Delivery Date:{" "}
                       {new Date(load.deliveryDate).toLocaleDateString()}
                     </p>
                     <p>Commodity: {load.commodity}</p>
                     <p>Weight: {load.weight} kg</p>
-                    <p>Offer Amount: ${load.offerAmount}</p>
+                    <p>Offer Amount: {currency} {load.offerAmount}</p>
                     <p>Details: {load.loadDetails}</p>
                   </div>
 

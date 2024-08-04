@@ -1,8 +1,4 @@
-import { commitSession, getSession } from "~/api/services/session";
 import { checkUserRole } from "./checkroles";
-import { authenticator } from "~/api/services/auth.server";
-import { redirect } from "@remix-run/node";
-
 const session_expiration: any = process.env.SESSION_EXPIRATION;
 
 const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -28,7 +24,7 @@ export const redirectUser = async (user: any) => {
     ((!carrierAccess && !carrierHasAccess) ||
       adminAccess)
   ) {
-    console.log("redirecting to dashboard");
+    console.log("redirecting to shipper dashboard");
     return shipperDashboard;
   }
 

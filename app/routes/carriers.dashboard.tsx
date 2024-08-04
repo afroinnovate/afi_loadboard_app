@@ -19,7 +19,7 @@ import type {
 } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
-import { authenticator } from "../api/services/auth.server";
+import { authenticator } from '../api/services/auth.server';
 import { commitSession, getSession } from "../api/services/session";
 import AccessDenied from "~/components/accessdenied";
 import SidebarCarrier from "~/components/sidebarCarrier";
@@ -27,6 +27,9 @@ import CarrierOverview from "~/components/carrierOverview";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { redirectUser } from "~/components/redirectUser";
+import { getUserInfo } from "~/api/services/user.service";  
+import { type CarrierUser } from '../api/models/carrierUser';
+
 
 export const meta: MetaFunction = () => {
   return [
@@ -42,8 +45,13 @@ export const links: LinksFunction = () => [
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
+    // Check if we're still logged in
+    await authenticator.isAuthenticated(request, {
+      failureRedirect: "/login/",
+    });
+
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get(authenticator.sessionKey);
+    let user = session.get(authenticator.sessionKey);
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
 
@@ -53,37 +61,61 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
     }
 
-    if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
+    const expires = new Date(Date.now() + EXPIRES_IN);
 
+    // Redirect to the appropriate dashboard based on the user role
     const shipperDashboard = await redirectUser(user?.user);
+
     if (shipperDashboard) {
       return redirect("/dashboard/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
-
-    if (user) {
-      // Store the token in the session
-      session.set("user", user);
-      const expires = new Date(Date.now() + EXPIRES_IN);
-      return json(user, {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
       });
     }
 
-    const error = session.get("_auth_error");
-    throw error;
+    var userBusinessProfile = await getUserInfo(user?.user.id, user?.token);
+    if (userBusinessProfile) {
+      if (userBusinessProfile.userType === "Carrier") {
+        const carrierUser: CarrierUser = {
+          id: user.id,
+          token: user.token,
+          user: {
+            firstName: userBusinessProfile.firstName,
+            middleName: userBusinessProfile.middleName,
+            lastName: userBusinessProfile.lastName,
+            email: userBusinessProfile.email,
+            phone: userBusinessProfile.phone,
+            userType: userBusinessProfile.userType,
+            dotNumber: userBusinessProfile.businessProfile.dotNumber,
+            motorCarrierNumber:
+              userBusinessProfile.businessProfile.motorCarrierNumber,
+            equipmentType: userBusinessProfile.businessProfile.equipmentType,
+            availableCapacity:
+              userBusinessProfile.businessProfile.availableCapacity,
+            companyName: userBusinessProfile.businessProfile.companyName,
+            vehicleTypes: userBusinessProfile.businessProfile.vehicleTypes,
+            carrierRole: userBusinessProfile.businessProfile.carrierRole,
+            roles: user.roles,
+            confirmed: user.confirmed,
+            status: user.status,
+          },
+        };
+        // set the session for the carrier user(hydrate appliation with carrier data)
+        session.set("carrier", carrierUser);
+      }
+    } 
+    // set the session for the auth user
+    session.set(authenticator.sessionKey, user);
+    return json(
+      { user, shipperDashboard },
+      {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
   } catch (error: any) {
+    console.log("Error", error);
     if (JSON.parse(error).data.status == 401) {
       return redirect("/login/");
     }
@@ -96,16 +128,12 @@ export default function CarrierDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
-  const navigate = useNavigate();
 
-  const user = loaderData?.user.user;
+  const user = loaderData?.user;
   console.log("User", user);
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
   );
-  const roles: string[] =
-    loaderData?.user?.roles.map((role: string) => role.toLowerCase()) || [];
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const toggleSettings = () => {
     setIsSettingsOpen(!isSettingsOpen);
@@ -115,14 +143,6 @@ export default function CarrierDashboard() {
   const activeSection = location.pathname.split("/")[2] || "home";
   // Check if user has 'support', 'admin' or any role containing 'carrier'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const [
-    shipperAccess,
-    shipperHasAccess,
-    adminAccess,
-    carrierAccess,
-    carrierHasAccess,
-  ] = checkUserRole(roles);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -135,47 +155,16 @@ export default function CarrierDashboard() {
     handleResize();
     // Add event listener to adjust sidebar visibility on window resize
     window.addEventListener("resize", handleResize);
-    if (
-      (shipperHasAccess || shipperAccess) &&
-      !carrierHasAccess &&
-      !carrierAccess
-    ) {
-      navigate("/dashboard/");
-    }
     // Cleanup event listener on component unmount
     return () => window.removeEventListener("resize", handleResize);
-  }, [
-    carrierAccess,
-    carrierHasAccess,
-    navigate,
-    shipperAccess,
-    shipperHasAccess,
-  ]); // Empty dependency array ensures this runs once on mount
+  }, []); // Empty dependency array ensures this runs once on mount
 
-  // Navigate away if unauthorized
-  useEffect(() => {
-    if (
-      (shipperHasAccess || shipperAccess) &&
-      !carrierHasAccess &&
-      !carrierAccess
-    ) {
-      navigate("/dashboard/");
-    }
-  }, [
-    shipperHasAccess,
-    carrierHasAccess,
-    shipperAccess,
-    carrierAccess,
-    navigate,
-  ]);
-
-  // check if the user is authorized to access this page
-  if (!carrierAccess && !shipperAccess && !adminAccess) {
-    console.log("No access");
+  // User roles and permission checks
+ if (loaderData && loaderData.shipperDashboard) {
     return (
       <AccessDenied
         returnUrl="/"
-        message="You do not have an access to the carrier dashboard"
+        message="You do not have access to the Carrier dashboard."
       />
     );
   }

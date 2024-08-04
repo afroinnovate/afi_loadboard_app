@@ -14,7 +14,7 @@ import {
 import type { LoadResponse } from "~/api/models/loadResponse";
 import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
-import { getSession } from "../api/services/session";
+import { commitSession, getSession } from "../api/services/session";
 import {
   ChevronUpIcon,
   LockClosedIcon,
@@ -31,34 +31,31 @@ import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
-import { dummyData } from "~/api/dummy/dummy-data";
+import { authenticator } from "~/api/services/auth.server";
+import { ShipperUser } from '../api/models/shipperUser';
 
-// const userData: LoginResponse = {
-//   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
-//     userName: "tangogatdet76@gmail.com",
-//     email: "tangogatdet76@gmail.com",
-//     firstName: "Pal",
-//     lastName: "Kuoth",
-//     roles: ["shipper"],
-//     phoneNumber: "+15806471212",
-//   },
-// };
+
+// Define the type for mapRoles
+const mapRoles: { [key: number]: string } = {
+  0: "govt_shipper",
+  1: "corporate_shipper",
+  2: "gov_shipper",
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
+    const user: any = session.get(authenticator.sessionKey);
 
-    // const user: any = userData;
+    const shipperProfile = session.get("shipper");
 
     if (!user) {
-      throw new Error("401 Unauthorized");
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
 
     // const response: LoadResponse = dummyData;
@@ -72,26 +69,28 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Error(response);
     }
 
-    return json([response, user]);
+    return json({ "profile": shipperProfile, "user": user, "response": response }, { status: 200 });
   } catch (error: any) {
-    console.error("Error: ", error);
-    if (JSON.parse(error).data.status === 401) {
-      return redirect("/login/");
-    }
-
-    // if it's not 401, throw the error
-    throw error;
+    throw error
+    // if (JSON.parse(error).data.status === 401) {
+    //   return redirect("/login/");
+    // }
   }
 };
 
 export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get("user");
+  const user = session.get(authenticator.sessionKey);
 
-  // const user: any = userData;
+  const shipperProfile = session.get("shipper");
+  console.log("Shipper Profile: ", shipperProfile);
 
   if (!user) {
-    throw new Response("401 Unauthorized", { status: 401 });
+    return redirect("/login/", {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
   }
 
   const formData = await request.formData();
@@ -179,7 +178,6 @@ export default function ViewLoads() {
 
   let error = "";
 
-  console.log("ActionData: ", actionData);
   if (loaderData && loaderData.errno) {
     if (loaderData.errno === "ENOTFOUND") {
       error =
@@ -203,9 +201,13 @@ export default function ViewLoads() {
 
   var loads: object = {};
   let user: any = {};
-  if (loaderData.length == 2 && error === "") {
-    loads = loaderData[0];
-    user = loaderData[1];
+  let key: number = 0
+  let profile: ShipperUser
+  if (loaderData && error === "") {
+    loads = loaderData.response;
+    user = loaderData.user
+    profile = loaderData.profile;
+    key = profile.user.businessProfile.shipperRole
   } else {
     error = "Ooops!, Something Went wrong, please try again.";
   }
@@ -233,13 +235,17 @@ export default function ViewLoads() {
   if (confirm === "confirmation") {
     loadIdToBeDeleted = actionData.loadId;
   }
+
+  console.log("Key: ", key);
+  const shipperRole = mapRoles[key];
+  console.log("Shipper Role: ", shipperRole);
+
   const [
     shipperAccess,
     shipperHasAccess,
-    adminAccess,
-    carrierAccess,
-    carrierHasAccess,
-  ] = checkUserRole(user?.roles);
+  ] = checkUserRole([shipperRole]);
+
+   const currency = "ETB";
 
   return (
     <div className="container mx-auto px-4 py-4">
@@ -354,20 +360,20 @@ export default function ViewLoads() {
                       <div className="flex items-center space-x-2">
                         {load.loadStatus === "open" && (
                           <div className="flex items-center">
-                            <LockOpenIcon className="w-5 h-5 text-orange-500" />
+                            <LockOpenIcon className="w-5 h-5 text-green-500" />
                             <span className="text-green-500">Open</span>
                           </div>
                         )}
                         {load.loadStatus === "closed" && (
                           <div className="flex items-center">
-                            <LockClosedIcon className="w-5 h-5 text-red-500" />
-                            <span className="text-red-500">Closed</span>
+                            <LockClosedIcon className="w-5 h-5 text-blue-500" />
+                            <span className="text-blue-500">Closed</span>
                           </div>
                         )}
                         {load.loadStatus === "accepted" && (
                           <div className="flex items-center">
-                            <DocumentCheckIcon className="w-5 h-5 text-blue-500" />
-                            <span className="text-blue-500">Accepted</span>
+                            <DocumentCheckIcon className="w-5 h-5 text-gray-500" />
+                            <span className="text-gray-500">Accepted</span>
                           </div>
                         )}
                         {load.loadStatus === "delivered" && (
@@ -384,8 +390,8 @@ export default function ViewLoads() {
                         )}
                         {load.loadStatus === "enroute" && (
                           <div className="flex items-center">
-                            <EllipsisHorizontalCircleIcon className="w-5 h-5 text-green-400" />
-                            <span className="text-orange-500">Enroute</span>
+                            <EllipsisHorizontalCircleIcon className="w-5 h-5 text-orange-400" />
+                            <span className="text-orange-400">Enroute</span>
                           </div>
                         )}
                         <ChevronUpIcon
@@ -402,12 +408,12 @@ export default function ViewLoads() {
                           {new Date(load.pickupDate).toLocaleDateString()}
                         </p>
                         <p>
-                          Delivery Date:{" "}
+                          Estimated Delivery Date:{" "}
                           {new Date(load.deliveryDate).toLocaleDateString()}
                         </p>
                         <p>Commodity: {load.commodity}</p>
                         <p>Weight: {load.weight} kg</p>
-                        <p>Offer Amount: ${load.offerAmount}</p>
+                        <p>Offer Amount: { currency } {load.offerAmount}</p>
                         <p>Details: {load.loadDetails}</p>
                       </div>
                       <div className="flex justify-end space-x-2 mt-4">

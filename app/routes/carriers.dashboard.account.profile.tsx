@@ -12,22 +12,20 @@ import {
   Form,
   useActionData,
   useLoaderData,
-  useNavigate,
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import invariant from "tiny-invariant";
 import {
-  ChangePassword,
+  authenticator,
   UpdatePasswordInProfile,
 } from "~/api/services/auth.server";
 import ErrorDisplay from "~/components/ErrorDisplay";
-import { getSession } from "~/api/services/session";
-import type { PasswordResetRequest } from "~/api/models/passwordResetRequest";
-import { PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
+import { commitSession, getSession } from "~/api/services/session";
+import { type PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
 
 export const meta: MetaFunction = () => {
   return [
@@ -41,38 +39,25 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
-// const userData = {
-//   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYWZpbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiYmJmNmZhOTEtOTljYy00NzAxLWJkZWUtNWRkMWY3MWJhZTdmIiwibmJmIjoxNzE1ODYwMTMwLCJleHAiOjE3MTU4NjM3MzUsImlhdCI6MTcxNTg2MDEzNSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.m24wLWyItr-658y3ewUgh1rex8hOjvbxM_MCDeodp9s",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     id: "7c134ef0-eff8-466e-955e-e195700d8696",
-//     userName: "tangotew@gmail.com",
-//     email: "tangotew@gmail.com",
-//     firstName: "Tango",
-//     lastName: "War",
-//     roles: ["carrier"],
-//     phoneNumber: "+15806471212",
-//   },
-// };
-
 export let loader = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
-    // const user: any = userData;
+    const user = session.get(authenticator.sessionKey);
+    
+    const carrierProfile = session.get("carrier");
+    const shipperProfile = session.get("shipper");
 
     if (!user) {
-      throw JSON.stringify({
-        data: {
-          message: "Unauthorized",
-          status: 401,
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
         },
       });
     }
 
-    return json({ user });
+    return carrierProfile ?
+      json({ user, carrierProfile }, { status: 200 }) :
+      json({ user, shipperProfile }, { status: 200 });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
       return "/login/";
@@ -84,6 +69,9 @@ export let loader = async ({ request }) => {
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get("user");
+
+  const carrierProfile = session.get("carrier");
+ const shipperProfile = session.get("shipper"); 
   // const user: any = userData;
   if (!user) {
     return json({ error: "Unauthorized", status: 401 }, { status: 401 });
