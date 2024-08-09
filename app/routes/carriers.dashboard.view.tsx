@@ -44,8 +44,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
 
-    const carrierProfile = session.get("carrier");
-
+    const carrierProfile: any = session.get("carrier");
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
     if (isNaN(EXPIRES_IN)) {
@@ -78,7 +77,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw response;
     }
 
-    return json([response, user], {
+    return json({ "loads": response, "carrierProfile": carrierProfile }, {
       headers: {
         "Set-Cookie": await commitSession(session, { expires }),
       },
@@ -147,6 +146,8 @@ export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
 
+  console.log("Carrier Profile", loaderData.carrierProfile);
+
   let error = "";
   let info = "";
 
@@ -175,11 +176,11 @@ export default function CarrierViewLoads() {
   }
 
   // Extract loads and user data from loader
-  let loads = [];
-  let user = {};
-  if (Array.isArray(loaderData) && loaderData.length === 2 && !error) {
-    loads = loaderData[0];
-    user = loaderData[1];
+  let loads = loaderData?.loads || [];
+  let carrierProfile = loaderData?.carrierProfile || {};
+
+  if (loaderData && !error) {
+    loads = loaderData.loads;
   } else {
     error =
       "No loads found or something went wrong. Please try again later or contact support.";
@@ -191,7 +192,7 @@ export default function CarrierViewLoads() {
 
   // User roles and permission checks
   const [shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
-    checkUserRole(user?.user.roles);
+    checkUserRole(carrierProfile.roles);
 
   let contactMode =
     actionData && actionData.message === "contactMode"
@@ -208,7 +209,7 @@ export default function CarrierViewLoads() {
   }
 
   // Utility function to determine styles based on load status
-  const getStatusStyles = (status) => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
       case "open":
         return "bg-green-600";
@@ -268,7 +269,7 @@ export default function CarrierViewLoads() {
               <>
                 {/* Contact Shipper View */}
                 {contactMode === "contactMode" && (
-                  <ContactShipperView load={load} shipper={load.createdBy} />
+                  <ContactShipperView shipper={load.createdBy} load={load} />
                 )}
 
                 {/* Bid Adjustment View */}
@@ -326,7 +327,9 @@ export default function CarrierViewLoads() {
                     </p>
                     <p>Commodity: {load.commodity}</p>
                     <p>Weight: {load.weight} kg</p>
-                    <p>Offer Amount: {currency} {load.offerAmount}</p>
+                    <p>
+                      Offer Amount: {currency} {load.offerAmount}
+                    </p>
                     <p>Details: {load.loadDetails}</p>
                   </div>
 
@@ -371,11 +374,27 @@ export default function CarrierViewLoads() {
                           name="offerAmount"
                           value={load.offerAmount}
                         />
+
                         <button
+                          disabled={
+                            load.loadStatus === "enroute" ||
+                            load.loadStatus === "accepted" ||
+                            load.loadStatus === "rejected" ||
+                            load.loadStatus === "closed"
+                          }
                           type="submit"
                           name="_action"
                           value="bid"
-                          className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none"
+                          // make conditional formatting for the button based on the load status
+                          className={`flex items-center px-4 py-2 text-sm font-medium text-orange-400 bg-gray-700 border border-orange-400 rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
+                            load.loadStatus === "enroute" ||
+                            load.loadStatus === "accepted" ||
+                            load.loadStatus === "rejected" ||
+                            load.loadStatus === "closed"
+                              ? "cursor-not-allowed"
+                              : ""
+                          }`}
+                          // className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none"
                           aria-label="Place Bid"
                         >
                           <CurrencyDollarIcon className="w-5 h-5 mr-2" />

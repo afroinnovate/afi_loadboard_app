@@ -19,7 +19,7 @@ import type {
 } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
-import { authenticator } from '../api/services/auth.server';
+import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
 import AccessDenied from "~/components/accessdenied";
 import SidebarCarrier from "~/components/sidebarCarrier";
@@ -27,9 +27,12 @@ import CarrierOverview from "~/components/carrierOverview";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { redirectUser } from "~/components/redirectUser";
-import { getUserInfo } from "~/api/services/user.service";  
-import { type CarrierUser } from '../api/models/carrierUser';
-
+import { getUserInfo } from "~/api/services/user.service";
+import BusinessInformation from "./carriers.dashboard.account.business";
+import type {
+  CarrierVehicle,
+  UserBusinessProfile,
+} from "../api/models/carrierUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -54,7 +57,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     let user = session.get(authenticator.sessionKey);
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
-
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
 
     if (isNaN(EXPIRES_IN)) {
@@ -74,46 +76,90 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    var userBusinessProfile = await getUserInfo(user?.user.id, user?.token);
+    var userBusinessProfile: any = await getUserInfo(
+      user?.user.id,
+      user?.token
+    );
+
+    const mapCarrierRole = (role: number | null) => {
+      switch (role) {
+        case 0:
+          return "ownerOperator";
+        case 1:
+          return "fleetOwner";
+        case 2:
+          return "Dispatch";
+        default:
+          return null;
+      }
+    };
+
     if (userBusinessProfile) {
       if (userBusinessProfile.userType === "Carrier") {
-        const carrierUser: CarrierUser = {
-          id: user.id,
-          token: user.token,
-          user: {
-            firstName: userBusinessProfile.firstName,
-            middleName: userBusinessProfile.middleName,
-            lastName: userBusinessProfile.lastName,
-            email: userBusinessProfile.email,
-            phone: userBusinessProfile.phone,
-            userType: userBusinessProfile.userType,
-            dotNumber: userBusinessProfile.businessProfile.dotNumber,
+        const carrierUser: UserBusinessProfile = {
+          userId: user?.user.id,
+          firstName: userBusinessProfile.firstName,
+          middleName: userBusinessProfile.middleName,
+          lastName: userBusinessProfile.lastName,
+          email: userBusinessProfile.email,
+          phone: userBusinessProfile.phone,
+          userType: userBusinessProfile.userType,
+          businessProfile: {
+            companyName: userBusinessProfile.businessProfile.companyName,
             motorCarrierNumber:
               userBusinessProfile.businessProfile.motorCarrierNumber,
+            dotNumber: userBusinessProfile.businessProfile.dotNumber,
             equipmentType: userBusinessProfile.businessProfile.equipmentType,
             availableCapacity:
               userBusinessProfile.businessProfile.availableCapacity,
-            companyName: userBusinessProfile.businessProfile.companyName,
-            vehicleTypes: userBusinessProfile.businessProfile.vehicleTypes,
-            carrierRole: userBusinessProfile.businessProfile.carrierRole,
-            roles: user.roles,
-            confirmed: user.confirmed,
-            status: user.status,
+            idCardOrDriverLicenceNumber:
+              userBusinessProfile.businessProfile.idCardOrDriverLicenceNumber,
+            insuranceName: userBusinessProfile.businessProfile.insuranceName,
+            businessType: userBusinessProfile.businessProfile.businessType,
+            carrierRole: mapCarrierRole(userBusinessProfile.businessProfile.carrierRole),
+            shipperRole: userBusinessProfile.businessProfile.shipperRole,
+            businessRegistrationNumber:
+              userBusinessProfile.businessProfile.businessRegistrationNumber,
+            carrierVehicles:
+              userBusinessProfile.businessProfile.carrierVehicles?.map(
+                (vehicle: CarrierVehicle) => ({
+                  id: vehicle.id,
+                  vehicleTypeId: vehicle.vehicleTypeId,
+                  name: vehicle.name,
+                  description: vehicle.description,
+                  imageUrl: vehicle.imageUrl,
+                  vin: vehicle.vin,
+                  licensePlate: vehicle.licensePlate,
+                  make: vehicle.make,
+                  model: vehicle.model,
+                  year: vehicle.year,
+                  color: vehicle.color,
+                  hasInsurance: vehicle.hasInsurance,
+                  hasRegistration: vehicle.hasRegistration,
+                  hasInspection: vehicle.hasInspection,
+                })
+              ),
           },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
         };
-        // set the session for the carrier user(hydrate appliation with carrier data)
+        // Set the session for the carrier user (hydrate application with carrier data)
         session.set("carrier", carrierUser);
       }
-    } 
-    // set the session for the auth user
+    }
+
+    // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
+
     return json(
       { user, shipperDashboard },
       {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
-      });
+      }
+    );
   } catch (error: any) {
     console.log("Error", error);
     if (JSON.parse(error).data.status == 401) {
@@ -129,8 +175,7 @@ export default function CarrierDashboard() {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
 
-  const user = loaderData?.user;
-  console.log("User", user);
+
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
   );
@@ -160,7 +205,7 @@ export default function CarrierDashboard() {
   }, []); // Empty dependency array ensures this runs once on mount
 
   // User roles and permission checks
- if (loaderData && loaderData.shipperDashboard) {
+  if (loaderData && loaderData.shipperDashboard) {
     return (
       <AccessDenied
         returnUrl="/"

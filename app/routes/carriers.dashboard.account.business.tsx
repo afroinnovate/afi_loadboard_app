@@ -46,7 +46,7 @@ export let loader: LoaderFunction = async ({ request }) => {
 
     const carrierProfile = session.get("carrier");
     const shipperProfile = session.get("shipper");
-    console.log("profiles", carrierProfile, shipperProfile);
+    console.log("carrier profile", carrierProfile);
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -209,7 +209,6 @@ export default function BusinessInformation() {
     Trucks: { selected: false, quantity: 0 },
     Boats: { selected: false, quantity: 0 },
     Vans: { selected: false, quantity: 0 },
-    Cargoes: { selected: false, quantity: 0 },
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,6 +321,7 @@ export default function BusinessInformation() {
     return <Loader />;
   }
 
+  console.log("User", user);
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg w-full h-full flex flex-col">
       <Modal
@@ -575,7 +575,7 @@ export default function BusinessInformation() {
                             name="vehicleTypes"
                             value={JSON.stringify(vehicleTypes)}
                           />
-                          {["Trucks", "Boats", "Vans", "Cargoes"].map((vehicle) => (
+                          {["Trucks", "Boats", "Vans"].map((vehicle) => (
                             <div key={vehicle} className="flex items-center">
                               <label className="flex pl-4 items-center space-x-2">
                                 <input
@@ -601,7 +601,7 @@ export default function BusinessInformation() {
                         />
                         <p className="font-medium">Fleet:</p>
                         <div className="grid grid-cols-2 gap-4">
-                          {["Trucks", "Boats", "Vans", "Cargoes"].map((vehicle) => (
+                          {["Trucks", "Boats", "Vans"].map((vehicle) => (
                             <div key={vehicle} className="flex items-center space-x-2">
                               <label className="flex items-center space-x-2">
                                 <input
