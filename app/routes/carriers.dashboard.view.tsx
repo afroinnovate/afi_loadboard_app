@@ -29,6 +29,7 @@ import { manageBidProcess } from "~/api/services/bid.helper";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
+import { UserBusinessProfile } from "~/api/models/carrierUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -103,6 +104,9 @@ export const action: ActionFunction = async ({ request }) => {
       });
     }
 
+      let carrierProfile: any = session.get("carrier");
+      carrierProfile.token = user.token;
+
     const formData = await request.formData();
     const actionType = formData.get("_action");
     const loadId: any = formData.get("loadId");
@@ -121,7 +125,7 @@ export const action: ActionFunction = async ({ request }) => {
         });
 
       case "placebid":
-        const bidDetails = await manageBidProcess(user, loadId, formData);
+        const bidDetails = await manageBidProcess(carrierProfile, loadId, formData);
         return json({
           error: "",
           message: bidDetails.message,
@@ -145,8 +149,6 @@ export const action: ActionFunction = async ({ request }) => {
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
-
-  console.log("Carrier Profile", loaderData.carrierProfile);
 
   let error = "";
   let info = "";
@@ -177,7 +179,7 @@ export default function CarrierViewLoads() {
 
   // Extract loads and user data from loader
   let loads = loaderData?.loads || [];
-  let carrierProfile = loaderData?.carrierProfile || {};
+  let carrierProfile: any = loaderData?.carrierProfile || {};
 
   if (loaderData && !error) {
     loads = loaderData.loads;
@@ -191,8 +193,8 @@ export default function CarrierViewLoads() {
   }
 
   // User roles and permission checks
-  const [shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
-    checkUserRole(carrierProfile.roles);
+  const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
+    checkUserRole(carrierProfile.roles, carrierProfile.businessProfile.carrierRole ?? "");
 
   let contactMode =
     actionData && actionData.message === "contactMode"
@@ -335,7 +337,7 @@ export default function CarrierViewLoads() {
 
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-2 mt-4">
-                    {carrierAccess && (
+                    {carrierAccess && !carrierHasAccess && (
                       <NavLink
                         to="/carriers/dashboard/account/business/"
                         className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10"

@@ -25,6 +25,7 @@ import { redirectUser } from "~/components/redirectUser";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getUserInfo } from "~/api/services/user.service";
 import { type ShipperUser } from '../api/models/shipperUser';
+import { UserBusinessProfile } from "~/api/models/carrierUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -41,18 +42,8 @@ export const links: LinksFunction = () => [
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    await authenticator.isAuthenticated(request, {
-      failureRedirect: "/login/",
-    });
-
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-
-    const session_expiration: any = process.env.SESSION_EXPIRATION;
-    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
-    if (isNaN(EXPIRES_IN)) {
-      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
-    }
 
     if (!user) {
       return redirect("/login/", {
@@ -60,6 +51,12 @@ export const loader: LoaderFunction = async ({ request }) => {
           "Set-Cookie": await commitSession(session),
         },
       });
+    }
+
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
     }
 
     const expires = new Date(Date.now() + EXPIRES_IN);
@@ -75,9 +72,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     }
 
     // hydrate session user with shipper data
-    var userBusinessInfo = await getUserInfo(user?.user?.id, user?.token);
+    var userBusinessInfo: any = await getUserInfo(user?.user?.id, user?.token);
 
-    if (userBusinessInfo) {
+    if (userBusinessInfo && userBusinessInfo.userType === "shipper") {
       const shipperUser: ShipperUser = {
         id: user.id,
         token: user.token,
@@ -94,25 +91,54 @@ export const loader: LoaderFunction = async ({ request }) => {
           businessProfile: {
             companyName: userBusinessInfo.businessProfile.companyName,
             businessType: userBusinessInfo.businessProfile.businessType,
-            businessRegistrationNumber: userBusinessInfo.businessProfile.businessRegistrationNumber,
+            businessRegistrationNumber:
+              userBusinessInfo.businessProfile.businessRegistrationNumber,
             shipperRole: userBusinessInfo.businessProfile.shipperRole,
           },
-        }
+        },
       };
       session.set("shipper", shipperUser);
-      return json(shipperUser, {
-        headers: {
-          "Set-Cookie": await commitSession(session, { expires }),
-        },
-      });
     } else {
-      session.set(authenticator.sessionKey, user);
-      return json({user, shipperDashboard}, {
+        const shipperProfile = {
+          userId: user?.user.id,
+          firstName: user?.user.firstName,
+          middleName: user?.user.middleName,
+          lastName: user?.user.lastName,
+          email: user?.user.email,
+          phone: user?.user.phoneNumber,
+          userType: user?.user.userType,
+          businessProfile: {
+            companyName: "",
+            motorCarrierNumber: "",
+            dotNumber: "",
+            equipmentType: "",
+            availableCapacity: 0,
+            idCardOrDriverLicenceNumber: "",
+            insuranceName: "",
+            businessType: "",
+            carrierRole: null,
+            shipperRole: 0,
+            businessRegistrationNumber: "",
+            carrierVehicles: [],
+          },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
+        };
+      session.set("shipper", shipperProfile);
+    }
+
+    // Set the session for the auth user
+    session.set(authenticator.sessionKey, user);
+
+    return json(
+      { user, shipperDashboard },
+      {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
-      });
-    }
+      }
+    );
   } catch (error: any) {
     console.log("Dashboard login Error", error);
     if (JSON.parse(error).data.status == 401) {

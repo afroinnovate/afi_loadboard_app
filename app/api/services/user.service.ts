@@ -93,7 +93,7 @@ export async function getUserInfo(userId: string, token: string) {
     } catch (error: any) {
         switch (error.status) {
             case 404:
-                throw JSON.stringify({
+                return JSON.stringify({
                     data: {
                         message: "User with ID 0 not found",
                         status: 404,
@@ -134,3 +134,67 @@ export async function getUserInfo(userId: string, token: string) {
     }
 }
 
+// Create a new user
+export async function CreateUser(userInfo: object, token: string) {
+    try {
+        const response = await fetch(baseUrl + "/users", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(userInfo),
+        });
+
+        // Check if the response is not ok (e.g., 400 or 500 status codes)
+        if (response.status !== 201) {
+            throw response;
+        }
+
+        // Assuming the response returns a JSON object
+        const data = await response.json();
+        const responseData: User = { ...data }
+        return responseData;
+    } catch (error: any) {
+        switch (error.status) {
+            case 404:
+                return JSON.stringify({
+                    data: {
+                        message: "User with ID 0 not found",
+                        status: 404,
+                    },
+                });
+
+            case 500:
+                throw new Error(
+                    JSON.stringify({
+                        data: {
+                            message: "Internal server error",
+                            status: 500,
+                        },
+                    })
+                );
+            case 400:
+                return JSON.stringify({
+                    data: {
+                        message: "Bad request",
+                        status: 400,
+                    },
+                });
+            case 401:
+                throw JSON.stringify({
+                    data: {
+                        message: "Unauthorized",
+                        status: 401,
+                    },
+                });
+            default:
+                throw JSON.stringify({
+                    data: {
+                        message: "An error occurred",
+                        status: 500,
+                    },
+            });
+        }
+    }
+}

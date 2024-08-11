@@ -47,18 +47,20 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  let user: LoginResponse = await authenticator.authenticate(
+  const user: any = await authenticator.authenticate(
     "user-pass",
     request,
     {
       failureRedirect: "/login/",
-      successRedirect: "/dashboard/",
+      // successRedirect: "/dashboard/",
     }
   );
 
   if (user) {
     const session = await getSession(request.headers.get("Cookie"));
-    return redirect("/dashboard/", {
+    var url = user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/";
+    session.set(authenticator.sessionKey, user);
+    return redirect(url, {
       headers: {
         "Set-Cookie": await commitSession(session),
       },

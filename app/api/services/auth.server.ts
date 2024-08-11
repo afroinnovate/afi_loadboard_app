@@ -61,14 +61,15 @@ export async function Login(email: string, password: string) {
     // Assuming the response returns a JSON object
     const data = await response.json();
 
-    const responseData: LoginResponse = { ...data };
+    const responseData: any = { ...data };
+
     return responseData;
   } catch (error) {
     throw error; // Rethrow the error to be handled by the caller
   }
 }
 
-export async function Register(user: User) {
+export async function Register(user: any) {
   try {
     const response = await fetch(baseUrl + "/register", {
       method: "POST",

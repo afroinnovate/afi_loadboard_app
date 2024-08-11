@@ -49,12 +49,16 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   try {
     // Check if we're still logged in
-    await authenticator.isAuthenticated(request, {
-      failureRedirect: "/login/",
-    });
-
     const session = await getSession(request.headers.get("Cookie"));
     let user = session.get(authenticator.sessionKey);
+
+    if (!user) {
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -94,8 +98,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     };
 
-    if (userBusinessProfile) {
-      if (userBusinessProfile.userType === "Carrier") {
+    if (userBusinessProfile && userBusinessProfile.userType === "carrier") {
         const carrierUser: UserBusinessProfile = {
           userId: user?.user.id,
           firstName: userBusinessProfile.firstName,
@@ -146,7 +149,34 @@ export const loader: LoaderFunction = async ({ request }) => {
         };
         // Set the session for the carrier user (hydrate application with carrier data)
         session.set("carrier", carrierUser);
-      }
+    } else {
+      const carrierProfile = {
+        userId: user?.user.id,
+        firstName: user?.user.firstName,
+        middleName: user?.user.middleName,
+        lastName: user?.user.lastName,
+        email: user?.user.email,
+        phone: user?.user.phoneNumber,
+        userType: user?.user.userType,
+        businessProfile: {
+          companyName: "",
+          motorCarrierNumber: "",
+          dotNumber: "",
+          equipmentType: "",
+          availableCapacity: 0,
+          idCardOrDriverLicenceNumber: "",
+          insuranceName: "",
+          businessType: "",
+          carrierRole: null,
+          shipperRole: 0,
+          businessRegistrationNumber: "",
+          carrierVehicles: [],
+        },
+        roles: user?.user.roles,
+        confirmed: user?.user.confirmed,
+        status: user?.user.status,
+      };
+      session.set("carrier", carrierProfile);
     }
 
     // Set the session for the auth user
@@ -161,7 +191,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   } catch (error: any) {
-    console.log("Error", error);
+    console.log("Carrier dashboard Error", error);
     if (JSON.parse(error).data.status == 401) {
       return redirect("/login/");
     }
@@ -175,14 +205,9 @@ export default function CarrierDashboard() {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
 
-
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
   );
-
-  const toggleSettings = () => {
-    setIsSettingsOpen(!isSettingsOpen);
-  };
 
   // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";

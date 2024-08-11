@@ -25,6 +25,9 @@ import { authenticator, CompleteProfile } from "~/api/services/auth.server";
 import { type CompleteProfileRequest } from "../api/models/profileCompletionRequest";
 import { Loader } from "~/components/loader";
 import Modal from "~/components/popup";
+import { type UserBusinessProfile } from "~/api/models/carrierUser";
+import { CreateUser } from "~/api/services/user.service";
+import VehicleForm from "~/components/vehicleForm";
 
 export const meta: MetaFunction = () => {
   return [
@@ -46,7 +49,6 @@ export let loader: LoaderFunction = async ({ request }) => {
 
     const carrierProfile = session.get("carrier");
     const shipperProfile = session.get("shipper");
-    console.log("carrier profile", carrierProfile);
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -77,8 +79,9 @@ export let loader: LoaderFunction = async ({ request }) => {
           "Independent Shipper": "independent_shipper",
           "Government Shipper": "government_shipper",
           "Corporate Shipper": "corporate_shipper",
-        };
-    return json({ user, roles });
+      };
+    
+    return json({ carrierProfile, roles });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
       return redirect("/login/");
@@ -89,11 +92,46 @@ export let loader: LoaderFunction = async ({ request }) => {
 
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get(authenticator.sessionKey);
+  let user = session.get(authenticator.sessionKey);
+  const token = user.token;
+
   if (!user) {
-    return redirect("/login/");
+    return redirect("/login/", {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
   }
 
+  const carrierProfile = session.get("carrier");
+  user = carrierProfile;
+
+  const mapCarrierRole = (role: string | null) => {
+    switch (role) {
+      case "owner_operator":
+        return 0;
+      case "fleet_owner":
+        return 1;
+      case "dispatcher":
+        return 2;
+      default:
+        return null;
+    }
+  };
+
+  const mapShipperRole = (role: string | null) => {
+    switch (role) {
+      case "independent_shipper":
+        return 0;
+      case "corporate_shipper":
+        return 1;
+      case "govt_shipper":
+        return 2;
+      default:
+        return null;
+    }
+  }
+  
   const body = await request.formData();
   const action = body.get("_action");
 
@@ -135,36 +173,99 @@ export let action: ActionFunction = async ({ request }) => {
 
       return json({ success: true });
     } else if (action === "business") {
-       const companyDetails = body.get("companyDetails") as string;
-       const role = body.get("role") as string;
-       let vehicleType = "";
-       let vehicleTypes = null;
+      const companyName = body.get("companyName") as string;
+      const role = body.get("role") as string;
 
-       if (role === "owner_operator") {
-         vehicleType = body.get("vehicleType") as string;
-       } else if (role === "fleet_owner") {
-         const vehicleTypesJSON = body.get("vehicleTypes") as string;
-         const parsedVehicleTypes = vehicleTypesJSON
-           ? JSON.parse(vehicleTypesJSON)
-           : {};
-         vehicleTypes = parsedVehicleTypes;
-       }
+      let vehicleType = body.get("vehicleType");
+      const vehicleName = body.get("vehicleName");
+      const vehicleCapacity =
+        body.get("vehicleCapacity") ? body.get("vehicleCapacity") : 0;
+      const vehicleColor = body.get("vehicleColor");
+      const registrationNumber = body.get("registrationNumber");
+      const hasInsurance = body.get("hasInsurance");
+      const hasInspection = body.get("hasInspection");
+      const businessType = body.get("businessType");
+      const idCardOrDriverLicenceNumber = body.get("idCardOrDriverLicenceNumber");
 
-       const business_req = {
-         companyDetails,
-         vehicleType,
-         vehicleTypes,
-         totalFleetSize:
-           role === "fleet_owner"
-             ? Object.values(vehicleTypes).reduce(
-                 (sum, vehicle: any) => sum + (vehicle.quantity || 0),
-                 0
-               )
-             : 0,
-         role,
-       };
+      let vehicleTypes = null;
+      if (role === "owner_operator") {
+        vehicleType = body.get("vehicleType") as string;
+      } else if (role === "fleet_owner") {
+        const vehicleTypesJSON = body.get("vehicleTypes") as string;
+        const parsedVehicleTypes = vehicleTypesJSON
+          ? JSON.parse(vehicleTypesJSON)
+          : {};
+        vehicleTypes = parsedVehicleTypes;
+      }
 
-      return json({ success: true });
+      let carrierRole = mapCarrierRole(role);
+      let shipperRole = mapShipperRole(role);
+
+      // Construct the business profile request object
+      const business_req: any = {
+        userId: user.userId,
+        email: user.email,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
+        phone: user.phone,
+        userType: user.userType,
+        businessProfile: {
+          companyName: companyName,
+          motorCarrierNumber: registrationNumber,
+          dotNumber: registrationNumber,
+          equipmentType: vehicleType,
+          availableCapacity: parseInt(vehicleCapacity),
+          idCardOrDriverLicenceNumber: idCardOrDriverLicenceNumber,
+          insuranceName: "Best Insure",
+          businessType: businessType,
+          carrierRole: carrierRole,
+          shipperRole: shipperRole,
+          businessRegistrationNumber: registrationNumber,
+          carrierVehicles: [
+            {
+              vehicleTypeId: 2,
+              name: vehicleName,
+              description: "This is my work vehicle",
+              imageUrl: "https://example.com/image2.jpg",
+              vin: registrationNumber,
+              licensePlate: registrationNumber,
+              make: vehicleType,
+              model: vehicleName,
+              year: "",
+              color: vehicleColor,
+              hasInsurance: hasInsurance === "on" ? true : false,
+              hasRegistration: registrationNumber ? true : false,
+              hasInspection: hasInspection === "on" ? true : false,
+            },
+          ],
+        }
+      }
+
+      // update the userinformation
+      var response = await CreateUser(business_req, token);
+      if (response) {
+        var updatedUser = {
+          userId: user.userId,
+          token: user.token,
+          user: {
+            firstName: user.firstName,
+            middleName: user.middleName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            userType: user.userType,
+            roles: user.roles,
+            confirmed: user.confirmed,
+            status: user.status,
+            businessProfile: business_req.businessProfile,
+          },
+        }
+        session.set("carrier", updatedUser);
+        await commitSession(session);
+      }
+
+      return json({ type: "business", success: true });
     } else if (action === "updated") {
       return redirect("/logout/");
     } else {
@@ -177,15 +278,16 @@ export let action: ActionFunction = async ({ request }) => {
       });
     }
   } catch (error: any) {
+    console.log("Action Error", error);
     if (JSON.parse(error).data.status == 401) {
-      return redirect("/login/");
+      session.set(authenticator.sessionKey, null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        }
+      })
     }
-    throw JSON.stringify({
-      data: {
-        message: JSON.parse(error).data.message,
-        status: JSON.parse(error).data.status,
-      },
-    });
+    throw error;
   }
 };
 
@@ -194,7 +296,7 @@ export default function BusinessInformation() {
   const actionData: any = useActionData();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const user = LoaderData?.user?.user;
+  const user:UserBusinessProfile = LoaderData?.carrierProfile;
   const roles = LoaderData?.roles;
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -204,6 +306,11 @@ export default function BusinessInformation() {
   const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
   const [fleetSize, setFleetSize] = useState("");
   const fetcher = useFetcher();
+
+  let businessUpdated = false;
+  if (actionData?.type === "business" && actionData?.success) {
+    businessUpdated = true;
+  }
 
   const [vehicleTypes, setVehicleTypes]: any = useState({
     Trucks: { selected: false, quantity: 0 },
@@ -298,7 +405,7 @@ export default function BusinessInformation() {
       setIsUpdateEnabled(false);
     }
 
-    if (fetcher.data && fetcher.data.success) {
+    if ((fetcher.data && fetcher.data.success) || businessUpdated) {
       setIsModalOpen(true);
     }
   }, [selectedRole, vehicleTypes, documents, isSubmitting, fetcher.data]);
@@ -314,6 +421,7 @@ export default function BusinessInformation() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    businessUpdated = false;
     window.location.reload(); // Reload the page to fetch updated data
   };
 
@@ -321,7 +429,10 @@ export default function BusinessInformation() {
     return <Loader />;
   }
 
-  console.log("User", user);
+  const selectedVehicleType = Object.keys(vehicleTypes).find(
+    (key) => vehicleTypes[key].selected
+  );
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg w-full h-full flex flex-col">
       <Modal
@@ -503,18 +614,18 @@ export default function BusinessInformation() {
                       </label>
                     </div>
 
-                    {user.status === true && user.companyDetails && (
+                    {user.status && user.businessProfile.companyName && (
                       <div className="mb-4 border border-gray-300">
                         <label className="block font-semibold">
                           Company Name:
                           <span className="font-normal px-6">
-                            {user.companyDetails}
+                            {user.businessProfile.companyName}
                           </span>
                         </label>
                       </div>
                     )}
 
-                    {user.status === false && (
+                    {!user.status && (
                       <>
                         <p className="mb-4">
                           Your business profile is not complete. Please complete
@@ -536,10 +647,10 @@ export default function BusinessInformation() {
                     <div className="mb-4">
                       <FloatingLabelInput
                         type="text"
-                        name="companyDetails"
-                        defaultValue={user.companyDetails}
+                        name="companyName"
+                        defaultValue={user.businessProfile.companyName}
                         required
-                        placeholder="Company Details"
+                        placeholder="Company Name"
                         className="block w-full mt-1 rounded-md border-gray-300"
                         onChange={function (
                           name: string,
@@ -592,60 +703,52 @@ export default function BusinessInformation() {
                         </div>
                       )}
 
-                    {selectedRole === "fleet_owner" && (
-                      <div className="col-span-2">
-                        <input
-                          type="hidden"
-                          name="vehicleTypes"
-                          value={JSON.stringify(vehicleTypes)}
-                        />
-                        <p className="font-medium">Fleet:</p>
-                        <div className="grid grid-cols-2 gap-4">
-                          {["Trucks", "Boats", "Vans"].map((vehicle) => (
-                            <div key={vehicle} className="flex items-center space-x-2">
-                              <label className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  name={vehicle}
-                                  onChange={handleVehicleChange}
-                                />
-                                <span>{vehicle}</span>
-                              </label>
-                              {vehicleTypes[vehicle].selected && (
-                                <input
-                                  type="number"
-                                  required
-                                  name={`${vehicle.toLowerCase()}Quantity`}
-                                  className="w-20 ml-auto"
-                                  placeholder="Qty"
-                                  value={vehicleTypes[vehicle].quantity}
-                                  onChange={(e) => handleVehicleQuantityChange(e, vehicle)}
-                                />
-                              )}
-                            </div>
-                          ))}
+                      {selectedRole === "fleet_owner" && (
+                        <div className="col-span-2">
+                          <input
+                            type="hidden"
+                            name="vehicleTypes"
+                            value={JSON.stringify(vehicleTypes)}
+                          />
+                          <p className="font-medium">Fleet:</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            {["Trucks", "Boats", "Vans"].map((vehicle) => (
+                              <div
+                                key={vehicle}
+                                className="flex items-center space-x-2"
+                              >
+                                <label className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    name={vehicle}
+                                    onChange={handleVehicleChange}
+                                  />
+                                  <span>{vehicle}</span>
+                                </label>
+                                {vehicleTypes[vehicle].selected && (
+                                  <input
+                                    type="number"
+                                    required
+                                    name={`${vehicle.toLowerCase()}Quantity`}
+                                    className="w-20 ml-auto"
+                                    placeholder="Qty"
+                                    value={vehicleTypes[vehicle].quantity}
+                                    onChange={(e) =>
+                                      handleVehicleQuantityChange(e, vehicle)
+                                    }
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {/* {selectedRole === "fleet_owner" && (
-                      <div className="col-span-2">
-                        <p className="font-medium">Fleet Size:</p>
-                        {["1-2", "3-10", "11-25", "26-50", "50+"].map(
-                          (size) => (
-                            <label key={size} className="px-2">
-                              <input
-                                type="radio"
-                                name="fleetSize"
-                                value={size}
-                                onChange={handleFleetSizeChange}
-                              />{" "}
-                              {size}
-                            </label>
-                          )
-                        )}
-                      </div>
-                    )} */}
-                    </div>  
+                      )}
+
+                      {/* Show VehicleForm if a vehicle type is selected */}
+                      {selectedVehicleType && (
+                        <VehicleForm selectedVehicle={selectedVehicleType} />
+                      )}
+                    </div>
                     <div className="mb-4 mt-6">
                       <label className="block text-green-700">
                         Upload Required Documents
@@ -762,3 +865,5 @@ export function ErrorBoundary() {
   };
   return <ErrorDisplay error={error} />;
 }
+
+
