@@ -19,7 +19,7 @@ import type { LoginUser } from "~/api/models/loginResponseUser";
 import { useState } from "react";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
-import { getSession } from "~/api/services/session";
+import { commitSession, getSession } from "~/api/services/session";
 import type { LoadResponse } from "~/api/models/loadResponse";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
@@ -126,10 +126,17 @@ export const action: ActionFunction = async ({ request }) => {
     } else {
       return redirect("/dashboard/loads/add");
     }
-  } catch (error) {
-    console.log("action caught error: ", error);
+  } catch (error: any) {
     if (error.message.includes("401")) {
-      return redirect("/login/");
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     return error;
   }

@@ -60,7 +60,16 @@ export let loader = async ({ request }) => {
       json({ user, shipperProfile }, { status: 200 });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
-      return "/login/";
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      }
+      );
     }
     throw e;
   }
@@ -103,9 +112,15 @@ export let action: ActionFunction = async ({ request }) => {
     };
 
     const response = await UpdatePasswordInProfile(request);
-    console.log("Response", response);
     if (response.status === 200) {
-      return redirect("/login/");
+      session.set(authenticator.sessionKey, null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
   } catch (error: any) {
     return json({ error: error.message }, { status: 400 });

@@ -4,7 +4,6 @@ import {
   useLoaderData,
   useLocation,
   NavLink,
-  useNavigate,
   useRouteError,
   isRouteErrorResponse,
 } from "@remix-run/react";
@@ -20,12 +19,10 @@ import { commitSession, getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from "../components/overview";
 import AccessDenied from "~/components/accessdenied";
-import { checkUserRole } from "~/components/checkroles";
 import { redirectUser } from "~/components/redirectUser";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getUserInfo } from "~/api/services/user.service";
 import { type ShipperUser } from '../api/models/shipperUser';
-import { UserBusinessProfile } from "~/api/models/carrierUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -61,6 +58,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
+    console.log("shipper dashboard user", user)
+    if (user?.user.userType === "carrier") {
+      return redirect("/carriers/dashboard/")
+    }
     // Redirect to the appropriate dashboard based on the user role
     const shipperDashboard = await redirectUser(user?.user);
     if (!shipperDashboard) {
@@ -142,7 +143,14 @@ export const loader: LoaderFunction = async ({ request }) => {
   } catch (error: any) {
     console.log("Dashboard login Error", error);
     if (JSON.parse(error).data.status == 401) {
-      return redirect("/login/");
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw error;
   }
@@ -156,12 +164,6 @@ export default function Dashboard() {
 
   const isLoadOperationsActive =
     location.pathname.startsWith("/dashboard/loads/");
-
-  var user: {} = {};
-
-  if (loaderData?.user) {
-    user = loaderData.user;
-  }
 
   // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";

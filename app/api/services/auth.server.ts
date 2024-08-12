@@ -1,5 +1,3 @@
-// import { invariant } from "@remix-run/router/dist/history";
-import type { User } from "../models/user";
 import invariant from "tiny-invariant";
 import { Authenticator } from "remix-auth";
 import { sessionStorage } from "./session";
@@ -7,10 +5,10 @@ import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
 import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
-import { PasswordUpdateRequest } from "../models/paswordUpdateRequest";
+import { type PasswordUpdateRequest } from "../models/paswordUpdateRequest";
 
-// const baseUrl = 'https://api.auth.afroinnovate.com/auth';
-const baseUrl = "http://localhost:8080/auth";
+const baseUrl = 'https://api.auth.afroinnovate.com/auth';
+// const baseUrl = "http://localhost:8080/auth";
 
 export let authenticator = new Authenticator<LoginResponse>(sessionStorage, {
   sessionKey: "_auth_data",

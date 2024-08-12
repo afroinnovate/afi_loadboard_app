@@ -1,6 +1,7 @@
 import type { User, UserResponse } from "../models/user";
 
-const baseUrl = "http://localhost:7070";
+const baseUrl = "https://api.frieght.afroinnovate.com/";
+// const baseUrl = "http://localhost:7070";
 
 export async function updateUserProfile(userId: string, userInfo: object, token: string) {
 

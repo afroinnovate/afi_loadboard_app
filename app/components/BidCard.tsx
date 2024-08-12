@@ -20,7 +20,6 @@ type BidCardProps = {
 
 export const BidCard: FC<BidCardProps> = ({ bid, shipperHasAccess }) => {
     const [isOpen, setIsOpen] = useState(false); // State to manage the open/closed state of the collapsible
-    
     return (
         <Disclosure as="div" className="bg-white shadow-md rounded-lg mb-4">
              {({ open }) => (

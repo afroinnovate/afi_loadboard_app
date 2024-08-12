@@ -62,6 +62,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
+    if (user?.user.userType === "shipper") {
+      return redirect("/dashboard/")
+    }
+
+    console.log("carrier prop: ", carrierProfile)
     // check if the user is authorized to access this page, else redircdt them the appropriate page
     const shipperDashboard = await redirectUser(user?.user);
     if (shipperDashboard) {
@@ -85,7 +90,15 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
-      return redirect("/login/");
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw error;
   }
@@ -104,12 +117,11 @@ export const action: ActionFunction = async ({ request }) => {
       });
     }
 
-      let carrierProfile: any = session.get("carrier");
-      carrierProfile.token = user.token;
+    let carrierProfile: any = session.get("carrier");
+    carrierProfile.token = user.token;
 
     const formData = await request.formData();
     const actionType = formData.get("_action");
-    const loadId: any = formData.get("loadId");
     const bidLoadId = formData.get("bidLoadId");
 
     switch (actionType) {
@@ -120,12 +132,17 @@ export const action: ActionFunction = async ({ request }) => {
         return json({
           error: "",
           message: "bidMode",
-          loadId: bidLoadId,
+          loadIdToBeBid: bidLoadId,
           offerAmount: formData.get("offerAmount"),
         });
 
       case "placebid":
-        const bidDetails = await manageBidProcess(carrierProfile, loadId, formData);
+        const bidAmount = formData.get("bidAmount");
+        const bidDetails = await manageBidProcess(
+          carrierProfile,
+          Number(bidLoadId),
+          Number(bidAmount)
+        );
         return json({
           error: "",
           message: bidDetails.message,
@@ -140,7 +157,15 @@ export const action: ActionFunction = async ({ request }) => {
     }
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
-      return redirect("/login/");
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw error;
   }
@@ -150,6 +175,7 @@ export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
 
+  console.log("action Data: ", actionData)
   let error = "";
   let info = "";
 
@@ -192,9 +218,13 @@ export default function CarrierViewLoads() {
     info = "No loads posted, please check back later";
   }
 
+  console.log("view carrier: ",carrierProfile);
+  
   // User roles and permission checks
   const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
     checkUserRole(carrierProfile.roles, carrierProfile.businessProfile.carrierRole ?? "");
+  
+  console.log(carrierAccess, carrierHasAccess)
 
   let contactMode =
     actionData && actionData.message === "contactMode"
@@ -203,12 +233,13 @@ export default function CarrierViewLoads() {
   let bidMode =
     actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
 
-  let loadIdToBeBid = 0;
-  let currentBid = 0;
-  if (bidMode === "bidMode") {
-    loadIdToBeBid = actionData.loadId;
-    currentBid = actionData.offerAmount;
-  }
+  let loadIdToBeBid = actionData?.loadIdToBeBid || null;
+  let currentBid = actionData?.offerAmount || 0;
+
+  // if (bidMode === "bidMode") {
+  //   loadIdToBeBid = actionData.loadId;
+  //   currentBid = actionData.offerAmount;
+  // }
 
   // Utility function to determine styles based on load status
   const getStatusStyles = (status: string) => {
@@ -275,11 +306,8 @@ export default function CarrierViewLoads() {
                 )}
 
                 {/* Bid Adjustment View */}
-                {bidMode === "bidMode" && (
-                  <BidAdjustmentView
-                    loadId={load.loadId}
-                    initialBid={currentBid}
-                  />
+                {bidMode === "bidMode" && load.loadId && (
+                  <BidAdjustmentView loadId={loadIdToBeBid} initialBid={currentBid} />
                 )}
 
                 <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
@@ -350,7 +378,7 @@ export default function CarrierViewLoads() {
 
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="loadId" value={load.id} />
+                        <input type="hidden" name="loadId" value={load.loadId} />
                         <button
                           type="submit"
                           name="_action"
@@ -365,18 +393,12 @@ export default function CarrierViewLoads() {
                     )}
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="bidLoadId" value={load.id} />
-                        <input
-                          type="hidden"
-                          name="loadIdToBeBid"
-                          value={loadIdToBeBid}
-                        />
+                        <input type="hidden" name="bidLoadId" value={load.loadId} />
                         <input
                           type="hidden"
                           name="offerAmount"
                           value={load.offerAmount}
                         />
-
                         <button
                           disabled={
                             load.loadStatus === "enroute" ||

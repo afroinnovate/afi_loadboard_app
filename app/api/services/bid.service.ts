@@ -1,11 +1,12 @@
 import type { BidRequest } from "../models/bidRequest";
 import type { BidResponse } from "../models/bidResponse";
 
-// const baseUrl = "https://api.frieght.afroinnovate.com/";
-const baseUrl = "http://localhost:8080/auth";
+const baseUrl = "https://api.frieght.afroinnovate.com/";
+// const baseUrl = "http://localhost:7070/";
 
 export async function PlaceBid(bidRequest: BidRequest, token: string) {
   try {
+    console.log("Creating bid service");
     const response = await fetch(baseUrl + "bids/", {
       method: "POST",
       headers: {
@@ -15,6 +16,7 @@ export async function PlaceBid(bidRequest: BidRequest, token: string) {
       body: JSON.stringify(bidRequest),
     });
 
+    console.log("response", response);
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 201) {
       throw response;
@@ -28,7 +30,7 @@ export async function PlaceBid(bidRequest: BidRequest, token: string) {
   } catch (error: any) {
     switch (error.status) {
       case 404:
-        throw JSON.stringify({
+        return JSON.stringify({
           data: {
             message: "Bid with ID 0 not found",
             status: 404,
@@ -201,8 +203,8 @@ export async function GetBid(token: string, id: Number) {
   }
 }
 
-export async function GetBidByLoadIdandCarrierId(token: string, loadId: Number, carrierId: string) {
-    try {
+export async function GetBidByLoadIdandCarrierId(loadId: Number, carrierId: string, token: string) {
+  try {
       const response = await fetch(`${baseUrl}bids/${loadId}/${carrierId}`, {
         method: "GET",
         headers: {
@@ -224,10 +226,11 @@ export async function GetBidByLoadIdandCarrierId(token: string, loadId: Number, 
   
       const responseData = await response.json();
       return responseData;
-    } catch (error: any) {
+  } catch (error: any) {
+    console.log('get bid error', error)
       switch (error.status) {
         case 404:
-          throw JSON.stringify({
+          return JSON.stringify({
             data: {
               message: `Bid with ID ${loadId} and ${carrierId} not found`,
               status: 404,
@@ -339,6 +342,7 @@ export async function UpdateBid(
   bidRequest: BidRequest
 ) {
   try {
+    console.log("Updating bid service", JSON.stringify(bidRequest), id);
     const url = `${baseUrl}bids/${id}`;
     const response = await fetch(url, {
       method: "PUT",
@@ -348,6 +352,8 @@ export async function UpdateBid(
       },
       body: JSON.stringify(bidRequest),
     });
+
+    console.log("response", response);
 
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 204) {

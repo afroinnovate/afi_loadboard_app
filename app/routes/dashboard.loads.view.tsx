@@ -27,12 +27,11 @@ import {
   MinusCircleIcon,
   EllipsisHorizontalCircleIcon,
 } from "@heroicons/react/20/solid";
-import type { LoadRequest } from "~/api/models/loadRequest";
 import UpdateLoadView from "~/components/updateload";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { authenticator } from "~/api/services/auth.server";
-import { ShipperUser } from '../api/models/shipperUser';
+import { type ShipperUser } from '../api/models/shipperUser';
 
 
 // Define the type for mapRoles
@@ -71,10 +70,19 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     return json({ "profile": shipperProfile, "user": user, "response": response }, { status: 200 });
   } catch (error: any) {
-    throw error
-    // if (JSON.parse(error).data.status === 401) {
-    //   return redirect("/login/");
-    // }
+    if (JSON.parse(error).data.status === 401) {
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
+    throw error;
   }
 };
 
@@ -133,7 +141,7 @@ export const action: ActionFunction = async ({ request }) => {
         Number(formData.get("loadId")) !== 0
           ? Number(formData.get("loadId"))
           : 99999;
-      const requestBody: LoadRequest = {
+      const requestBody: any = {
         commodity: formData.get("commodity") as string,
         deliveryDate: formattedDeliveryDate,
         destination: formData.get("destination") as string,
@@ -162,11 +170,18 @@ export const action: ActionFunction = async ({ request }) => {
     } else if (action === "cancel") {
       return redirect("/dashboard/loads/view/");
     } else {
-      throw new Error({ status: "Invalid action" });
+      throw ({ status: "Invalid action" });
     }
   } catch (error: any) {
     if (error.message.includes(401)) {
-      return redirect("/login/");
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     return json({ status: `Failed to delete load, ${error.message}` });
   }
@@ -212,11 +227,8 @@ export default function ViewLoads() {
     error = "Ooops!, Something Went wrong, please try again.";
   }
 
-  var roles: string[] = [""];
-
   if (Object.keys(user).length > 0 && error === "") {
     user = user.user;
-    roles = user.roles.map((role: string) => role.toLowerCase());
   } else {
     error = "Ooops!, Something Went wrong, please try again.";
   }

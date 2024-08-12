@@ -67,7 +67,7 @@ const ContactShipperView = ({ shipper, load }) => {
         <Form method="post">
           <div className="flex space-x-4">
             <Link
-              to="/shipper/dashboard/chat"
+              to="/carriers/dashboard/view"
               className="flex items-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />

@@ -82,7 +82,15 @@ export const loader: LoaderFunction = async ({ request }) => {
     return json({ bidsArray, user });
   } catch (error: any) {
     if (JSON.parse(error).data.status === 401) {
-      return redirect("/login/"); // Client-side redirect
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw error;
   }

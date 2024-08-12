@@ -84,7 +84,15 @@ export let loader: LoaderFunction = async ({ request }) => {
     return json({ carrierProfile, roles });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
-      return redirect("/login/");
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw e;
   }
@@ -345,7 +353,7 @@ export default function BusinessInformation() {
      }));
    }
  };
-
+  
   const handleVehicleQuantityChange = (e, vehicle) => {
     const { value } = e.target;
     setVehicleTypes((prevVehicles) => ({
@@ -583,7 +591,7 @@ export default function BusinessInformation() {
                 {!showCompleteProfileForm && (
                   <>
                     <div className="flex items-center mb-4">
-                      {user.status === true ? (
+                      {user.status || user.businessProfile.carrierRole !== null? (
                         <>
                           <h3 className="mr-2">Business Profile Status:</h3>
                           <div className="relative group">
@@ -625,7 +633,7 @@ export default function BusinessInformation() {
                       </div>
                     )}
 
-                    {!user.status && (
+                    {user.businessProfile.carrierRole === null && (
                       <>
                         <p className="mb-4">
                           Your business profile is not complete. Please complete

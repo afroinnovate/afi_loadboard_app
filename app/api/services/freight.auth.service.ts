@@ -1,7 +1,8 @@
 import { type LoadRequest } from "../models/loadRequest";
-import { User } from "../models/user";
+import { type User } from "../models/user";
 
 const baseUrl = "https://api.frieght.afroinnovate.com/";
+// const baseUrl = "http://localhost:7070/";
 
 export async function UpdatePersonalInfo(loadRequest: LoadRequest, token: string) {
   try {
