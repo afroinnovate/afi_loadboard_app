@@ -217,7 +217,7 @@ export default function CarrierViewLoads() {
   if (Object.keys(loads).length === 0) {
     info = "No loads posted, please check back later";
   }
-
+  
   console.log("view carrier: ",carrierProfile);
   
   // User roles and permission checks

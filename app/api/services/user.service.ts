@@ -102,14 +102,13 @@ export async function getUserInfo(userId: string, token: string) {
                 });
 
             case 500:
-                throw new Error(
-                    JSON.stringify({
-                        data: {
-                            message: "Internal server error",
-                            status: 500,
-                        },
-                    })
-                );
+                throw JSON.stringify({
+                    data: {
+                        message: "Internal server error",
+                        status: 500,
+                    },
+                })
+                
             case 400:
                 throw JSON.stringify({
                     data: {

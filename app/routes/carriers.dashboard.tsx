@@ -80,10 +80,13 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    var userBusinessProfile: any = await getUserInfo(
-      user?.user.id,
-      user?.token
-    );
+    var userBusinessProfile: any;
+    try {
+      userBusinessProfile = await getUserInfo(user?.user.id, user?.token);
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      userBusinessProfile = null;
+    }
 
     const mapCarrierRole = (role: number | null) => {
       switch (role) {
@@ -98,9 +101,12 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     };
 
-    console.log(userBusinessProfile);
     // convert the userType to lowercase
-    if (userBusinessProfile !== null && userBusinessProfile.userType.toLowerCase() === "carrier") {
+    if (
+      typeof userBusinessProfile === "object" &&
+      userBusinessProfile !== null &&
+      !userBusinessProfile.data
+    ) {
         const carrierUser: any = {
           userId: user?.user.id,
           firstName: userBusinessProfile.firstName,
@@ -121,7 +127,9 @@ export const loader: LoaderFunction = async ({ request }) => {
               userBusinessProfile.businessProfile.idCardOrDriverLicenceNumber,
             insuranceName: userBusinessProfile.businessProfile.insuranceName,
             businessType: userBusinessProfile.businessProfile.businessType,
-            carrierRole: mapCarrierRole(userBusinessProfile.businessProfile.carrierRole),
+            carrierRole: mapCarrierRole(
+              userBusinessProfile.businessProfile.carrierRole
+            ),
             shipperRole: userBusinessProfile.businessProfile.shipperRole,
             businessRegistrationNumber:
               userBusinessProfile.businessProfile.businessRegistrationNumber,
@@ -151,35 +159,66 @@ export const loader: LoaderFunction = async ({ request }) => {
         };
         // Set the session for the carrier user (hydrate application with carrier data)
         session.set("carrier", carrierUser);
+    } else if (JSON.parse(userBusinessProfile).data.status === 404) {
+      console.error("User not found");
+        const carrierProfile = {
+          userId: user?.user.id,
+          firstName: user?.user.firstName,
+          middleName: user?.user.middleName,
+          lastName: user?.user.lastName,
+          email: user?.user.email,
+          phone: user?.user.phoneNumber,
+          userType: user?.user.userType,
+          businessProfile: {
+            companyName: "",
+            motorCarrierNumber: "",
+            dotNumber: "",
+            equipmentType: "",
+            availableCapacity: 0,
+            idCardOrDriverLicenceNumber: "",
+            insuranceName: "",
+            businessType: "",
+            carrierRole: null,
+            shipperRole: null,
+            businessRegistrationNumber: "",
+            carrierVehicles: [],
+          },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
+        };
+        session.set("carrier", carrierProfile);
     } else {
-      const carrierProfile = {
-        userId: user?.user.id,
-        firstName: user?.user.firstName,
-        middleName: user?.user.middleName,
-        lastName: user?.user.lastName,
-        email: user?.user.email,
-        phone: user?.user.phoneNumber,
-        userType: user?.user.userType,
-        businessProfile: {
-          companyName: "",
-          motorCarrierNumber: "",
-          dotNumber: "",
-          equipmentType: "",
-          availableCapacity: 0,
-          idCardOrDriverLicenceNumber: "",
-          insuranceName: "",
-          businessType: "",
-          carrierRole: null,
-          shipperRole: null,
-          businessRegistrationNumber: "",
-          carrierVehicles: [],
-        },
-        roles: user?.user.roles,
-        confirmed: user?.user.confirmed,
-        status: user?.user.status,
-      };
-      session.set("carrier", carrierProfile);
-    }
+        const carrierProfile = {
+          userId: user?.user.id,
+          firstName: user?.user.firstName,
+          middleName: user?.user.middleName,
+          lastName: user?.user.lastName,
+          email: user?.user.email,
+          phone: user?.user.phoneNumber,
+          userType: user?.user.userType,
+          businessProfile: {
+            companyName: "",
+            motorCarrierNumber: "",
+            dotNumber: "",
+            equipmentType: "",
+            availableCapacity: 0,
+            idCardOrDriverLicenceNumber: "",
+            insuranceName: "",
+            businessType: "",
+            carrierRole: null,
+            shipperRole: null,
+            businessRegistrationNumber: "",
+            carrierVehicles: [],
+          },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
+        };
+        session.set("carrier", carrierProfile);
+      }
+
+    console.log(session.get("carrier"));
 
     // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
