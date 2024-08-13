@@ -54,13 +54,15 @@ export const action: ActionFunction = async ({ request }) => {
       "Phone number must start with + or 0 and be at least 10 digits long and less than 14."
     );
 
-    const profile: CompleteProfileRequest ={
+    const profile: any ={
       firstName: firstName,
       lastName: lastName,
       email: email,
       phoneNumber: phone,
       role: role,
       middleName: middleName !== "" ? middleName : "",
+      status: true,
+      userType: role,
     }
   
     await CompleteProfile(profile);

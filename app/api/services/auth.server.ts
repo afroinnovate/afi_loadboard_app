@@ -88,16 +88,18 @@ export async function Register(user: any) {
   }
 }
 
-export async function CompleteProfile(profile: CompleteProfileRequest) {
+export async function CompleteProfile(profile: any) {
   try {
+    console.log("Profile", profile);
     const response = await fetch(baseUrl + "/completeprofile", {
-      method: "POST",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(profile),
     });
 
+    console.log("Response", response);
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 200) {
       throw response;
