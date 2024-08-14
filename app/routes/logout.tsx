@@ -2,6 +2,7 @@
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { authenticator } from "~/api/services/auth.server";
 import { commitSession, getSession } from "~/api/services/session";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const loader: LoaderFunction = async ({ request }) => {
   var session = await getSession(request.headers.get("Cookie"));
@@ -26,3 +27,4 @@ export const action: ActionFunction = async ({ request, params }) => {
   });
 };
 
+<ErrorBoundary />;

@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
 import {
-  Link,
   Outlet,
   useLoaderData,
   useLocation,
   NavLink,
-  useNavigate,
-  useCatch,
   useRouteError,
-  Form,
   isRouteErrorResponse,
 } from "@remix-run/react";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 import type {
   MetaFunction,
@@ -24,14 +21,11 @@ import { commitSession, getSession } from "../api/services/session";
 import AccessDenied from "~/components/accessdenied";
 import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
-import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { redirectUser } from "~/components/redirectUser";
 import { getUserInfo } from "~/api/services/user.service";
-import BusinessInformation from "./carriers.dashboard.account.business";
 import type {
   CarrierVehicle,
-  UserBusinessProfile,
 } from "../api/models/carrierUser";
 
 export const meta: MetaFunction = () => {
@@ -160,7 +154,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         // Set the session for the carrier user (hydrate application with carrier data)
         session.set("carrier", carrierUser);
     } else if (JSON.parse(userBusinessProfile).data.status === 404) {
-      console.error("User not found");
+      console.error("User's business profile not found");
         const carrierProfile = {
           userId: user?.user.id,
           firstName: user?.user.firstName,
@@ -217,8 +211,6 @@ export const loader: LoaderFunction = async ({ request }) => {
         };
         session.set("carrier", carrierProfile);
       }
-
-    console.log(session.get("carrier"));
 
     // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
@@ -347,21 +339,4 @@ export default function CarrierDashboard() {
   );
 }
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  if (isRouteErrorResponse(errorResponse)) {
-    const error = {
-      message: errorResponse.data.message,
-      status: errorResponse.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  }
-  return (
-    <div className="flex content-center bg-red-800 text-white">
-      <h1>Uh oh ...</h1>
-      <p>Something went wrong.</p>
-      <pre>{errorResponse}</pre>
-    </div>
-  );
-}
+<ErrorBoundary />;

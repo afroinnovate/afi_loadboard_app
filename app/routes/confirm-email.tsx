@@ -9,8 +9,8 @@ import { FloatingLabelInput } from "../components/FloatingInput";
 import invariant from "tiny-invariant";
 import { useState } from "react";
 import { CompleteProfile } from "~/api/services/auth.server";
-import type { CompleteProfileRequest } from "~/api/models/profileCompletionRequest";
 import ErrorDisplay from "~/components/ErrorDisplay";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const loader: LoaderFunction = async () => {
   return json({
@@ -199,3 +199,5 @@ export default function ConfirmEmailPage() {
     </div>
   );
 }
+
+<ErrorBoundary />;

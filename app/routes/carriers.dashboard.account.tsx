@@ -1,6 +1,7 @@
-import { Outlet, useLocation, useNavigate } from "@remix-run/react";
+import { useLocation, useNavigate } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import AccountOverlay from "~/components/accountOverlay";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export default function Account() {
   const [isOverlayOpen, setIsOverlayOpen] = useState(true);
@@ -39,3 +40,6 @@ export default function Account() {
     </div>
   );
 }
+
+
+<ErrorBoundary />;

@@ -9,10 +9,9 @@ import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
-import type { LoginResponse } from "../api/models/loginResponse";
 import { useState } from "react";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
-// import invariant from "tiny-invariant";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -175,3 +174,5 @@ export default function Login() {
     </>
   );
 }
+
+<ErrorBoundary />;

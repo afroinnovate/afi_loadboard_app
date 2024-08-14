@@ -26,6 +26,7 @@ import {
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { commitSession, getSession } from "~/api/services/session";
 import { type PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -272,22 +273,4 @@ export default function Profile() {
   );
 }
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  try {
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  } catch (e) {
-    const error = {
-      message:
-        "Your Current password is wrong or the new password does not meet the requirements. Please try again.",
-      status: 400,
-    };
-    return <ErrorDisplay error={error} />;
-  }
-}
+<ErrorBoundary />;

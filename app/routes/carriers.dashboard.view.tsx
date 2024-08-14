@@ -26,10 +26,9 @@ import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
 import { checkUserRole } from "~/components/checkroles";
 import { manageBidProcess } from "~/api/services/bid.helper";
-import ErrorDisplay from "~/components/ErrorDisplay";
 import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
-import { UserBusinessProfile } from "~/api/models/carrierUser";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -66,7 +65,6 @@ export const loader: LoaderFunction = async ({ request }) => {
       return redirect("/dashboard/")
     }
 
-    console.log("carrier prop: ", carrierProfile)
     // check if the user is authorized to access this page, else redircdt them the appropriate page
     const shipperDashboard = await redirectUser(user?.user);
     if (shipperDashboard) {
@@ -437,18 +435,4 @@ export default function CarrierViewLoads() {
   );
 }
 
-export function ErrorBoundary() {
-  try {
-    const errorResponse: any = useRouteError();
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  } catch (e) {
-    console.error(e);
-    return <div>Something went wrong</div>;
-  }
-}
+<ErrorBoundary />;

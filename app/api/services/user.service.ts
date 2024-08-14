@@ -7,7 +7,7 @@ export async function updateUserProfile(userId: string, userInfo: object, token:
 
     console.log("request:", userId, userInfo)
     try {
-        const response = await fetch(baseUrl + "/users/" + userId, {
+        const response = await fetch(baseUrl + "users/" + userId, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -30,7 +30,7 @@ export async function updateUserProfile(userId: string, userInfo: object, token:
         console.log("error", error)
         switch (error.status) {
             case 404:
-                throw JSON.stringify({
+                return JSON.stringify({
                     data: {
                         message: "User with ID 0 not found",
                         status: 404,
@@ -74,7 +74,7 @@ export async function updateUserProfile(userId: string, userInfo: object, token:
 // Get User info by id
 export async function getUserInfo(userId: string, token: string) {
     try {
-        const response = await fetch(baseUrl + "/users/" + userId, {
+        const response = await fetch(baseUrl + "users/" + userId, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -137,7 +137,7 @@ export async function getUserInfo(userId: string, token: string) {
 // Create a new user
 export async function CreateUser(userInfo: object, token: string) {
     try {
-        const response = await fetch(baseUrl + "/users", {
+        const response = await fetch(baseUrl + "users/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -146,6 +146,7 @@ export async function CreateUser(userInfo: object, token: string) {
             body: JSON.stringify(userInfo),
         });
 
+        console.log("server response", response)
         // Check if the response is not ok (e.g., 400 or 500 status codes)
         if (response.status !== 201) {
             throw response;

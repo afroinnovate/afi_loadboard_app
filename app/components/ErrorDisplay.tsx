@@ -15,7 +15,7 @@ interface ErrorProps {
   };
 }
 
-const ErrorDisplay: React.FC<ErrorProps> = ({ error }) => {
+const ErrorDisplay: React.FC<ErrorProps> = ({ error }:{error: any}) => {
   const errorCode = errorCodes[error.status] || errorCodes.default;
 
   return (

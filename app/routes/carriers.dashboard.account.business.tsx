@@ -6,7 +6,6 @@ import {
   useFetcher,
   useLoaderData,
   useNavigation,
-  useRouteError,
 } from "@remix-run/react";
 import {
   type LoaderFunction,
@@ -19,7 +18,6 @@ import customStyles from "../styles/global.css";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { commitSession, getSession } from "~/api/services/session";
 import invariant from "tiny-invariant";
-import ErrorDisplay from "~/components/ErrorDisplay";
 import { PencilIcon } from "@heroicons/react/16/solid";
 import { authenticator, CompleteProfile } from "~/api/services/auth.server";
 import { type CompleteProfileRequest } from "../api/models/profileCompletionRequest";
@@ -28,6 +26,7 @@ import Modal from "~/components/popup";
 import { type UserBusinessProfile } from "~/api/models/carrierUser";
 import { CreateUser } from "~/api/services/user.service";
 import VehicleForm from "~/components/vehicleForm";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -48,7 +47,6 @@ export let loader: LoaderFunction = async ({ request }) => {
     const user = session.get(authenticator.sessionKey);
 
     const carrierProfile = session.get("carrier");
-    const shipperProfile = session.get("shipper");
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -73,14 +71,14 @@ export let loader: LoaderFunction = async ({ request }) => {
       ? {
           "Owner Operator": "owner_operator",
           "Fleet Owner": "fleet_owner",
-          "Dispatcher": "dispatcher",
+          Dispatcher: "dispatcher",
         }
       : {
           "Independent Shipper": "independent_shipper",
           "Government Shipper": "government_shipper",
           "Corporate Shipper": "corporate_shipper",
-      };
-    
+        };
+
     return json({ carrierProfile, roles });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
@@ -138,17 +136,17 @@ export let action: ActionFunction = async ({ request }) => {
       default:
         return null;
     }
-  }
-  
+  };
+
   const body = await request.formData();
   const action = body.get("_action");
-
+  console.log("Action User: ", user);
   try {
     if (action === "personal") {
       const firstName = body.get("firstName");
       const middleName: any = body.get("middleName");
       const lastName = body.get("lastName");
-      const phoneNumber = body.get("phoneNumber");
+      const phoneNumber = body.get("phone");
       const email = body.get("email");
 
       invariant(typeof firstName === "string", "First name is required");
@@ -172,7 +170,7 @@ export let action: ActionFunction = async ({ request }) => {
           lastName,
           email,
           phoneNumber,
-          roles: user.user.roles,
+          roles: user.roles,
         },
       };
       await CompleteProfile(loaderRequest);
@@ -186,14 +184,17 @@ export let action: ActionFunction = async ({ request }) => {
 
       let vehicleType = body.get("vehicleType");
       const vehicleName = body.get("vehicleName");
-      const vehicleCapacity =
-        body.get("vehicleCapacity") ? body.get("vehicleCapacity") : 0;
+      const vehicleCapacity = body.get("vehicleCapacity")
+        ? body.get("vehicleCapacity")
+        : 0;
       const vehicleColor = body.get("vehicleColor");
       const registrationNumber = body.get("registrationNumber");
       const hasInsurance = body.get("hasInsurance");
       const hasInspection = body.get("hasInspection");
       const businessType = body.get("businessType");
-      const idCardOrDriverLicenceNumber = body.get("idCardOrDriverLicenceNumber");
+      const idCardOrDriverLicenceNumber = body.get(
+        "idCardOrDriverLicenceNumber"
+      );
 
       let vehicleTypes = null;
       if (role === "owner_operator") {
@@ -247,55 +248,59 @@ export let action: ActionFunction = async ({ request }) => {
               hasInspection: hasInspection === "on" ? true : false,
             },
           ],
-        }
-      }
+        },
+      };
 
       // update the userinformation
-      var response = await CreateUser(business_req, token);
+      var response: any = await CreateUser(business_req, token);
       if (response) {
-        var updatedUser = {
-          userId: user.userId,
-          token: user.token,
-          user: {
-            firstName: user.firstName,
-            middleName: user.middleName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            userType: user.userType,
-            roles: user.roles,
-            confirmed: user.confirmed,
-            status: user.status,
-            businessProfile: business_req.businessProfile,
-          },
+        if (JSON.parse(response).data.status === 404) {
+          throw JSON.stringify({
+            data: {
+              message:
+                "Failed to update business profile, Bad request, please reach out to support",
+              status: 400,
+            },
+          });
+        } else {
+          var updatedUser = {
+            userId: user.userId,
+            token: user.token,
+            user: {
+              firstName: user.firstName,
+              middleName: user.middleName,
+              lastName: user.lastName,
+              email: user.email,
+              phone: user.phone,
+              userType: user.userType,
+              roles: user.roles,
+              confirmed: user.confirmed,
+              status: user.status,
+              businessProfile: business_req.businessProfile,
+            },
+          };
+          session.set("carrier", updatedUser);
+          await commitSession(session);
         }
-        session.set("carrier", updatedUser);
-        await commitSession(session);
       }
 
       return json({ type: "business", success: true });
     } else if (action === "updated") {
       return redirect("/logout/");
-    } else {
-      throw JSON.stringify({
-        data: {
-          message:
-            "Invalid Action",
-          status: 400,
-        },
-      });
     }
   } catch (error: any) {
     console.log("Action Error", error);
     if (JSON.parse(error).data.status == 401) {
       session.set(authenticator.sessionKey, null);
+      session.set("carrier", null);
+      session.set("shipper", null);
       return redirect("/login/", {
         headers: {
           "Set-Cookie": await commitSession(session),
-        }
-      })
+        },
+      });
     }
-    throw error;
+    throw new Error(error);
   }
 };
 
@@ -304,7 +309,7 @@ export default function BusinessInformation() {
   const actionData: any = useActionData();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const user:UserBusinessProfile = LoaderData?.carrierProfile;
+  const user: UserBusinessProfile = LoaderData?.carrierProfile;
   const roles = LoaderData?.roles;
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -337,23 +342,23 @@ export default function BusinessInformation() {
     setDocuments((prevDocs) => prevDocs.filter((_, i) => i !== index));
   };
 
- const handleVehicleChange = (e) => {
-   const { name, value, type, checked } = e.target;
-   if (selectedRole === "owner_operator") {
-     setVehicleTypes({
-       Trucks: { selected: value === "Trucks", quantity: 0 },
-       Boats: { selected: value === "Boats", quantity: 0 },
-       Vans: { selected: value === "Vans", quantity: 0 },
-       Cargoes: { selected: value === "Cargoes", quantity: 0 },
-     });
-   } else {
-     setVehicleTypes((prevVehicles) => ({
-       ...prevVehicles,
-       [name]: { ...prevVehicles[name], selected: checked },
-     }));
-   }
- };
-  
+  const handleVehicleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (selectedRole === "owner_operator") {
+      setVehicleTypes({
+        Trucks: { selected: value === "Trucks", quantity: 0 },
+        Boats: { selected: value === "Boats", quantity: 0 },
+        Vans: { selected: value === "Vans", quantity: 0 },
+        Cargoes: { selected: value === "Cargoes", quantity: 0 },
+      });
+    } else {
+      setVehicleTypes((prevVehicles) => ({
+        ...prevVehicles,
+        [name]: { ...prevVehicles[name], selected: checked },
+      }));
+    }
+  };
+
   const handleVehicleQuantityChange = (e, vehicle) => {
     const { value } = e.target;
     setVehicleTypes((prevVehicles) => ({
@@ -371,7 +376,7 @@ export default function BusinessInformation() {
     middleName: user?.middleName || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
-    phoneNumber: user?.phoneNumber || "",
+    phone: user?.phone || "",
   });
 
   const isFormValid = () => {
@@ -379,11 +384,11 @@ export default function BusinessInformation() {
       formValues.firstName &&
       formValues.lastName &&
       formValues.email &&
-      formValues.phoneNumber
+      formValues.phone
     );
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: any) => {
     const { name, value } = e.target;
     setFormValues({
       ...formValues,
@@ -397,7 +402,7 @@ export default function BusinessInformation() {
     const requiredDocs = documents;
     if (selectedRole === "owner_operator") {
       const isVehicleSelected = Object.values(vehicleTypes).some(
-        (v) => v.selected
+        (v: any) => v.selected
       );
       const requiredDocCount = requiredDocs.length >= 2;
       const isValid = isVehicleSelected && requiredDocCount;
@@ -416,10 +421,16 @@ export default function BusinessInformation() {
     if ((fetcher.data && fetcher.data.success) || businessUpdated) {
       setIsModalOpen(true);
     }
-  }, [selectedRole, vehicleTypes, documents, isSubmitting, fetcher.data]);
+  }, [
+    selectedRole,
+    vehicleTypes,
+    documents,
+    isSubmitting,
+    fetcher.data,
+    businessUpdated,
+  ]);
 
-
-  const handleEditClick = (field) => {
+  const handleEditClick = (field: any) => {
     setIsEditingField(field);
   };
 
@@ -507,7 +518,7 @@ export default function BusinessInformation() {
                     { name: "middleName", label: "Middle Name" },
                     { name: "lastName", label: "Last Name" },
                     { name: "email", label: "Email" },
-                    { name: "phoneNumber", label: "Phone Number" },
+                    { name: "phone", label: "Phone Number" },
                   ].map((field, index) => (
                     <div
                       key={index}
@@ -527,7 +538,7 @@ export default function BusinessInformation() {
                     { name: "middleName", label: "Middle Name" },
                     { name: "lastName", label: "Last Name" },
                     { name: "email", label: "Email" },
-                    { name: "phoneNumber", label: "Phone Number" },
+                    { name: "phone", label: "Phone Number" },
                   ].map((field, index) => (
                     <div
                       key={index}
@@ -591,7 +602,7 @@ export default function BusinessInformation() {
                 {!showCompleteProfileForm && (
                   <>
                     <div className="flex items-center mb-4">
-                      {user.status || user.businessProfile.carrierRole !== null? (
+                      {user.businessProfile.carrierRole !== null ? (
                         <>
                           <h3 className="mr-2">Business Profile Status:</h3>
                           <div className="relative group">
@@ -863,15 +874,4 @@ export default function BusinessInformation() {
   );
 }
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  console.log("Error response", errorResponse);
-  const jsonError = JSON.parse(errorResponse);
-  const error = {
-    message: jsonError.data.message,
-    status: jsonError.data.status,
-  };
-  return <ErrorDisplay error={error} />;
-}
-
-
+<ErrorBoundary/>;

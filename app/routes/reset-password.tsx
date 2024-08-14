@@ -14,6 +14,7 @@ import { ChangePassword } from "~/api/services/auth.server";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import { PasswordResetRequest } from "~/api/models/passwordResetRequest";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -155,21 +156,4 @@ export default function NewPasswordPage() {
   );
 }
 
-export function ErrorBoundary() {
-  try{
-    const errorResponse: any = useRouteError();
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  }catch(e){
-    const error = {
-      message: "Something went wrong while tryig to reset the password, try again later",
-      status: 500
-    }
-    return <ErrorDisplay error={error} />
-  }
-}
+<ErrorBoundary />;

@@ -7,12 +7,12 @@ import {
   json,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
-import type { User } from "~/api/models/user";
 import { Register } from "~/api/services/auth.server";
 import invariant from "tiny-invariant";
 import { useState, useEffect } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -222,3 +222,5 @@ export default function Signup() {
     </div>
   );
 }
+
+<ErrorBoundary />;
