@@ -253,35 +253,26 @@ export let action: ActionFunction = async ({ request }) => {
 
       // update the userinformation
       var response: any = await CreateUser(business_req, token);
+      console.log("Response: ", response);
       if (response) {
-        if (JSON.parse(response).data.status === 404) {
-          throw JSON.stringify({
-            data: {
-              message:
-                "Failed to update business profile, Bad request, please reach out to support",
-              status: 400,
-            },
-          });
-        } else {
-          var updatedUser = {
-            userId: user.userId,
-            token: user.token,
-            user: {
-              firstName: user.firstName,
-              middleName: user.middleName,
-              lastName: user.lastName,
-              email: user.email,
-              phone: user.phone,
-              userType: user.userType,
-              roles: user.roles,
-              confirmed: user.confirmed,
-              status: user.status,
-              businessProfile: business_req.businessProfile,
-            },
-          };
-          session.set("carrier", updatedUser);
-          await commitSession(session);
-        }
+        var updatedUser = {
+          userId: user.userId,
+          token: user.token,
+          user: {
+            firstName: user.firstName,
+            middleName: user.middleName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            userType: user.userType,
+            roles: user.roles,
+            confirmed: user.confirmed,
+            status: user.status,
+            businessProfile: business_req.businessProfile,
+          },
+        };
+        session.set("carrier", updatedUser);
+        await commitSession(session);
       }
 
       return json({ type: "business", success: true });
@@ -290,17 +281,31 @@ export let action: ActionFunction = async ({ request }) => {
     }
   } catch (error: any) {
     console.log("Action Error", error);
-    if (JSON.parse(error).data.status == 401) {
-      session.set(authenticator.sessionKey, null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+    switch (JSON.parse(error.message).data.status) {
+      case 404 || 400:
+        return json({
+          error:
+            "User's business profile was not updated, please try again, or contact support with CODE: 404",
+        });
+      case 401:
+        session.set(authenticator.sessionKey, null);
+        session.set("carrier", null);
+        session.set("shipper", null);
+        return redirect("/login/", {
+          headers: {
+            "Set-Cookie": await commitSession(session),
+          },
+        });
+      case 500:
+        return json({
+          error:
+            "Something went wrong, please try again later, or reach support with CODE: 500",
+        });
+        break;
+      default:
+        return json({ error: "Something went wrong, please try again later." });
+        break;
     }
-    throw new Error(error);
   }
 };
 
@@ -874,4 +879,4 @@ export default function BusinessInformation() {
   );
 }
 
-<ErrorBoundary/>;
+<ErrorBoundary />;

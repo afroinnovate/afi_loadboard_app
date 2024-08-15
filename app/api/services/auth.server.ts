@@ -99,7 +99,6 @@ export async function CompleteProfile(profile: any) {
       body: JSON.stringify(profile),
     });
 
-    console.log("Response", response);
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 200) {
       throw response;

@@ -77,9 +77,18 @@ export const loader: LoaderFunction = async ({ request }) => {
     var userBusinessProfile: any;
     try {
       userBusinessProfile = await getUserInfo(user?.user.id, user?.token);
-    } catch (error) {
-      console.error("Error fetching user info:", error);
+    } catch (error: any) {
       userBusinessProfile = null;
+      if (JSON.parse(error).data.status === 401) {
+        session.set("user", null);
+        session.set("carrier", null);
+        session.set("shipper", null);
+        return redirect("/login/", {
+          headers: {
+            "Set-Cookie": await commitSession(session),
+          },
+        });
+      }
     }
 
     const mapCarrierRole = (role: number | null) => {
@@ -154,7 +163,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         // Set the session for the carrier user (hydrate application with carrier data)
         session.set("carrier", carrierUser);
     } else if (JSON.parse(userBusinessProfile).data.status === 404) {
-      console.error("User's business profile not found");
+        console.error("User's business profile not found");
         const carrierProfile = {
           userId: user?.user.id,
           firstName: user?.user.firstName,
@@ -224,6 +233,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   } catch (error: any) {
+    console.error("carrier dashboard action error: ", JSON.parse(error  ));
     if (JSON.parse(error).data.status == 401) {
       const session = await getSession(request.headers.get("Cookie"));
       session.set("user", null);

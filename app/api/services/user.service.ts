@@ -137,6 +137,7 @@ export async function getUserInfo(userId: string, token: string) {
 // Create a new user
 export async function CreateUser(userInfo: object, token: string) {
     try {
+        console.log("request:", userInfo)
         const response = await fetch(baseUrl + "users/", {
             method: "POST",
             headers: {
@@ -157,45 +158,32 @@ export async function CreateUser(userInfo: object, token: string) {
         const responseData: User = { ...data }
         return responseData;
     } catch (error: any) {
-        switch (error.status) {
-            case 404:
-                return JSON.stringify({
-                    data: {
-                        message: "User with ID 0 not found",
-                        status: 404,
-                    },
-                });
+        console.log("response error", error);
+        let errorMessage = "An error occurred";
+        let errorStatus = 500;
 
-            case 500:
-                throw new Error(
-                    JSON.stringify({
-                        data: {
-                            message: "Internal server error",
-                            status: 500,
-                        },
-                    })
-                );
-            case 400:
-                return JSON.stringify({
-                    data: {
-                        message: "Bad request",
-                        status: 400,
-                    },
-                });
-            case 401:
-                throw JSON.stringify({
-                    data: {
-                        message: "Unauthorized",
-                        status: 401,
-                    },
-                });
-            default:
-                throw JSON.stringify({
-                    data: {
-                        message: "An error occurred",
-                        status: 500,
-                    },
-            });
+        if (error.status) {
+            errorStatus = error.status;
+            switch (error.status) {
+                case 404:
+                    errorMessage = error.message || "User with ID 0 not found";
+                    break;
+                case 400:
+                    errorMessage = error.message || "Bad request";
+                    break;
+                case 401:
+                    errorMessage = "Unauthorized";
+                    break;
+                case 500:
+                    errorMessage = error.message || "Internal server error";
+                    break;
+            }
         }
+        throw new Error(JSON.stringify({
+            data: {
+                message: errorMessage,
+                status: errorStatus,
+            },
+        }));
     }
 }

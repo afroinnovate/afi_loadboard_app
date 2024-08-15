@@ -15,6 +15,7 @@ export const loader: LoaderFunction = async () => {
   return json({
     formData: {
       firstName: "",
+      middleName: "",
       lastName: "",
       email: "",
       phone: "",
@@ -29,6 +30,7 @@ export const loader: LoaderFunction = async () => {
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const firstName = formData.get("firstName")?.toString().trim();
+  const middleName = formData.get("middleName")?.toString().trim();
   const lastName = formData.get("lastName")?.toString().trim();
   const email = formData.get("email")?.toString().trim();
   const phone = formData.get("phone")?.toString().trim();
@@ -56,18 +58,27 @@ export const action: ActionFunction = async ({ request }) => {
     );
 
     const profile: CompleteProfileRequest ={
-      firstName,
-      lastName,
-      email,
-      phone,
-      role: role
+      firstName: firstName,
+      middleName: middleName?? "",
+      lastName: lastName,
+      email: email,
+      phoneNumber: phone,
+      role: role?? "",
+      status: true,
+      userType: role?? "",
     }
+
+    console.log("Profile: ", profile);
   
     await CompleteProfile(profile);
     return redirect(`/login/`);
   } catch (error: any) {
     console.error("Error during profile completion: ", error);
-    return json({ error: error.message }, { status: 400 });
+    if (error.status === 401)
+    {
+      return redirect("/login/");
+    }
+    return json({ error: error.message });
   }
 };
 
@@ -92,26 +103,8 @@ export default function UpdateBusinessProfile() {
     },
   });
 
-  const handleInputChange = (e) => {
-    // const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: any) => {
     const { name, value } = e.target;
-    // if (type === "number") {
-    //   setForm(prev => ({
-    //     ...prev,
-    //     vehicles: {
-    //       ...prev.vehicles,
-    //       [`${name}`]: parseInt(value, 10) || 0 // Ensure the number is parsed correctly
-    //     }
-    //   }));
-    // } else if (type === "checkbox") {
-    //   setForm(prev => ({
-    //     ...prev,
-    //     vehicles: {
-    //       ...prev.vehicles,
-    //       [name]: checked
-    //     }
-    //   }));
-    // } else {
     setForm(prev => ({
       ...prev,
       [name]: value
@@ -123,16 +116,8 @@ export default function UpdateBusinessProfile() {
     setForm((prev) => ({
       ...prev,
       role: value,
-      // subRole: "", // Reset subRole on role change
     }));
   };
-
-  // const handleSubRoleChange = (value) => {
-  //   setForm((prev) => ({
-  //     ...prev,
-  //     subRole: value,
-  //   }));
-  // };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -150,6 +135,14 @@ export default function UpdateBusinessProfile() {
           <FloatingLabelInput
             name="firstName"
             placeholder="* First Name"
+            defaultValue={form.firstName}
+            required
+            minLength={3}
+            onChange={handleInputChange}
+          />
+          <FloatingLabelInput
+            name="middleName"
+            placeholder="* Middle Name"
             defaultValue={form.firstName}
             required
             minLength={3}
@@ -202,138 +195,6 @@ export default function UpdateBusinessProfile() {
               ))}
             </select>
           </div>
-
-          {/* Dynamic sub-role selection based on role
-          {form.role === "shipper" && (
-            <div className="mb-6">
-              <fieldset>
-                <legend className="block text-sm font-medium mb-2">
-                  * Type of Shipper:
-                </legend>
-                {[
-                  "Gov't Shipper",
-                  "Corporate Shipper",
-                  "Independent Shipper",
-                ].map((type) => (
-                  <label key={type} className="block">
-                    <input
-                      type="radio"
-                      name="shipperType"
-                      value={type.toLowerCase().replace(/\s/g, "_")}
-                      checked={
-                        form.subRole === type.toLowerCase().replace(/\s/g, "_")
-                      }
-                      onChange={() =>
-                        handleSubRoleChange(
-                          type.toLowerCase().replace(/\s/g, "_")
-                        )
-                      }
-                      className="mr-2"
-                    />
-                    {type}
-                  </label>
-                ))}
-              </fieldset>
-            </div>
-          )} */}
-
-          {/* {form.role === "carrier" && (
-            <div className="mb-6">
-              <fieldset>
-                <legend className="block text-sm font-medium mb-2">
-                  * Type of Carrier:
-                </legend>
-                {["Fleet Owner", "Owner Operator", "Dispatcher"].map((type) => (
-                  <label key={type} className="block">
-                    <input
-                      type="radio"
-                      name="carrierType"
-                      value={type.toLowerCase().replace(/\s/g, "_")}
-                      checked={
-                        form.subRole === type.toLowerCase().replace(/\s/g, "_")
-                      }
-                      onChange={() =>
-                        handleSubRoleChange(
-                          type.toLowerCase().replace(/\s/g, "_")
-                        )
-                      }
-                      className="mr-2"
-                    />
-                    {type}
-                  </label>
-                ))} */}
-
-                {/* Conditional Vehicle Type and Quantity Inputs
-                {form.subRole === "fleet_owner" && (
-                  <div className="col-span-2 flex flex-wrap gap-4">
-                    {["Trucks", "Boats", "Vans", "Cargoes"].map((vehicle) => (
-                      <div key={vehicle}>
-                        <label className="px-2">
-                          <input
-                            type="checkbox"
-                            name='vehicleType'
-                            checked={form.vehicles[vehicle.trim()]}
-                            onChange={handleInputChange}
-                          />
-                          {vehicle}
-                        </label>
-                        {form.vehicles[vehicle.trim()] && (
-                          <input
-                            type="number"
-                            name='quantity'
-                            value={form.vehicles[`${vehicle.trim().toLowerCase()}Quantity`]}  // Ensures a fallback value of 0
-                            onChange={handleInputChange}
-                            className="w-11 h-5 p-2"
-                            placeholder="Qty"
-                            min="1"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )} */}
-
-                {/* {form.subRole === "owner_operator" && (
-                  <div className="col-span-2 flex flex-wrap gap-4">
-                    <div>
-                      <label className="px-4">
-                        <input
-                          type="checkbox"
-                          name="vehicleType"
-                          value="Trucks"
-                        />{" "}
-                        Truck
-                      </label>
-                      <label className="px-4">
-                        <input
-                          type="checkbox"
-                          name="vehicleType"
-                          value="Boats"
-                        />{" "}
-                        Boat
-                      </label>
-                      <label className="px-4">
-                        <input
-                          type="checkbox"
-                          name="vehicleType"
-                          value="Vans"
-                        />{" "}
-                        Van
-                      </label>
-                      <label className="px-4">
-                        <input
-                          type="checkbox"
-                          name="vehicleType"
-                          value="Cargoes"
-                        />{" "}
-                        Cargoe
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </fieldset>
-            </div>
-          )} */}
           <button
             type="submit"
             className="mt-6 w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-orange-400 disabled:opacity-50"
