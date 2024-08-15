@@ -27,7 +27,7 @@ export default function Account() {
   }, [baseUrl, closedOverlay, navigate]);
 
   return (
-    <div className="flex h-screen w-full bg-gray-100">
+    <div className="flex h-screen w-full bg-gray-100 ">
       {isOverlayOpen && !closedOverlay && (
         <AccountOverlay onClose={closeOverlay} />
       )}

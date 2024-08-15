@@ -17,7 +17,7 @@ export default function AccountOverlay({ onClose }) {
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      <div className="top-16 left-0 h-full w-72 bg-white text-black p-6 shadow-md">
+      <div className="top-16 left-0 h-full w-45 bg-white text-black p-6 shadow-md">
         <h2 className="text-2xl font-semibold mb-4">Menu</h2>
         <ul className="space-y-4">
           <li>
@@ -58,7 +58,7 @@ export default function AccountOverlay({ onClose }) {
           </li>
         </ul>
       </div>
-      <div className="flex-1 ml-72 p-6 overflow-y-auto bg-white">
+      <div className="flex-1 ml-16 p-6 overflow-y-auto bg-white">
         <div className="p-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Settings</h2>
@@ -69,7 +69,7 @@ export default function AccountOverlay({ onClose }) {
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          <div className="overflow-y-auto h-full mt-6">
+          <div className="h-full mt-6 w-full overflow-y-scroll ">
             <Outlet />
           </div>
         </div>

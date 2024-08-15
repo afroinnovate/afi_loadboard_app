@@ -3,7 +3,6 @@ import { Authenticator } from "remix-auth";
 import { sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
-import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
 import { type PasswordUpdateRequest } from "../models/paswordUpdateRequest";
 

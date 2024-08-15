@@ -301,10 +301,8 @@ export let action: ActionFunction = async ({ request }) => {
           error:
             "Something went wrong, please try again later, or reach support with CODE: 500",
         });
-        break;
       default:
         return json({ error: "Something went wrong, please try again later." });
-        break;
     }
   }
 };
