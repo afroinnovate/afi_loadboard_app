@@ -283,7 +283,7 @@ export default function CarrierViewLoads() {
         {loads.map((load: any) => (
           <Disclosure
             as="div"
-            key={load.id}
+            key={load.loadId}
             className="bg-gray-700 shadow rounded-lg"
           >
             {({ open }) => (
