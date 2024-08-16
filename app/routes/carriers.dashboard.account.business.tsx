@@ -45,8 +45,15 @@ export let loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-
     const carrierProfile = session.get("carrier");
+
+    carrierProfile.phone = user.user.phoneNumber;
+    carrierProfile.email = user.user.email;
+    carrierProfile.firstName = user.user.firstName;
+    carrierProfile.middleName = user.user.middleName;
+    carrierProfile.lastName = user.user.lastName;
+    carrierProfile.roles = user.user.roles;
+    carrierProfile.userType = user.user
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -98,19 +105,27 @@ export let loader: LoaderFunction = async ({ request }) => {
 
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  let user = session.get(authenticator.sessionKey);
-  const token = user.token;
+  let autUser = session.get(authenticator.sessionKey);
+  const token = autUser.token;
 
-  if (!user) {
+  if (!autUser) {
     return redirect("/login/", {
       headers: {
         "Set-Cookie": await commitSession(session),
       },
     });
   }
-
+  
   const carrierProfile = session.get("carrier");
-  user = carrierProfile;
+  let user = carrierProfile;
+
+  user.phone = autUser.user.phoneNumber;
+  user.email = autUser.user.email;
+  user.firstName = autUser.user.firstName;
+  user.middleName = autUser.user.middleName;
+  user.lastName = autUser.user.lastName;
+  user.roles = autUser.user.roles;
+  user.userType = autUser.user.userType;
 
   const mapCarrierRole = (role: string | null) => {
     switch (role) {
