@@ -24,14 +24,12 @@ authenticator.use(
     invariant(password, "Missing password parameter");
 
     try {
-      // console.log("Attempting login with", username);
       let loginResponse = await Login(username, password);
 
       if (loginResponse instanceof Error) {
         throw loginResponse;
       }
 
-      // console.log("Login successful", loginResponse);
       return loginResponse;
     } catch (error) {
       console.error("Error during authentication", error);
@@ -89,7 +87,6 @@ export async function Register(user: any) {
 
 export async function CompleteProfile(profile: any) {
   try {
-    console.log("Profile", profile);
     const response = await fetch(baseUrl + "/completeprofile", {
       method: "PUT",
       headers: {

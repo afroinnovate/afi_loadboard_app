@@ -140,7 +140,6 @@ export let action: ActionFunction = async ({ request }) => {
 
   const body = await request.formData();
   const action = body.get("_action");
-  console.log("Action User: ", user);
   try {
     if (action === "personal") {
       const firstName = body.get("firstName");
@@ -253,7 +252,6 @@ export let action: ActionFunction = async ({ request }) => {
 
       // update the userinformation
       var response: any = await CreateUser(business_req, token);
-      console.log("Response: ", response);
       if (response) {
         var updatedUser = {
           userId: user.userId,

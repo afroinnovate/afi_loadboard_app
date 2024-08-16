@@ -173,7 +173,6 @@ export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
 
-  console.log("action Data: ", actionData)
   let error = "";
   let info = "";
 
@@ -216,14 +215,10 @@ export default function CarrierViewLoads() {
     info = "No loads posted, please check back later";
   }
   
-  console.log("view carrier: ",carrierProfile);
-  
   // User roles and permission checks
   const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
     checkUserRole(carrierProfile.roles, carrierProfile.businessProfile.carrierRole ?? "");
   
-  console.log(carrierAccess, carrierHasAccess)
-
   let contactMode =
     actionData && actionData.message === "contactMode"
       ? actionData.message
@@ -233,11 +228,6 @@ export default function CarrierViewLoads() {
 
   let loadIdToBeBid = actionData?.loadIdToBeBid || null;
   let currentBid = actionData?.offerAmount || 0;
-
-  // if (bidMode === "bidMode") {
-  //   loadIdToBeBid = actionData.loadId;
-  //   currentBid = actionData.offerAmount;
-  // }
 
   // Utility function to determine styles based on load status
   const getStatusStyles = (status: string) => {

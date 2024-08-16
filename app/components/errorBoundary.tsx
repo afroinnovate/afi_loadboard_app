@@ -11,7 +11,6 @@ export function ErrorBoundary() {
     status: errorStatus,
   };
   if (error instanceof Error) {
-    console.log("am here now", error.message);
     errorMessage = JSON.parse(error.message).data.message;
   } else if (typeof error === "string") {
     try {

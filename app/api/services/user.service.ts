@@ -4,8 +4,6 @@ const baseUrl = "https://api.frieght.afroinnovate.com/";
 // const baseUrl = "http://localhost:7070";
 
 export async function updateUserProfile(userId: string, userInfo: object, token: string) {
-
-    console.log("request:", userId, userInfo)
     try {
         const response = await fetch(baseUrl + "users/" + userId, {
             method: "PUT",
@@ -27,7 +25,7 @@ export async function updateUserProfile(userId: string, userInfo: object, token:
         const responseData: User = { ...data }
         return responseData;
     } catch (error: any) {
-        console.log("error", error)
+        console.log("Update Profile error", error)
         switch (error.status) {
             case 404:
                 return JSON.stringify({
@@ -137,7 +135,6 @@ export async function getUserInfo(userId: string, token: string) {
 // Create a new user
 export async function CreateUser(userInfo: object, token: string) {
     try {
-        console.log("request:", userInfo)
         const response = await fetch(baseUrl + "users/", {
             method: "POST",
             headers: {
@@ -146,8 +143,7 @@ export async function CreateUser(userInfo: object, token: string) {
             },
             body: JSON.stringify(userInfo),
         });
-
-        console.log("server response", response)
+        
         // Check if the response is not ok (e.g., 400 or 500 status codes)
         if (response.status !== 201) {
             throw response;

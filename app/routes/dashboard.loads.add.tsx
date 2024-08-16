@@ -116,7 +116,6 @@ export const action: ActionFunction = async ({ request }) => {
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
-    console.log("response: ", response);
     if (Object.keys(response).length > 0 && response.origin !== undefined) {
       return redirect("/dashboard/loads/view");
     }

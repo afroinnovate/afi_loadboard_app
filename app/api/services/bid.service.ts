@@ -6,7 +6,6 @@ const baseUrl = "https://api.frieght.afroinnovate.com/";
 
 export async function PlaceBid(bidRequest: BidRequest, token: string) {
   try {
-    console.log("Creating bid service");
     const response = await fetch(baseUrl + "bids/", {
       method: "POST",
       headers: {
@@ -16,7 +15,6 @@ export async function PlaceBid(bidRequest: BidRequest, token: string) {
       body: JSON.stringify(bidRequest),
     });
 
-    console.log("response", response);
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 201) {
       throw response;
@@ -342,7 +340,6 @@ export async function UpdateBid(
   bidRequest: BidRequest
 ) {
   try {
-    console.log("Updating bid service", JSON.stringify(bidRequest), id);
     const url = `${baseUrl}bids/${id}`;
     const response = await fetch(url, {
       method: "PUT",
@@ -352,8 +349,6 @@ export async function UpdateBid(
       },
       body: JSON.stringify(bidRequest),
     });
-
-    console.log("response", response);
 
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 204) {

@@ -156,10 +156,7 @@ export const action: ActionFunction = async ({ request }) => {
         modified: formattedDate,
       };
 
-      const response = await UpdateLoad(user.token, Id, requestBody);
-      if (response) {
-        console.log("Response: ", response);
-      }
+      await UpdateLoad(user.token, Id, requestBody);
       return redirect("/dashboard/loads/view/");
     } else if (action === "delete" && loadId) {
       console.log("Deleting Load with ID: ", loadId);

@@ -4,7 +4,6 @@ import { createCookieSessionStorage } from "@remix-run/node";
 const secretKeyDevelopment = process.env.SECRET_KEY_DEV || '';
 const secretKeyProduction = process.env.SECRET_KEY_PROD || '';
 
-// console.log("secretKeyDevelopment", secretKeyDevelopment);
 // Choose the secret based on the environment
 const secretKey = process.env.NODE_ENV === "production" ? secretKeyProduction : secretKeyDevelopment;
 
