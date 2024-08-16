@@ -1,7 +1,6 @@
 import {
   Form,
   useActionData,
-  useAsyncError,
   useLoaderData,
   useNavigation,
   useRouteError,
@@ -15,39 +14,18 @@ import {
 import invariant from "tiny-invariant";
 import { authenticator } from "~/api/services/auth.server";
 import AccessDenied from "~/components/accessdenied";
-import type { LoginUser } from "~/api/models/loginResponseUser";
 import { useState } from "react";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
 import { commitSession, getSession } from "~/api/services/session";
-import type { LoadResponse } from "~/api/models/loadResponse";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
-
-// const userData: LoginResponse = {
-//   token:
-//     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiZTliMzZiNzktZGY5My00MTdlLWE4MmQtMDZiODk4MTYzOTliIiwibmJmIjoxNzE1MzQyMzE2LCJleHAiOjE3MTUzNDU5MjEsImlhdCI6MTcxNTM0MjMyMSwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.1l-Ci6yjw3AEaupZi4-MnyGj22mqNacd6W4jCFafQjo",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     id: "7c134ef0-eff8-466e-955e-e195700d812321",
-//     userName: "tangogatdet76@gmail.com",
-//     email: "tangogatdet76@gmail.com",
-//     firstName: "Pal",
-//     lastName: "Kuoth",
-//     roles: ["shipper"],
-//     phoneNumber: "+15806471212",
-//   },
-// };
 
 export const action: ActionFunction = async ({ request }) => {
   try {
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get("user");
-
-    // const user = userData;
 
     if (!user) {
       // Handle the missing token scenario

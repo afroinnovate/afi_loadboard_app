@@ -32,13 +32,14 @@ import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { authenticator } from "~/api/services/auth.server";
 import { type ShipperUser } from '../api/models/shipperUser';
+import { ErrorBoundary } from "~/root";
 
 
 // Define the type for mapRoles
 const mapRoles: { [key: number]: string } = {
-  0: "govt_shipper",
-  1: "corporate_shipper",
-  2: "gov_shipper",
+  0: "independentShipper",
+  1: "corporateShipper",
+  2: "govtShipper",
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -46,9 +47,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     // Find the parent route match containing the user and token
     const session = await getSession(request.headers.get("Cookie"));
     const user: any = session.get(authenticator.sessionKey);
-
-    const shipperProfile = session.get("shipper");
-
+    
     if (!user) {
       return redirect("/login/", {
         headers: {
@@ -57,9 +56,10 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
+    const shipperProfile = session.get("shipper");
+
     // const response: LoadResponse = dummyData;
     const response: LoadResponse = await GetLoads(user.token);
-
     if (response && typeof response === "string") {
       throw new Error(response);
     }
@@ -68,7 +68,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Error(response);
     }
 
-    return json({ "profile": shipperProfile, "user": user, "response": response }, { status: 200 });
+    return json({ "profile": shipperProfile, "loads": response }, { status: 200 });
   } catch (error: any) {
     if (JSON.parse(error).data.status === 401) {
       const session = await getSession(request.headers.get("Cookie"));
@@ -107,7 +107,7 @@ export const action: ActionFunction = async ({ request }) => {
   console.log("ID: ", loadId, "Action: ", action);
 
   try {
-    if (action === "edit" && loadId) {
+    if (action === "edit") {
       console.log("Editing Load Mode");
       const load = {
         commodity: formData.get("commodity"),
@@ -167,10 +167,16 @@ export const action: ActionFunction = async ({ request }) => {
     } else if (action === "cancel") {
       return redirect("/dashboard/loads/view/");
     } else {
-      throw ({ status: "Invalid action" });
+      throw JSON.stringify({
+        data: {
+          message: "Invalid Action",
+          status: 400
+        }
+      });
     }
   } catch (error: any) {
-    if (error.message.includes(401)) {
+    console.log("Load View Error: ", error);
+    if (JSON.parse(error).data.status === 401) {
       session.set("user", null);
       session.set("carrier", null);
       session.set("shipper", null);
@@ -214,21 +220,16 @@ export default function ViewLoads() {
   var loads: object = {};
   let user: any = {};
   let key: number = 0
-  let profile: ShipperUser
+  let profile: ShipperUser = {} as ShipperUser;
   if (loaderData && error === "") {
-    loads = loaderData.response;
-    user = loaderData.user
+    loads = loaderData.loads;
     profile = loaderData.profile;
     key = profile.user.businessProfile.shipperRole
   } else {
     error = "Ooops!, Something Went wrong, please try again.";
   }
 
-  if (Object.keys(user).length > 0 && error === "") {
-    user = user.user;
-  } else {
-    error = "Ooops!, Something Went wrong, please try again.";
-  }
+  console.log("Action: ", actionData);
 
   let confirm = "";
   let editMode = "";
@@ -245,16 +246,14 @@ export default function ViewLoads() {
     loadIdToBeDeleted = actionData.loadId;
   }
 
-  console.log("Key: ", key);
   const shipperRole = mapRoles[key];
-  console.log("Shipper Role: ", shipperRole);
 
   const [
     shipperAccess,
     shipperHasAccess,
-  ] = checkUserRole([shipperRole]);
+  ] = checkUserRole([profile?.user.userType], shipperRole);
 
-   const currency = "ETB";
+  const currency = "ETB";
 
   return (
     <div className="container mx-auto px-4 py-4">
@@ -264,7 +263,7 @@ export default function ViewLoads() {
         </h1>
       </div>
       {error && <p className="text-center text-red-500">{error}</p>}
-      {shipperAccess && (
+      {shipperAccess && !shipperHasAccess && (
         <NavLink
           to="/shipper/profile"
           className="flex justify-center bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10"
@@ -280,7 +279,7 @@ export default function ViewLoads() {
             Object.values(loads).map((load) => (
               <Disclosure
                 as="div"
-                key={load.id}
+                key={load.loadId}
                 className="bg-white shadow rounded-lg"
               >
                 {({ open }) => (
@@ -427,7 +426,7 @@ export default function ViewLoads() {
                       </div>
                       <div className="flex justify-end space-x-2 mt-4">
                         <form method="post">
-                          <input type="hidden" name="loadId" value={load.id} />
+                          <input type="hidden" name="loadId" value={load.loadId} />
                           <input
                             type="hidden"
                             name="origin"
@@ -491,7 +490,7 @@ export default function ViewLoads() {
                           </button>
                         </form>
                         <form method="post" className="bg-gray-100">
-                          <input type="hidden" name="loadId" value={load.id} />
+                          <input type="hidden" name="loadId" value={load.loadId} />
                           <button
                             type="submit"
                             name="_action"
@@ -521,13 +520,4 @@ export default function ViewLoads() {
   );
 }
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  const jsonError = JSON.parse(errorResponse);
-  const error = {
-    message: jsonError.data.message,
-    status: jsonError.data.status,
-  };
-
-  return <ErrorDisplay error={error} />;
-}
+<ErrorBoundary />;

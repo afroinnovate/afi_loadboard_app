@@ -41,7 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-
+    
     if (!user) {
       return redirect("/login/", {
         headers: {
@@ -58,7 +58,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
-    console.log("shipper dashboard user", user)
     if (user?.user.userType === "carrier") {
       return redirect("/carriers/dashboard/")
     }
@@ -77,7 +76,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     if (userBusinessInfo && userBusinessInfo.userType === "shipper") {
       const shipperUser: ShipperUser = {
-        id: user.id,
+        id: user?.user.id,
         token: user.token,
         user: {
           firstName: userBusinessInfo.firstName,
@@ -131,9 +130,9 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
-
+    const shipperUser = session.get("shipper");
     return json(
-      { user, shipperDashboard },
+      { user: shipperUser, shipperDashboard },
       {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
@@ -192,6 +191,7 @@ export default function Dashboard() {
             {/* Replace with an appropriate icon or text */}
             &#9776;
           </button>
+
           <NavLink
             to="/dashboard/"
             end
@@ -227,8 +227,8 @@ export default function Dashboard() {
           </h2>
         </div>
       </header>
-      <div className="flex pt-14 mt-14">
-        <div className="hidden lg:flex">
+      <div className="flex pt-16 mt-20">
+        <div className="hidden lg:flex top-30">
           {sidebarOpen && <Sidebar activeSection={activeSection} />}
         </div>
         <main className="w-full flex justify-center content-center p-3 shadow-lg mt-20">
