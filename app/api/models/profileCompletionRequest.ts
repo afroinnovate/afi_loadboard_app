@@ -5,4 +5,6 @@ export type CompleteProfileRequest = {
     role: string;
     email: string;
     phoneNumber: string;
+    status: boolean;
+    userType: string;
 }

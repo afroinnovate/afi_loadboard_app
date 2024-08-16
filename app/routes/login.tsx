@@ -9,10 +9,9 @@ import { json, redirect } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { authenticator } from "../api/services/auth.server";
 import { commitSession, getSession } from "../api/services/session";
-import type { LoginResponse } from "../api/models/loginResponse";
 import { useState } from "react";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
-// import invariant from "tiny-invariant";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -28,60 +27,52 @@ export const links: LinksFunction = () => [
 ];
 
 export const loader: LoaderFunction = async ({ request }) => {
-  // Check if this is the initial request
-  // const isInitialRequest = request.method === 'GET';
-
-  await authenticator.isAuthenticated(request, {
-    successRedirect: `/dashboard/`,
-  });
-
-  // if not check the session
   const session = await getSession(request.headers.get("Cookie"));
-  let error = session.get(authenticator.sessionErrorKey);
-  if (error) {
-    // if there is an error, we'll add it to the flash
-    session.flash(authenticator.sessionErrorKey, error);
-    return json<any>(error);
+  const user = await authenticator.isAuthenticated(request);
+
+  if (user) {
+    return redirect(
+      user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/"
+    );
   }
-  return "Invalid username or password";
+
+  const errorMessage = session.get(authenticator.sessionErrorKey) || null;
+  return json({ message: errorMessage });
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  let user: LoginResponse = await authenticator.authenticate(
-    "user-pass",
-    request,
-    {
-      failureRedirect: "/login/",
-      successRedirect: "/dashboard/",
-    }
-  );
+  const session = await getSession(request.headers.get("Cookie"));
 
-  if (user) {
-    const session = await getSession(request.headers.get("Cookie"));
-    return redirect("/dashboard/", {
+  try {
+    const user = await authenticator.authenticate("user-pass", request);
+    session.set(authenticator.sessionKey, user);
+    const redirectUrl =
+      user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/";
+    return redirect(redirectUrl, {
       headers: {
         "Set-Cookie": await commitSession(session),
       },
-    }
+    });
+  } catch (error) {
+    session.flash(
+      authenticator.sessionErrorKey,
+      "Invalid username or password"
     );
+    return redirect("/login", {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
   }
-  return "Invalid username or password";
 };
 
 export default function Login() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const loaderData: { message?: string } = useLoaderData();
-  let loaderMessage = "";
-  if (loaderData.message == "401: Unauthorized") {
-    loaderMessage = "Invalid username or password";
-  } else {
-    loaderMessage = "Something went wrong. Please try again later.";
-  }
+  const loaderData = useLoaderData<{ message?: string }>();
 
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const [password, setPassword] = useState("");
-
   const [email, setEmail] = useState("");
 
   // Function to handle password field focus - show rules
@@ -102,17 +93,17 @@ export default function Login() {
           style={{ maxWidth: "600px" }}
         >
           <h1 className="text-center text-2xl font-extrabold text-gray-900 py-4">
-            Welcome to loadboard
+            Welcome to Loadboard
           </h1>
 
           {loaderData.message && (
-            <p className="text-red-500 text-xs italic p-2">{loaderMessage}</p>
+            <p className="text-red-500 text-xs italic p-2">
+              {loaderData.message}
+            </p>
           )}
+
           <Form reloadDocument method="post" className="space-y-6">
             <div className="relative mb-2">
-              {/* <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  <span className="text-red-500">*</span> Username
-                </label> */}
               <input
                 id="email"
                 name="email"
@@ -125,8 +116,8 @@ export default function Login() {
                       ? "border-t-white border-b-green-500"
                       : "border-b-red-500 border-l-red-500 border-r-red-500 border-t-white"
                   }`}
-                // className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your email or username"
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="mt-4">
@@ -174,3 +165,5 @@ export default function Login() {
     </>
   );
 }
+
+<ErrorBoundary />;

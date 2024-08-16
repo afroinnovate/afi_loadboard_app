@@ -4,7 +4,6 @@ import { createCookieSessionStorage } from "@remix-run/node";
 const secretKeyDevelopment = process.env.SECRET_KEY_DEV || '';
 const secretKeyProduction = process.env.SECRET_KEY_PROD || '';
 
-// console.log("secretKeyDevelopment", secretKeyDevelopment);
 // Choose the secret based on the environment
 const secretKey = process.env.NODE_ENV === "production" ? secretKeyProduction : secretKeyDevelopment;
 
@@ -12,13 +11,14 @@ const secretKey = process.env.NODE_ENV === "production" ? secretKeyProduction : 
 export const sessionStorage = createCookieSessionStorage({
   cookie: {
     name: "_session", // use any name you want here
-    domain:"afroinnovate.com", //change it to afroinnovate.com when you deploy
-    // domain: "localhost", // change it to afroinnovate.com when you deploy
+    domain: "afroinnovate.com", //change it to afroinnovate.com when you deploy
+    // domain: "localhost", //change it to afroinnovate.com when you deploy
     sameSite: "lax", // this helps with CSRF
     path: "/", // remember to add this so the cookie will work in all routes
     httpOnly: true, // for security reasons, make this cookie http only
     secrets: [secretKey], // replace this with an actual secret
-    secure: process.env.NODE_ENV === "production", // enable this in prod only
+    // secure: process.env.NODE_ENV === "production", // enable this in prod only
+    // 1 minute expiration for testing
   },
 });
 

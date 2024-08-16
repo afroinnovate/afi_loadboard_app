@@ -2,6 +2,7 @@
 import { Link } from "@remix-run/react";
 import type { LinksFunction, MetaFunction } from "@remix-run/node";
 import customStyles from "../styles/global.css";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 // Define the MetaFunction to set metadata for the page
 export const meta: MetaFunction = () => [{
@@ -47,3 +48,5 @@ export default function RegistrationResult() {
     </div>
   );
 }
+
+<ErrorBoundary />;

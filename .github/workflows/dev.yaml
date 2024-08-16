@@ -335,7 +335,7 @@ jobs:
             fi
 
             docker pull $RELEASE_TAG
-            docker run -d -e "SECRET_KEY_DEV=$SECRET_KEY_DEV" -e SESSION_EXPIRATION=600 -e "SECRET_KEY_PROD=$SECRET_KEY_PROD" -p 3000:3000 $RELEASE_TAG
+            docker run -d -e "SECRET_KEY_DEV=$SECRET_KEY_DEV" -e SESSION_EXPIRATION=1200 -e "SECRET_KEY_PROD=$SECRET_KEY_PROD" -p 3000:3000 $RELEASE_TAG
 
             # perform cleanup by running cleanup-image.sh file
             ./cleanup.sh
@@ -351,12 +351,7 @@ jobs:
       - name: Post Deployment Notice on Push
         if: github.event_name == 'push'
         run: |
-          echo 
+          echo "::notice title=Deployed ${{ inputs.deploy_description }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
+          
           echo "::notice title=Deployment::Deployed ${{ env.RELEASE_TAG }} to Droplet with status ${{ steps.deploy.conclusion }}"
           echo "::notice Title=Deployment for UI changes in ${{ env.RELEASE_TAG }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
-        
-         
-            
-            
-            
-                

@@ -1,12 +1,10 @@
-// import { invariant } from "@remix-run/router/dist/history";
-import type { User } from "../models/user";
 import invariant from "tiny-invariant";
 import { Authenticator } from "remix-auth";
 import { sessionStorage } from "./session";
 import type { LoginResponse } from "../models/loginResponse";
 import { FormStrategy } from "remix-auth-form";
-import type { CompleteProfileRequest } from "../models/profileCompletionRequest";
 import type { PasswordResetRequest } from "../models/passwordResetRequest";
+import { type PasswordUpdateRequest } from "../models/paswordUpdateRequest";
 
 const baseUrl = 'https://api.auth.afroinnovate.com/auth';
 // const baseUrl = "http://localhost:8080/auth";
@@ -18,15 +16,15 @@ export let authenticator = new Authenticator<LoginResponse>(sessionStorage, {
 
 // Tell the Authenticator to use the form strategy
 authenticator.use(
-  new FormStrategy(async ({ form, context }) => {
-    let email = form.get("email") as string;
+  new FormStrategy(async ({ form }) => {
+    let username = form.get("email") as string;
     let password = form.get("password") as string;
 
-    invariant(email, "Missing email parameter");
+    invariant(username, "Missing email parameter");
     invariant(password, "Missing password parameter");
 
     try {
-      let loginResponse = await Login(email, password);
+      let loginResponse = await Login(username, password);
 
       if (loginResponse instanceof Error) {
         throw loginResponse;
@@ -34,6 +32,7 @@ authenticator.use(
 
       return loginResponse;
     } catch (error) {
+      console.error("Error during authentication", error);
       throw error;
     }
   }),
@@ -57,14 +56,15 @@ export async function Login(email: string, password: string) {
     // Assuming the response returns a JSON object
     const data = await response.json();
 
-    const responseData: LoginResponse = { ...data };
+    const responseData: any = { ...data };
+
     return responseData;
   } catch (error) {
     throw error; // Rethrow the error to be handled by the caller
   }
 }
 
-export async function Register(user: User) {
+export async function Register(user: any) {
   try {
     const response = await fetch(baseUrl + "/register", {
       method: "POST",
@@ -85,10 +85,10 @@ export async function Register(user: User) {
   }
 }
 
-export async function CompleteProfile(profile: CompleteProfileRequest) {
+export async function CompleteProfile(profile: any) {
   try {
     const response = await fetch(baseUrl + "/completeprofile", {
-      method: "POST",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },

@@ -1,4 +1,3 @@
-// app/routes/signup.tsx
 import { useNavigation, Form, Link, useActionData } from "@remix-run/react";
 import {
   type MetaFunction,
@@ -8,12 +7,12 @@ import {
   json,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
-import type { User } from "~/api/models/user";
 import { Register } from "~/api/services/auth.server";
 import invariant from "tiny-invariant";
 import { useState, useEffect } from "react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -37,7 +36,7 @@ export const action: ActionFunction = async ({ request }) => {
   var errorMessage = "";
 
   try {
-    const user: User = {
+    const user: any = {
       email: body.get("email") as string,
       password: body.get("password") as string,
     };
@@ -59,6 +58,7 @@ export const action: ActionFunction = async ({ request }) => {
       /[A-Z]/.test(password),
       "Password must contain at least one uppercase letter"
     );
+    console.log("passwords: ", password, confirmPassword);
     invariant(
       typeof confirmPassword === "string" && confirmPassword === password,
       "Passwords must match"
@@ -67,6 +67,7 @@ export const action: ActionFunction = async ({ request }) => {
     await Register(user);
     return redirect(`/registration/`);
   } catch (error: any) {
+    console.log("error signup: ", error);
     switch (error.message) {
       case "Invariant failed: Password must be at least 8 characters long":
         errorMessage = error.message.replace("Invariant failed: ", "");
@@ -102,6 +103,7 @@ export default function Signup() {
   const [isFormValid, setIsFormValid] = useState(false);
 
   const isPasswordValid = password !== "" && password === confirmPassword;
+  console.log("isPasswordValid: ", isPasswordValid);
 
   useEffect(() => {
     const emailValid = email.length > 6;
@@ -110,13 +112,15 @@ export default function Signup() {
       /[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/.test(password) &&
       /[A-Z]/.test(password);
     const passwordsMatch = password === confirmPassword;
-    setIsFormValid(emailValid && passwordValid && passwordsMatch && termsAccepted);
+    setIsFormValid(
+      emailValid && passwordValid && passwordsMatch && termsAccepted
+    );
   }, [email, password, confirmPassword, termsAccepted]);
 
   const handlePasswordChange = (name: string, value: string) => {
     if (name === "password") {
       setPassword(value);
-    } else if (name === "confirmpassword") {
+    } else if (name === "confirmPassword") {
       setConfirmPassword(value);
     }
   };
@@ -140,8 +144,10 @@ export default function Signup() {
           </Link>
         </p>
 
-        {actionData && (
-          <p className="text-red-500 text-xs italic p-2">{actionData}</p>
+        {actionData?.error && (
+          <div className="mb-4 text-red-600 text-center text-sm">
+            {actionData.error}
+          </div>
         )}
 
         <Form reloadDocument method="post" className="mb-0 space-y-2">
@@ -165,10 +171,10 @@ export default function Signup() {
           </fieldset>
           <fieldset>
             <FloatingPasswordInput
-              name="confirmpassword"
+              name="confirmPassword" // Ensure this is exactly "confirmPassword"
               placeholder="Confirm Password"
               required
-              newPassword={password}
+              newPassword={confirmPassword}
               onChange={(name, value) => handlePasswordChange(name, value)}
             />
           </fieldset>
@@ -185,7 +191,7 @@ export default function Signup() {
               I agree to the{" "}
               <Link
                 to="/terms"
-                className="font-bold text-blue-600 hover:text-ornage-400"
+                className="font-bold text-blue-600 hover:text-orange-400"
               >
                 Terms{" "}
               </Link>
@@ -200,19 +206,21 @@ export default function Signup() {
             </label>
           </div>
           <button
-              type="submit"
-              id="submit-button"
-              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                isPasswordValid && isFormValid
-                  ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
-                  : "bg-gray-700 cursor-not-allowed"
-              }`}
-              disabled={!isPasswordValid || isSubmitting}
-            >
-              {isSubmitting ? "Signing Up..." : "Create Account"}
+            type="submit"
+            id="submit-button"
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+              isPasswordValid && isFormValid
+                ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
+                : "bg-gray-700 cursor-not-allowed"
+            }`}
+            disabled={!isPasswordValid || isSubmitting}
+          >
+            {isSubmitting ? "Signing Up..." : "Create Account"}
           </button>
         </Form>
       </div>
     </div>
   );
 }
+
+<ErrorBoundary />;

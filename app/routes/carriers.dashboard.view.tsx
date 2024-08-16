@@ -5,7 +5,12 @@ import {
   type ActionFunction,
   type MetaFunction,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, useRouteError } from "@remix-run/react";
+import {
+  NavLink,
+  useActionData,
+  useLoaderData,
+  useRouteError,
+} from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
 import { commitSession, getSession } from "../api/services/session";
@@ -21,9 +26,9 @@ import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
 import { checkUserRole } from "~/components/checkroles";
 import { manageBidProcess } from "~/api/services/bid.helper";
-import ErrorDisplay from "~/components/ErrorDisplay";
 import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -39,6 +44,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
 
+    const carrierProfile: any = session.get("carrier");
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
     if (isNaN(EXPIRES_IN)) {
@@ -55,6 +61,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
+    if (user?.user.userType === "shipper") {
+      return redirect("/dashboard/")
+    }
+
     // check if the user is authorized to access this page, else redircdt them the appropriate page
     const shipperDashboard = await redirectUser(user?.user);
     if (shipperDashboard) {
@@ -63,22 +73,30 @@ export const loader: LoaderFunction = async ({ request }) => {
           "Set-Cookie": await commitSession(session, { expires }),
         },
       });
-    } 
-    
+    }
+
     // Get the loads
     const response = await GetLoads(user.token);
     if (typeof response === "string") {
       throw response;
     }
 
-    return json([response, user], {
+    return json({ "loads": response, "carrierProfile": carrierProfile }, {
       headers: {
         "Set-Cookie": await commitSession(session, { expires }),
       },
     });
   } catch (error: any) {
-    if(JSON.parse(error).data.status == 401){
-      return redirect("/login/")
+    if (JSON.parse(error).data.status == 401) {
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw error;
   }
@@ -97,27 +115,38 @@ export const action: ActionFunction = async ({ request }) => {
       });
     }
 
+    let carrierProfile: any = session.get("carrier");
+    carrierProfile.token = user.token;
+
     const formData = await request.formData();
     const actionType = formData.get("_action");
-    const loadId: any = formData.get("loadId") 
-    const bidLoadId = formData.get("bidLoadId")
- 
+    const bidLoadId = formData.get("bidLoadId");
+
     switch (actionType) {
       case "contact":
-        return json({"error": "", "message": "contactMode" });
+        return json({ error: "", message: "contactMode" });
 
       case "bid":
         return json({
-          "error": "",
-          "message": "bidMode",
-          "loadId":  bidLoadId,
-          "offerAmount": formData.get("offerAmount")
+          error: "",
+          message: "bidMode",
+          loadIdToBeBid: bidLoadId,
+          offerAmount: formData.get("offerAmount"),
         });
 
       case "placebid":
-        const bidDetails = await manageBidProcess(user, loadId, formData);
-        return json({"error": "", "message": bidDetails.message, "amount": bidDetails.amount});
-      
+        const bidAmount = formData.get("bidAmount");
+        const bidDetails = await manageBidProcess(
+          carrierProfile,
+          Number(bidLoadId),
+          Number(bidAmount)
+        );
+        return json({
+          error: "",
+          message: bidDetails.message,
+          amount: bidDetails.amount,
+        });
+
       case "closeContact":
         return redirect("/carriers/dashboard/view");
 
@@ -125,8 +154,16 @@ export const action: ActionFunction = async ({ request }) => {
         throw new Error("Invalid action");
     }
   } catch (error: any) {
-    if(JSON.parse(error).data.status == 401){
-      return redirect("/login/")
+    if (JSON.parse(error).data.status == 401) {
+      const session = await getSession(request.headers.get("Cookie"));
+      session.set("user", null);
+      session.set("carrier", null);
+      session.set("shipper", null);
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
     throw error;
   }
@@ -155,22 +192,20 @@ export default function CarrierViewLoads() {
       info = `Oops! Your bid wasn't placed/updated. Please try again. Amount: ${amount}`;
     } else if (
       message !== undefined &&
-      (message.includes("bidPlaced") ||
-      message.includes("bidUpdatePlaced"))
+      (message.includes("bidPlaced") || message.includes("bidUpdatePlaced"))
     ) {
       info = `Bid placed/updated successfully. New amount: ${amount}`;
-    }
-    else if (actionError !== null || actionError !== undefined) {
-      error = actionError
+    } else if (actionError !== null || actionError !== undefined) {
+      error = actionError;
     }
   }
 
   // Extract loads and user data from loader
-  let loads = [];
-  let user = {};
-  if (Array.isArray(loaderData) && loaderData.length === 2 && !error) {
-    loads = loaderData[0];
-    user = loaderData[1];
+  let loads = loaderData?.loads || [];
+  let carrierProfile: any = loaderData?.carrierProfile || {};
+
+  if (loaderData && !error) {
+    loads = loaderData.loads;
   } else {
     error =
       "No loads found or something went wrong. Please try again later or contact support.";
@@ -179,43 +214,51 @@ export default function CarrierViewLoads() {
   if (Object.keys(loads).length === 0) {
     info = "No loads posted, please check back later";
   }
-
+  
   // User roles and permission checks
-  const [shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] = checkUserRole(user?.user.roles);
+  const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
+    checkUserRole(carrierProfile.roles, carrierProfile.businessProfile.carrierRole ?? "");
+  
+  let contactMode =
+    actionData && actionData.message === "contactMode"
+      ? actionData.message
+      : "";
+  let bidMode =
+    actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
 
-  let contactMode = actionData && actionData.message === "contactMode" ? actionData.message : "";
-  let bidMode = actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
-
-  let loadIdToBeBid = 0;
-  let currentBid = 0;
-  if (bidMode === "bidMode") {
-    loadIdToBeBid = actionData.loadId;
-    currentBid = actionData.offerAmount;
-  }
+  let loadIdToBeBid = actionData?.loadIdToBeBid || null;
+  let currentBid = actionData?.offerAmount || 0;
 
   // Utility function to determine styles based on load status
-  const getStatusStyles = (status) => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
       case "open":
-        return "bg-orange-500";
+        return "bg-green-600";
       case "accepted":
-        return "bg-blue-500";
-      case "enroute":
-        return "bg-yellow-500";
-      default:
         return "bg-gray-500";
+      case "enroute":
+        return "bg-red-500";
+      default:
+        return "bg-orange-500";
     }
   };
 
   // Conditional rendering for access denied or valid dashboard
-  if (!shipperHasAccess && !carrierHasAccess && !adminAccess && !carrierAccess) {
+  if (
+    !shipperHasAccess &&
+    !carrierHasAccess &&
+    !adminAccess &&
+    !carrierAccess
+  ) {
     return (
       <AccessDenied
         returnUrl="/"
         message="You do not have access to the carrier dashboard."
       />
     );
-  } 
+  }
+
+  const currency = "ETB";
 
   return (
     <div
@@ -246,24 +289,14 @@ export default function CarrierViewLoads() {
             {({ open }) => (
               <>
                 {/* Contact Shipper View */}
-                {
-                  contactMode === "contactMode" && (
-                    <ContactShipperView
-                      load={load}
-                      shipper={load.createdBy}
-                    />
-                  )
-                }
+                {contactMode === "contactMode" && (
+                  <ContactShipperView shipper={load.createdBy} load={load} />
+                )}
 
                 {/* Bid Adjustment View */}
-                {
-                  bidMode === "bidMode" && (
-                    <BidAdjustmentView
-                      loadId={load.loadId}
-                      initialBid={currentBid}
-                    />
-                  )
-                }
+                {bidMode === "bidMode" && load.loadId && (
+                  <BidAdjustmentView loadId={loadIdToBeBid} initialBid={currentBid} />
+                )}
 
                 <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
                   <div className="pl-2 flex items-center space-x-3">
@@ -279,7 +312,7 @@ export default function CarrierViewLoads() {
                         : ""}
                     </span>
                     <span className="text-lg font-semibold text-blue-400">
-                      ${load.offerAmount}
+                      {currency} {load.offerAmount}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -307,20 +340,24 @@ export default function CarrierViewLoads() {
                       {new Date(load.pickupDate).toLocaleDateString()}
                     </p>
                     <p>
-                      Delivery Date:{" "}
+                      Estimated Delivery Date:{" "}
                       {new Date(load.deliveryDate).toLocaleDateString()}
                     </p>
                     <p>Commodity: {load.commodity}</p>
                     <p>Weight: {load.weight} kg</p>
-                    <p>Offer Amount: ${load.offerAmount}</p>
+                    <p>
+                      Offer Amount: {currency} {load.offerAmount}
+                    </p>
                     <p>Details: {load.loadDetails}</p>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-2 mt-4">
-                  
-                    {carrierAccess && (
-                      <NavLink to="/carriers/dashboard/account/business/" className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10">
+                    {carrierAccess && !carrierHasAccess && (
+                      <NavLink
+                        to="/carriers/dashboard/account/business/"
+                        className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10"
+                      >
                         <button className="text-lg">
                           Please Complete your profile to pick up a load
                         </button>
@@ -329,7 +366,7 @@ export default function CarrierViewLoads() {
 
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="loadId" value={ load.id } />
+                        <input type="hidden" name="loadId" value={load.loadId} />
                         <button
                           type="submit"
                           name="_action"
@@ -344,18 +381,32 @@ export default function CarrierViewLoads() {
                     )}
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="bidLoadId" value={ load.id } />
-                        <input type="hidden" name="loadIdToBeBid" value={ loadIdToBeBid } />
+                        <input type="hidden" name="bidLoadId" value={load.loadId} />
                         <input
                           type="hidden"
                           name="offerAmount"
                           value={load.offerAmount}
                         />
                         <button
+                          disabled={
+                            load.loadStatus === "enroute" ||
+                            load.loadStatus === "accepted" ||
+                            load.loadStatus === "rejected" ||
+                            load.loadStatus === "closed"
+                          }
                           type="submit"
                           name="_action"
                           value="bid"
-                          className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none"
+                          // make conditional formatting for the button based on the load status
+                          className={`flex items-center px-4 py-2 text-sm font-medium text-orange-400 bg-gray-700 border border-orange-400 rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
+                            load.loadStatus === "enroute" ||
+                            load.loadStatus === "accepted" ||
+                            load.loadStatus === "rejected" ||
+                            load.loadStatus === "closed"
+                              ? "cursor-not-allowed"
+                              : ""
+                          }`}
+                          // className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none"
                           aria-label="Place Bid"
                         >
                           <CurrencyDollarIcon className="w-5 h-5 mr-2" />
@@ -374,18 +425,4 @@ export default function CarrierViewLoads() {
   );
 }
 
-export function ErrorBoundary() {
-  try{
-    const errorResponse: any = useRouteError();
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  }catch(e){
-    console.error(e);
-    return <div>Something went wrong</div>
-  }
-}
+<ErrorBoundary />;

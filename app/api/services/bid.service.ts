@@ -28,7 +28,7 @@ export async function PlaceBid(bidRequest: BidRequest, token: string) {
   } catch (error: any) {
     switch (error.status) {
       case 404:
-        throw JSON.stringify({
+        return JSON.stringify({
           data: {
             message: "Bid with ID 0 not found",
             status: 404,
@@ -201,8 +201,8 @@ export async function GetBid(token: string, id: Number) {
   }
 }
 
-export async function GetBidByLoadIdandCarrierId(token: string, loadId: Number, carrierId: string) {
-    try {
+export async function GetBidByLoadIdandCarrierId(loadId: Number, carrierId: string, token: string) {
+  try {
       const response = await fetch(`${baseUrl}bids/${loadId}/${carrierId}`, {
         method: "GET",
         headers: {
@@ -224,10 +224,11 @@ export async function GetBidByLoadIdandCarrierId(token: string, loadId: Number, 
   
       const responseData = await response.json();
       return responseData;
-    } catch (error: any) {
+  } catch (error: any) {
+    console.log('get bid error', error)
       switch (error.status) {
         case 404:
-          throw JSON.stringify({
+          return JSON.stringify({
             data: {
               message: `Bid with ID ${loadId} and ${carrierId} not found`,
               status: 404,

@@ -12,6 +12,7 @@ import invariant from "tiny-invariant";
 import { useState } from "react";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { XMarkIcon } from "@heroicons/react/16/solid";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -121,21 +122,4 @@ export default function ResetPasswordPage() {
 }
 
 
-export function ErrorBoundary() {
-  try{
-    const errorResponse: any = useRouteError();
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  }catch(e){
-    const error = {
-      message: "Something went wrong, try again later",
-      status: 500
-    }
-    return <ErrorDisplay error={error} />
-  }
-}
+<ErrorBoundary />;
