@@ -105,10 +105,10 @@ export let loader: LoaderFunction = async ({ request }) => {
 
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  let autUser = session.get(authenticator.sessionKey);
-  const token = autUser.token;
+  let authUser = session.get(authenticator.sessionKey);
+  const token = authUser.token;
 
-  if (!autUser) {
+  if (!authUser) {
     return redirect("/login/", {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -119,13 +119,13 @@ export let action: ActionFunction = async ({ request }) => {
   const carrierProfile = session.get("carrier");
   let user = carrierProfile;
 
-  user.phone = autUser.user.phoneNumber;
-  user.email = autUser.user.email;
-  user.firstName = autUser.user.firstName;
-  user.middleName = autUser.user.middleName;
-  user.lastName = autUser.user.lastName;
-  user.roles = autUser.user.roles;
-  user.userType = autUser.user.userType;
+  user.phone = authUser.user.phoneNumber;
+  user.email = authUser.user.email;
+  user.firstName = authUser.user.firstName;
+  user.middleName = authUser.user.middleName;
+  user.lastName = authUser.user.lastName;
+  user.roles = authUser.user.roles;
+  user.userType = authUser.user.userType;
 
   const mapCarrierRole = (role: string | null) => {
     switch (role) {
@@ -175,6 +175,8 @@ export let action: ActionFunction = async ({ request }) => {
         email: email,
         role: "",
         phoneNumber: phoneNumber,
+        userType: user.userType,
+        status: true,
       };
       let updatedUserSession = {
         token: user.token,

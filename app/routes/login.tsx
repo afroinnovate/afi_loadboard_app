@@ -28,11 +28,11 @@ export const links: LinksFunction = () => [
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = await authenticator.isAuthenticated(request);
+  const user: any = await authenticator.isAuthenticated(request);
 
   if (user) {
     return redirect(
-      user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/"
+      user?.user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/"
     );
   }
 
@@ -44,10 +44,10 @@ export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
 
   try {
-    const user = await authenticator.authenticate("user-pass", request);
+    const user: any = await authenticator.authenticate("user-pass", request);
     session.set(authenticator.sessionKey, user);
     const redirectUrl =
-      user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/";
+      user?.user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/";
     return redirect(redirectUrl, {
       headers: {
         "Set-Cookie": await commitSession(session),
