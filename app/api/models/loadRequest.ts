@@ -1,18 +1,28 @@
 export type LoadRequest = {
-    userId: string;
     shipperUserId: string;
     origin: string;
     destination: string;
     pickupDate: string;
     deliveryDate: string;
     commodity: string;
+    estimatedDistance: number;
     weight: number;
     offerAmount: number;
     loadDetails: string;
     loadStatus: string;
-    modifiedBy: string;
-    modified: string;
-    created: string;
-    createdBy: object;
-}
-
+    createdAt: string;
+    createdBy: {
+        userId: string;
+        email: string;
+        firstName: string;
+        middleName: string;
+        lastName: string;
+        phone: string;
+        userType: string;
+        businessType: string;
+        businessRegistrationNumber: string;
+        companyName: string;
+        idCardOrDriverLicenceNumber: string;
+        shipperRole: number;
+    };
+};

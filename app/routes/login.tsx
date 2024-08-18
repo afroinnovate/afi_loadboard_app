@@ -28,7 +28,7 @@ export const links: LinksFunction = () => [
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user: any = await authenticator.isAuthenticated(request);
+  const user: any = await session.get(authenticator.sessionKey);
 
   if (user) {
     return redirect(

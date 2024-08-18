@@ -43,11 +43,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const user = session.get(authenticator.sessionKey);
     
     if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
@@ -85,16 +81,18 @@ export const loader: LoaderFunction = async ({ request }) => {
           email: userBusinessInfo.email,
           phone: userBusinessInfo.phone,
           userType: userBusinessInfo.userType,
-          roles: user.roles,
-          confirmed: user.confirmed,
-          status: user.status,
           businessProfile: {
             companyName: userBusinessInfo.businessProfile.companyName,
             businessType: userBusinessInfo.businessProfile.businessType,
             businessRegistrationNumber:
               userBusinessInfo.businessProfile.businessRegistrationNumber,
             shipperRole: userBusinessInfo.businessProfile.shipperRole,
+            idCardOrDriverLicenceNumber:
+              userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
           },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
         },
       };
       session.set("shipper", shipperUser);

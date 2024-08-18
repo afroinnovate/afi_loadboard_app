@@ -14,391 +14,469 @@ import {
 import invariant from "tiny-invariant";
 import { authenticator } from "~/api/services/auth.server";
 import AccessDenied from "~/components/accessdenied";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
 import { commitSession, getSession } from "~/api/services/session";
 import { checkUserRole } from "~/components/checkroles";
 import ErrorDisplay from "~/components/ErrorDisplay";
+import { ErrorBoundary } from "~/root";
+import { ShipperUser } from "~/api/models/shipperUser";
+import { FloatingLabelInput } from "~/components/FloatingInput";
+import { DateInput } from "~/components/dateInput";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
 
-export const action: ActionFunction = async ({ request }) => {
-  try {
-    // Find the parent route match containing the user and token
-    const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get("user");
+export const meta: MetaFunction = () => {
+  return [
+    {
+      title: "Afroinnovate | Loadboard | Add Load",
+      description: "Dashboard for Adding the loads",
+    },
+  ];
+};
 
-    if (!user) {
-      // Handle the missing token scenario
-      throw new Response("401 Unauthorized", { status: 401 });
-    }
-
-    const formData = await request.formData();
-
-    // Validate the form data
-    invariant(formData.has("origin"), "Origin is required");
-    invariant(formData.has("destination"), "Destination is required");
-    invariant(formData.has("pickupDate"), "Pickup date is required");
-    invariant(formData.has("deliveryDate"), "Delivery date is required");
-    invariant(formData.has("weight"), "Weight is required");
-
-    if (!user && !user.user.id) {
-      invariant(formData.has("userId"), "User ID is required");
-    }
-
-    if (
-      isNaN(Number(formData.get("offerAmount"))) ||
-      formData.get("offerAmount") === ""
-    ) {
-      formData.set("offerAmount", "0");
-    }
-
-    const pickupDate = formData.get("pickupDate");
-    const deliveryDate = formData.get("deliveryDate");
-
-    // Assuming that the time part is not critical for the pickupDate and deliveryDate,
-    // you can set it to a default time like 12:00:00.000Z (noon) or any other time you see fit.
-    const formattedPickupDate = new Date(
-      pickupDate + "T12:00:00.000Z"
-    ).toISOString();
-    const formattedDeliveryDate = new Date(
-      deliveryDate + "T12:00:00.000Z"
-    ).toISOString();
-
-    const formattedDate = new Date().toISOString();
-
-    const shipper = {
-      userId: user.user.id,
-      firstName: user.user.firstName,
-      lastName: user.user.lastName,
-      email: user.user.email,
-      companyName: user.user.companyName,
-      dotNumber: user.user.dotNumber,
-    };
-    // Create a new load request
-    const loadRequest: LoadRequest = {
-      loadDetails: formData.get("loadDetails") as string,
-      origin: formData.get("origin") as string,
-      destination: formData.get("destination") as string,
-      // pickupDate: "2024-02-10T14:20:14.916Z", // Format the date
-      // deliveryDate:  "2024-02-14T14:20:14.916Z", // Format the date
-      pickupDate: formattedPickupDate,
-      deliveryDate: formattedDeliveryDate,
-      commodity: formData.get("commodities") as string,
-      weight: Number(formData.get("weight")), // Ensure number type
-      offerAmount: Number(formData.get("offerAmount")), // Correct field and ensure number type
-      userId: user.user.id,
-      shipperUserId: user.user.id,
-      created: formattedDate,
-      loadStatus: "open",
-      createdBy: shipper,
-    };
-
-    const response: any = await AddLoads(loadRequest, user.token);
-    if (Object.keys(response).length > 0 && response.origin !== undefined) {
-      return redirect("/dashboard/loads/view");
-    }
-    // Save the load to the database
-    if (!response.toString().includes("Error")) {
-      return redirect("/dashboard/loads/view");
-    } else {
-      return redirect("/dashboard/loads/add");
-    }
-  } catch (error: any) {
-    if (error.message.includes("401")) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
-    return error;
-  }
+// Define the type for mapRoles
+const mapRoles: { [key: number]: string } = {
+  0: "independentShipper",
+  1: "corporateShipper",
+  2: "govtShipper",
 };
 
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    var user: any = await authenticator.isAuthenticated(request, {
-      failureRedirect: "/login/",
-    });
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
 
-    // const user = userData;
+    if (!user) {
+      // Handle the missing token scenario
+      return redirect("/logout/");
+    }
 
-    return json({ user: user });
-  } catch (error) {
-    console.log("loader error: ", error);
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds
+    const expires = new Date(Date.now() + EXPIRES_IN); // Convert seconds to milliseconds
+
+    // get shipper's profile from session storage
+    const shipper: ShipperUser = session.get("shipper");
+    if (!shipper) {
+      return redirect("/logout/");
+    }
+
+    if (isNaN(EXPIRES_IN)) {
+      throw JSON.stringify({ message: "SESSION_EXPIRATION is not set or is not a valid number", status: 401 });
+    }
+
+    if (user.user.userType === "carrier") {
+      return redirect("/carriers/dashboard/", {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      });
+    }
+ 
+    const shipperRole = mapRoles[shipper.user.businessProfile.shipperRole];
+    const hasAccess = ["independentShipper", "corporateShipper", "govtShipper"].includes(shipperRole);
+
+    return json({ user, shipper, hasAccess });
+  } catch (error: any) {
+    console.error(" Add load  error: ", error);
+    if (JSON.parse(error).data.status === 401) {
+      return redirect("/logout/");
+    }
     return error;
   }
 };
 
+export const action: ActionFunction = async ({ request }) => {
+   try {
+     const session = await getSession(request.headers.get("Cookie"));
+     const user = session.get(authenticator.sessionKey);
+     const shipperProfile: ShipperUser = session.get("shipper");
+
+     if (!user || !shipperProfile) {
+       return redirect("/logout/");
+     }
+
+     const formData = await request.formData();
+
+     const requiredFields = [
+       "origin",
+       "destination",
+       "pickupDate",
+       "deliveryDate",
+       "commodity",
+       "weight",
+       "offerAmount",
+       "loadDetails",
+     ];
+
+     const errors: { [key: string]: string } = {};
+
+     for (const field of requiredFields) {
+       const value = formData.get(field);
+       if (!value || value.toString().trim() === "") {
+         errors[field] = `${field} is required`;
+       }
+     }
+
+     if (Object.keys(errors).length > 0) {
+       return json({ errors }, { status: 400 });
+     }
+
+     const pickupDate = new Date(formData.get("pickupDate") as string);
+     const deliveryDate = new Date(formData.get("deliveryDate") as string);
+     const today = new Date();
+     today.setHours(0, 0, 0, 0);
+
+     if (pickupDate < today) {
+       errors.pickupDate = "Pick-up date cannot be in the past";
+     }
+
+     if (deliveryDate < pickupDate) {
+       errors.deliveryDate =
+         "Estimated delivery date must be on or after the pick-up date";
+     }
+
+     if (Object.keys(errors).length > 0) {
+       return json({ errors }, { status: 400 });
+     }
+
+     const loadRequest: LoadRequest = {
+       shipperUserId: user.user.id,
+       origin: formData.get("origin") as string,
+       destination: formData.get("destination") as string,
+       pickupDate: pickupDate.toISOString(),
+       deliveryDate: deliveryDate.toISOString(),
+       commodity: formData.get("commodity") as string,
+       estimatedDistance: Number(formData.get("estimatedDistance")),
+       weight: Number(formData.get("weight")),
+       offerAmount: Number(formData.get("offerAmount")),
+       loadDetails: formData.get("loadDetails") as string,
+       loadStatus: "Open",
+       createdAt: new Date().toISOString(),
+       createdBy: {
+         userId: user.user.id,
+         email: user.user.email,
+         firstName: user.user.firstName,
+         middleName: user.user.middleName || "",
+         lastName: user.user.lastName,
+         phone: user.user.phone,
+         userType: "shipper",
+         businessType: shipperProfile.user.businessProfile.businessType,
+         businessRegistrationNumber:
+           shipperProfile.user.businessProfile.businessRegistrationNumber,
+         companyName: shipperProfile.user.businessProfile.companyName,
+         idCardOrDriverLicenceNumber:
+           shipperProfile.user.businessProfile.idCardOrDriverLicenceNumber,
+         shipperRole: shipperProfile.user.businessProfile.shipperRole,
+       },
+     };
+
+     const response: any = await AddLoads(loadRequest, user.token);
+     if (Object.keys(response).length > 0 && response.origin !== undefined) {
+       return redirect("/dashboard/loads/view");
+     } else {
+       return json(
+         { error: "Failed to add load. Please try again." },
+         { status: 500 }
+       );
+     }
+   } catch (error: any) {
+     if (JSON.parse(error).data.status === 401) {
+       return redirect("/logout/");
+     }
+     return error;
+   }
+};
+
+// Define the shape of our form data
+interface formData {
+  title: string;
+  loadDetails: string;
+  origin: string;
+  destination: string;
+  estimatedDistance: string;
+  pickupDate: string;
+  deliveryDate: string;
+  commodities: string;
+  weight: string;
+  offerAmount: string;
+  [key: string]: string; // Index signature to allow string indexing
+}
+
+
+const loadTypes = [
+  "Clothing",
+  "Furniture",
+  "Electronics",
+  "Food & Beverages",
+  "Machinery",
+  "Medical Supplies",
+  "Paper Products",
+  "Pharmaceuticals",
+  "Plastics",
+  "Textiles",
+  "Mixed Load",
+  "Goverment Load",
+  "Classified Load",
+  "Agricultural Produce",
+  "Construction Materials",
+  "Hazardous Materials",
+  "Livestock",
+  "Automobile",
+  "Other",
+];
+
 export default function AddLoad() {
-  const actionData = useActionData();
-  console.log("actionData: ", actionData);
-  const loaderData: any = useLoaderData();
+  const actionData = useActionData<{ errors?: { [key: string]: string }, error?: string }>();
+  const { user, shipper, hasAccess } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
-
-  const isSubmitting = navigation.state === "submitting";
-
-  var roles: string[] = [""];
-  // var user: LoginUser = {
-  //   id: "",
-  //   userName: "",
-  //   firstName: "",
-  //   lastName: "",
-  //   email: "",
-  //   roles: [""],
-  // };
-
-  var user: any = {};
-
-  console.log("It got here:...");
-  if (loaderData && loaderData.user) {
-    user = loaderData.user;
-  }
-
-  // Check if user has 'support', 'admin' or any role containing 'confirmed shipper(indenpendent, corporate, gov)'
-  const [
-    shipperAccess,
-    shipperHasAccess,
-    adminAccess,
-    carrierAccess,
-    carrierHasAccess,
-  ] = checkUserRole(user?.user.roles);
-
   const [offerType, setOfferType] = useState("flat");
+  const today = new Date().toISOString().split("T")[0];
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [selectedLoadType, setSelectedLoadType] = useState("");
 
-  console.log("actionData: ", actionData);
-  var error = "";
-  if ((actionData && actionData.errno) || (loader && loader.errno)) {
-    if (actionData.errno === "ENOTFOUND") {
-      error =
-        "Oopse!, you seem to have connectivity issue, please connect to a reliable internet.";
-    } else if (actionData.errno === "ECONNREFUSED") {
-      error = "Oops!, Connection refused, please try again.";
-    } else {
-      error = "Oops!, Something Went wrong, please try again.";
-    }
-  }
-
-  if (!shipperHasAccess) {
+  const [formData, setFormData] = useState({
+    title: "",
+    loadDetails: "",
+    origin: "",
+    destination: "",
+    estimatedDistance: "",
+    pickupDate: "",
+    deliveryDate: "",
+    commodity: "",
+    weight: "",
+    offerAmount: "",
+  });
+  
+  if (!hasAccess) {
     return (
       <AccessDenied
         returnUrl="/dashboard/loads/view"
         message="You do not have enough access to add a load"
       />
     );
-  } else {
-    return (
-      <div className="container mx-auto p-4 flex flex-col justify-center items-center min-m-screen overflow-hidden">
-        <div className="flex justify-center items-center shadow-sm border-spacing-3 mb-6 w-full">
-          <h1 className="text-2xl font-bold mb-4 p-6 text-center text-green-500">
-            Add New Load Offer
-          </h1>
-        </div>
-        {error !== "" && (
-          <p className="flex justify-start text-red-500 text-sm itallic p-5 m-5">
-            {error}
-          </p>
-        )}
-        <Form method="post" className="w-full max-w-4xl">
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label
-                htmlFor="title"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                id="title"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="loadDetails"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Load Details
-              </label>
-              <input
-                type="text"
-                name="loadDetails"
-                id="loadDetails"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="origin"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Origin <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="origin"
-                id="origin"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="destination"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Destination <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="destination"
-                id="destination"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="pickupDate"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Pick-up Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="pickupDate"
-                id="pickupDate"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="deliveryDate"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Delivery Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="deliveryDate"
-                id="deliveryDate"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="commodities"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Items <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="commodities"
-                id="commodities"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="offerType"
-                  id="offerType"
-                  value="flat"
-                  className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                  checked={offerType === "flat"}
-                  onChange={() => setOfferType("flat")}
-                />
-                <span className="ml-2 text-gray-700">Flat Offer</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="offerType"
-                  value="negotiable"
-                  className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                  checked={offerType === "negotiable"}
-                  onChange={() => setOfferType("negotiable")}
-                />
-                <span className="ml-2 text-gray-700">Negotiable</span>
-              </label>
-            </div>
-
-            <div>
-              <label
-                htmlFor="weight"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Weight <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="weight"
-                id="weight"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            {offerType === "flat" && (
-              <div>
-                <label
-                  htmlFor="offerAmount"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Offer Amount <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="offerAmount"
-                  id="offerAmount"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  required
-                />
-              </div>
-            )}
-          </div>
-          <div className="flex justify-center mb-8">
-            <button
-              type="submit"
-              className="items-center w-full py-2 px-4 mt-6  border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-orange-500 hover:italic hover:text-white text-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {isSubmitting ? "Submitting the load..." : "Submit Load"}
-            </button>
-          </div>
-        </Form>
-      </div>
-    );
   }
-}
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  const jsonError = JSON.parse(errorResponse);
-  const error = {
-    message: jsonError.data.message,
-    status: jsonError.data.status,
+  const handleInputChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  return <ErrorDisplay error={error} />;
+  const handleLoadTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSelectedLoadType(value);
+    setFormData((prev) => ({ ...prev, commodity: value }));
+  };
+
+  useEffect(() => {
+    const requiredFields = [
+      "origin",
+      "destination",
+      "pickupDate",
+      "deliveryDate",
+      "commodity",
+      "weight",
+      "offerAmount",
+      "loadDetails",
+    ];
+    const isValid = requiredFields.every((field) => formData[field] !== "");
+    setIsFormValid(isValid);
+  }, [formData]);
+
+  const currency = 'ETB';
+
+  return (
+    <div className="container mx-auto p-4 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-6 text-center text-green-600">
+        Add New Load Offer
+      </h1>
+
+      {actionData?.error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{actionData.error}</span>
+        </div>
+      )}
+
+      <Form method="post" className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FloatingLabelInput
+            name="title"
+            placeholder="Title"
+            required={false}
+            onChange={handleInputChange}
+            error={actionData?.errors?.title}
+          />
+
+          <FloatingLabelInput
+            name="loadDetails"
+            placeholder="Load Description"
+            required
+            onChange={handleInputChange}
+            error={actionData?.errors?.loadDetails}
+          />
+
+          <FloatingLabelInput
+            name="origin"
+            placeholder="Origin"
+            required
+            onChange={handleInputChange}
+            error={actionData?.errors?.origin}
+          />
+
+          <FloatingLabelInput
+            name="destination"
+            placeholder="Destination"
+            required
+            onChange={handleInputChange}
+            error={actionData?.errors?.destination}
+          />
+
+          <DateInput
+            name="pickupDate"
+            label="Pick-up Date"
+            required
+            min={today}
+            onChange={handleInputChange}
+            error={actionData?.errors?.pickupDate}
+          />
+
+          <DateInput
+            name="deliveryDate"
+            label="Est. Delivery Date"
+            required
+            min={today}
+            onChange={handleInputChange}
+            error={actionData?.errors?.deliveryDate}
+          />
+
+          <FloatingLabelInput
+            name="estimatedDistance"
+            type="number"
+            placeholder="Est. Distance (km)"
+            min={1}
+            step={0.1}
+            required
+            onChange={handleInputChange}
+            error={actionData?.errors?.estimatedDistance}
+          />
+
+          <FloatingLabelInput
+            name="weight"
+            type="number"
+            placeholder="Weight (kg)"
+            required
+            min={1}
+            onChange={handleInputChange}
+            error={actionData?.errors?.weight}
+          />
+
+          <div className="col-span-2 relative">
+            <label
+              htmlFor="commodity"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Load Type (Commodity)
+            </label>
+            <div className="relative">
+              <select
+                id="commodity"
+                name="commodity"
+                value={selectedLoadType}
+                onChange={handleLoadTypeChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md appearance-none bg-white"
+                required
+              >
+                <option value="">Select a load type</option>
+                {loadTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <ChevronDownIcon className="h-4 w-4" />
+              </div>
+            </div>
+            {actionData?.errors?.commodity && (
+              <p className="mt-1 text-sm text-red-600">
+                {actionData.errors.commodity}
+              </p>
+            )}
+          </div>
+
+          {selectedLoadType === "Other" && (
+            <FloatingLabelInput
+              name="commodity"
+              placeholder="Custom Load Type"
+              required
+              onChange={handleInputChange}
+              error={actionData?.errors?.commodity}
+            />
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4 pb-4">
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                name="offerType"
+                value="flat"
+                checked={offerType === "flat"}
+                onChange={() => setOfferType("flat")}
+                className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+              />
+              <span className="ml-2">Flat Offer</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                name="offerType"
+                value="negotiable"
+                checked={offerType === "negotiable"}
+                onChange={() => setOfferType("negotiable")}
+                className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+              />
+              <span className="ml-2">Negotiable</span>
+            </label>
+          </div>
+
+          {offerType === "flat" && (
+            <FloatingLabelInput
+              name="offerAmount"
+              type="number"
+              placeholder={`Offer Amount (${currency})`}
+              required
+              min="1"
+              onChange={handleInputChange}
+              error={actionData?.errors?.offerAmount}
+            />
+          )}
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+              isFormValid
+                ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                : "bg-gray-500 cursor-not-allowed"
+            }`}
+            disabled={!isFormValid || navigation.state === "submitting"}
+          >
+            {navigation.state === "submitting"
+              ? "Submitting..."
+              : "Submit Load"}
+          </button>
+        </div>
+      </Form>
+    </div>
+  );
 }
+
+<ErrorBoundary />;
