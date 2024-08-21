@@ -1,12 +1,5 @@
-import {
-  Form,
-  Link,
-  redirect,
-  useLoaderData,
-  useLocation,
-  useRouteError,
-} from "@remix-run/react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, Form, useLocation } from "@remix-run/react";
 import {
   XMarkIcon,
   Bars3Icon,
@@ -17,10 +10,6 @@ import {
 } from "@heroicons/react/20/solid";
 import getUnicodeFlagIcon from "country-flag-icons/unicode";
 
-import CarrierHeader from "./carrierheader";
-import ShipperHeader from "./shipperheader";
-import ErrorDisplay from "./ErrorDisplay";
-
 export default function Header({ user }) {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,26 +19,16 @@ export default function Header({ user }) {
   const isLoadOperationsActive =
     location.pathname === "/carriers/dashboard/view/" ||
     location.pathname === "/dashboard/loads/view/";
-  let isAuthenticated =
+  const isAuthenticated =
     location.pathname.startsWith("/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
 
-  // const baseUrl = location.pathname.split("/").slice(0, -1).join("/");
-
   const baseUrl =
-    location.pathname == "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
+    location.pathname === "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const toggleSettings = () => {
-    setIsSettingsOpen(!isSettingsOpen);
-  };
-
-  const closeSettings = () => {
-    setIsSettingsOpen(false);
-  };
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleSettings = () => setIsSettingsOpen(!isSettingsOpen);
+  const closeSettings = () => setIsSettingsOpen(false);
 
   const userInitials = `${user?.user.firstName?.charAt(0) ?? ""}${
     user?.user.lastName?.charAt(0) ?? ""
@@ -61,40 +40,40 @@ export default function Header({ user }) {
         closeSettings();
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="fixed left-0 top-0 right-0 bg-white shadow-md z-20 font-apercu font-serif">
+    <div className="fixed left-0 top-0 right-0 bg-white border-b border-gray-200 shadow-sm z-20 font-sans">
       <nav className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-        <div className="hidden lg:flex justify-center flex-grow">
+        <div className="flex items-center flex-shrink-0">
           <Link to="/" className="flex items-center">
             <img
-              src=""
-              alt="AFI LoadBoard"
-              className="h-8 w-auto text-xl text-green-700 hover:translate-x-2 hover:translate-y-2 hover:underline hover:cursor-pointer"
+              src="/logo2.ico"
+              alt="AfroInnovate Logo"
+              className="h-10 w-auto mr-2"
             />
+            <span className="text-2xl font-bold text-orange-500">
+              AFI LoadBoard
+            </span>
           </Link>
         </div>
 
-        {location.pathname.startsWith("/carriers/dashboard") ||
-        location.pathname.startsWith("/dashboard/") ? (
-          <div className="hidden lg:flex justify right space-x-4">
+        {(location.pathname.startsWith("/carriers/dashboard") ||
+          location.pathname.startsWith("/dashboard/")) && (
+          <div className="hidden lg:flex items-center space-x-4">
             {!isAuthenticated ? (
               <>
                 <Link
                   to="/login/"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-green-600 bg-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
+                  className="px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-300"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup/"
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:bg-orange-400 hover:translate-y-1 transition duration-300"
+                  className="px-4 py-2 rounded-md text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition duration-300"
                 >
                   Get Started Now
                 </Link>
@@ -104,7 +83,7 @@ export default function Header({ user }) {
                 {location.pathname === "/carriers/dashboard/" && (
                   <Link
                     to="/carriers/dashboard/view"
-                    className="bg-green-500 text-white font-bold p-2 rounded hover:bg-orange-400 hover:animate-pulse"
+                    className="bg-orange-500 text-white font-bold px-4 py-2 rounded hover:bg-orange-600 transition duration-300"
                   >
                     PickUp Load Now
                   </Link>
@@ -112,57 +91,52 @@ export default function Header({ user }) {
                 {location.pathname === "/dashboard/" && (
                   <Link
                     to="/dashboard/loads/view/"
-                    className="bg-green-500 text-white font-bold p-2 rounded hover:bg-orange-400 hover:animate-pulse"
+                    className="bg-orange-500 text-white font-bold px-4 py-2 rounded hover:bg-orange-600 transition duration-300"
                   >
                     Manage loads
                   </Link>
                 )}
 
-                <div>
-                  <select
-                    className="block p-2 font-bold rounded hover:bg-orange-400 text-green-800 focus:outline-none hover:cursor-pointer"
-                    onChange={(e) => handleLanguageChange(e.target.value)}
-                  >
-                    <option value="eng" defaultChecked>
-                      {getUnicodeFlagIcon("US")} eng
-                    </option>
-                    <option value="arb">
-                      {getUnicodeFlagIcon("SA")} arabic
-                    </option>
-                    <option value="amh">
-                      {getUnicodeFlagIcon("ET")} amharic
-                    </option>
-                    <option value="nus">{getUnicodeFlagIcon("SS")} nuer</option>
-                  </select>
-                </div>
+                <select
+                  className="bg-gray-800 text-gray-300 px-3 py-2 rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                >
+                  <option value="eng" defaultChecked>
+                    {getUnicodeFlagIcon("US")} ENG
+                  </option>
+                  <option value="arb">{getUnicodeFlagIcon("SA")} ARB</option>
+                  <option value="amh">{getUnicodeFlagIcon("ET")} AMH</option>
+                  <option value="nus">{getUnicodeFlagIcon("SS")} NUS</option>
+                </select>
+
                 <div className="relative" ref={settingsRef}>
                   <button
                     onClick={toggleSettings}
-                    className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className="flex items-center space-x-2 text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    <div className="w-10 h-10 flex items-center justify-center bg-green-500 text-white font-bold rounded-full p-2 hover:bg-orange-400">
+                    <div className="w-10 h-10 flex items-center justify-center bg-orange-500 text-white font-bold rounded-full">
                       <span>{userInitials}</span>
                     </div>
                   </button>
                   {isSettingsOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-50">
                       <Link
-                        to={baseUrl + "/account/profile"}
-                        className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
+                        to={`${baseUrl}/account/profile`}
+                        className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
                       >
                         <UserIcon className="w-5 h-5 mr-2" />
                         Account
                       </Link>
                       <Link
                         to="/settings"
-                        className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
+                        className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
                       >
                         <CogIcon className="w-5 h-5 mr-2" />
                         Settings
                       </Link>
                       <Link
                         to="#"
-                        className="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100"
+                        className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
                       >
                         <LifebuoyIcon className="w-5 h-5 mr-2" />
                         Help
@@ -170,7 +144,7 @@ export default function Header({ user }) {
                       <Form action="/logout/" method="post">
                         <button
                           type="submit"
-                          className="flex items-center w-full text-left px-4 py-2 text-green-700 hover:bg-gray-100"
+                          className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
                         >
                           <ArrowRightOnRectangleIcon className="w-5 h-5 mr-2" />
                           Logout
@@ -182,68 +156,33 @@ export default function Header({ user }) {
               </>
             )}
           </div>
-        ) : null}
+        )}
 
-        {/* Hamburger button for mobile view */}
         {(location.pathname.startsWith("/carriers/dashboard") ||
           location.pathname.startsWith("/dashboard/")) && (
           <button
             onClick={toggleMenu}
-            aria-label="Open Menu"
-            className="rounded focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
+            className="lg:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500"
           >
             {isMenuOpen ? (
-              <XMarkIcon className="h-6 w-6 text-orange-500" />
+              <XMarkIcon className="h-6 w-6" />
             ) : (
-              <Bars3Icon className="h-6 w-6 text-green-600" />
+              <Bars3Icon className="h-6 w-6" />
             )}
           </button>
         )}
       </nav>
 
-      {/* Menu overlay for mobile view */}
       {isMenuOpen &&
         (location.pathname.startsWith("/carriers/dashboard/") ||
           location.pathname.startsWith("/dashboard/")) && (
-          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-20 z-20 max-sm:min-h-full">
-            <div className="bg-white rounded-lg shadow-md ml-5 mt-3 mr-5 overflow-auto max-h-full max-w-full">
-              {location.pathname.startsWith("/carriers/dashboard") && (
-                <CarrierHeader
-                  isAuthenticated={isAuthenticated}
-                  isLoadOperationsActive={isLoadOperationsActive}
-                  toggleMenu={toggleMenu}
-                />
-              )}
-              {location.pathname.startsWith("/dashboard/") && (
-                <ShipperHeader
-                  isAuthenticated={isAuthenticated}
-                  isLoadOperationsActive={isLoadOperationsActive}
-                  toggleMenu={toggleMenu}
-                />
-              )}
+          <div className="lg:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {/* Mobile menu items */}
+              {/* You can add CarrierHeader and ShipperHeader components here */}
             </div>
           </div>
         )}
     </div>
   );
-}
-
-export function ErrorBoundary() {
-  try {
-    const errorResponse = useRouteError();
-    const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: jsonError.data.message,
-      status: jsonError.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  } catch (e) {
-    console.error(e);
-    return (
-      <div className="flex content-center bg-red-800 text-white font-medium animate-bounce">
-        Something went wrong
-      </div>
-    );
-  }
 }

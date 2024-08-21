@@ -23,6 +23,7 @@ import { redirectUser } from "~/components/redirectUser";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getUserInfo } from "~/api/services/user.service";
 import { type ShipperUser } from '../api/models/shipperUser';
+import { ErrorBoundary } from "./dashboard.loads.bids";
 
 export const meta: MetaFunction = () => {
   return [
@@ -238,22 +239,4 @@ export default function Dashboard() {
   );
 }
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  if (isRouteErrorResponse(errorResponse)) {
-    // const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: errorResponse.data.message,
-      status: errorResponse.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  }
-  return (
-    <div className="flex content-center bg-red-800 text-white">
-      <h1>Uh oh ...</h1>
-      <p>Something went wrong.</p>
-      <pre>{errorResponse}</pre>
-    </div>
-  );
-}
+<ErrorBoundary />

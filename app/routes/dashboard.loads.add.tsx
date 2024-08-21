@@ -1,5 +1,6 @@
 import {
   Form,
+  MetaFunction,
   useActionData,
   useLoaderData,
   useNavigation,
@@ -11,17 +12,14 @@ import {
   type LoaderFunction,
   json,
 } from "@remix-run/node";
-import invariant from "tiny-invariant";
 import { authenticator } from "~/api/services/auth.server";
 import AccessDenied from "~/components/accessdenied";
 import { useEffect, useState } from "react";
 import type { LoadRequest } from "~/api/models/loadRequest";
 import { AddLoads } from "~/api/services/load.service";
 import { commitSession, getSession } from "~/api/services/session";
-import { checkUserRole } from "~/components/checkroles";
-import ErrorDisplay from "~/components/ErrorDisplay";
-import { ErrorBoundary } from "~/root";
-import { ShipperUser } from "~/api/models/shipperUser";
+import { ErrorBoundary } from "~/components/errorBoundary";
+import type { ShipperUser } from "~/api/models/shipperUser";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { DateInput } from "~/components/dateInput";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";

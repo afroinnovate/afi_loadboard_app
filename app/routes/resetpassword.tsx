@@ -1,31 +1,9 @@
-import { useNavigation, Form, useActionData, Link, useRouteError } from "@remix-run/react";
-import {
-  type MetaFunction,
-  type LinksFunction,
-  type ActionFunction,
-  json,
-} from "@remix-run/node";
-import customStyles from "../styles/global.css";
+import React, { useState } from "react";
+import { Form, useActionData, useNavigation, Link } from "@remix-run/react";
+import { ActionFunction, json } from "@remix-run/node";
 import { RequestResetPassword } from "~/api/services/auth.server";
-import { FloatingLabelInput } from "~/components/FloatingInput";
 import invariant from "tiny-invariant";
-import { useState } from "react";
-import ErrorDisplay from "~/components/ErrorDisplay";
-import { XMarkIcon } from "@heroicons/react/16/solid";
 import { ErrorBoundary } from "~/components/errorBoundary";
-
-export const meta: MetaFunction = () => {
-  return [
-    {
-      title: "Loadboard | Reset Password",
-      description: "Request a password reset link",
-    },
-  ];
-};
-
-export const links: LinksFunction = () => [
-  ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
-];
 
 export const action: ActionFunction = async ({ request }) => {
   const body = await request.formData();
@@ -33,93 +11,94 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     invariant(
-      typeof email === "string" && email.length > 6 && email.includes("@") && email.includes("."),
+      typeof email === "string" &&
+        email.length > 6 &&
+        email.includes("@") &&
+        email.includes("."),
       "Enter a valid email address"
     );
 
     await RequestResetPassword(email);
     return json({ success: true });
   } catch (error: any) {
-    throw error
+    return json({ error: error.message }, { status: 400 });
   }
 };
 
-export default function ResetPasswordPage() {
+export const PasswordReset = () => {
+  const [email, setEmail] = useState("");
   const navigation = useNavigation();
+  const actionData = useActionData();
   const isSubmitting = navigation.state === "submitting";
-  const actionData: any = useActionData();
-  const [showModal, setShowModal] = useState(true);
-
-  const handleClose = () => {
-    setShowModal(false); // Hide the modal
-  };
-
-  if (!showModal) {
-    return null;
-  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div
-        className="bg-white bg-opacity-90 py-8 px-6 shadow-2xl rounded-lg sm:px-10"
-        style={{ maxWidth: "600px" }}
-      >
-        <Link
-          to="/login/"
-          className="text-black--500 hover:text-gray-700 focus:outline-none flex justify-end"
-        >
-          <XMarkIcon className="h-6 w-6 ml-auto" />
-        </Link>
-        <h1 className="text-center text-2xl font-extrabold text-green-1000 py-4">
-          Reset Your Password
-        </h1>
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-gray-800 p-8 rounded-lg">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-orange-500">
+            AfroInnovate
+          </h2>
+          <h3 className="mt-2 text-center text-xl text-gray-300">
+            Reset your password
+          </h3>
+        </div>
+        <Form method="post" className="mt-8 space-y-6">
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-gray-300 rounded-t-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm bg-gray-700"
+                placeholder="Enter your email or username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
 
-        {actionData?.error && (
-          <p className="text-red-500 text-xs italic p-2 m-4">
-            {actionData.error}
-          </p>
-        )}
+          {actionData?.error && (
+            <div className="text-red-500 text-sm">{actionData.error}</div>
+          )}
 
-        {actionData?.success ? (
-          <div className="text-center">
-            <p className="text-green-500 text-xs italic p-2">
+          {actionData?.success && (
+            <div className="text-green-500 text-sm">
               Check your email for the reset link. If you don't see the email,
               check your spam folder.
-            </p>
-            <Link
-              to="/login/"
-              className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
-            >
-              Close
-            </Link>
-          </div>
-        ) : (
-          <Form reloadDocument method="post" className="mb-0 space-y-6">
-            <fieldset>
-              <FloatingLabelInput
-                name="email"
-                placeholder="Email"
-                required
-                minLength={6}
-                type="email"
-                onChange={() => {}}
-              />
-            </fieldset>
+            </div>
+          )}
+
+          <div>
             <button
               type="submit"
               disabled={isSubmitting}
-              className={ isSubmitting ? "bg-gray-400 text-gray-700 cursor-not-allowed "
-                        :"w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-orange-400 bg-green-500" 
-              }
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                isSubmitting
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              }`}
             >
-              {isSubmitting ? "Sending Reset Link..." : "Send Reset Link"}
+              {isSubmitting ? "Sending Reset Link..." : "Reset Password"}
             </button>
-          </Form>
-        )}
+          </div>
+        </Form>
+
+        <div className="text-center">
+          <Link
+            to="/login"
+            className="font-medium text-orange-600 hover:text-orange-500"
+          >
+            Back to Sign In
+          </Link>
+        </div>
       </div>
     </div>
   );
-}
-
+};
 
 <ErrorBoundary />;
