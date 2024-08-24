@@ -42,9 +42,10 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
 
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get("user");
+  const user = session.get(authenticator.sessionKey);
+  const carrierProfile = session.get("carrier");
 
-  if (!user) {
+  if (!carrierProfile) {
     return json({ error: "Unauthorized", status: 401 }, { status: 401 });
   }
 
