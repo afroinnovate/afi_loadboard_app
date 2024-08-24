@@ -197,7 +197,7 @@ export default function ViewLoads() {
       {!hasAccess && (
         <NavLink
           to="/shipper/dashboard/account/profile"
-          className="block w-full max-w-md mx-auto bg-blue-500 text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-blue-600 transition duration-300"
+          className="block w-full max-w-md mx-auto border border-green-200  text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-green-700 hover:text-white transition duration-300 animate-pulse"
         >
           Complete your profile to manage loads
         </NavLink>
