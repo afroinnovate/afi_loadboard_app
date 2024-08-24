@@ -173,7 +173,7 @@ export const action: ActionFunction = async ({ request }) => {
 
      const response: any = await AddLoads(loadRequest, user.token);
      if (Object.keys(response).length > 0 && response.origin !== undefined) {
-       return redirect("/dashboard/loads/view");
+       return redirect("/shipper/dashboard/loads/view");
      } else {
        return json(
          { error: "Failed to add load. Please try again." },
@@ -251,7 +251,7 @@ export default function AddLoad() {
   if (!hasAccess) {
     return (
       <AccessDenied
-        returnUrl="/dashboard/loads/view"
+        returnUrl="/shipper/dashboard/loads/view"
         message="You do not have enough access to add a load"
       />
     );

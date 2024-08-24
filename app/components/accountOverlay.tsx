@@ -1,78 +1,105 @@
+import { useState, useEffect } from "react";
 import { useLocation, Link, Outlet } from "@remix-run/react";
 import {
-  XMarkIcon,
   UserIcon,
   CogIcon,
   LifebuoyIcon,
   InformationCircleIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from "@heroicons/react/20/solid";
 
-export default function AccountOverlay({ onClose }) {
+export default function AccountOverlay({
+  onClose,
+  isOpen,
+  toggleSidebar,
+}: {
+  onClose: () => void;
+  isOpen: boolean;
+  toggleSidebar: () => void;
+}) {
   const location = useLocation();
+  const [isMobile, setIsMobile] = useState(false);
 
   const basePath =
     location.pathname === "/dashboard/"
-      ? "/dashboard/account"
+      ? "/shipper/dashboard/account"
       : "/carriers/dashboard/account";
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const menuItems = [
+    { path: "profile", icon: UserIcon, label: "Profile" },
+    {
+      path: "business",
+      icon: InformationCircleIcon,
+      label: "Business Information",
+    },
+    { path: "subscriptions", icon: CogIcon, label: "Subscription" },
+    { path: "help", icon: LifebuoyIcon, label: "Help" },
+  ];
+
   return (
-    <div className="flex h-screen w-full bg-gray-100">
-      <div className="top-16 left-0 h-full w-45 bg-white text-black p-6 shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Menu</h2>
-        <ul className="space-y-4">
-          <li>
-            <Link
-              to={`${basePath}/profile`}
-              className="flex items-center text-green-900 hover:bg-gray-300 p-2 rounded"
-            >
-              <UserIcon className="w-5 h-5 mr-2" />
-              Profile
-            </Link>
-          </li>
-          <li>
-            <Link
-              to={`${basePath}/business`}
-              className="flex items-center text-green-900 hover:bg-gray-300 p-2 rounded"
-            >
-              <InformationCircleIcon className="w-5 h-5 mr-2" />
-              Business Information
-            </Link>
-          </li>
-          <li>
-            <Link
-              to={`${basePath}/subscriptions`}
-              className="flex items-center text-green-900 hover:bg-gray-300 p-2 rounded"
-            >
-              <CogIcon className="w-5 h-5 mr-2" />
-              Subscription
-            </Link>
-          </li>
-          <li>
-            <Link
-              to={`${basePath}/help`}
-              className="flex items-center text-green-900 hover:bg-gray-300 p-2 rounded"
-            >
-              <LifebuoyIcon className="w-5 h-5 mr-2" />
-              Help
-            </Link>
-          </li>
-        </ul>
+    <div className="flex h-screen bg-white text-green-800">
+      {/* Sidebar */}
+      <div
+        className={`fixed top-16 inset-y-0 left-0 z-30 w-64 bg-gray-900 text-green-400 transition-all duration-300 ease-in-out transform ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } ${isMobile ? "shadow-lg" : ""}`}
+      >
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-4">
+            <h2 className="text-2xl font-semibold">Menu</h2>
+          </div>
+          <nav className="flex-1 overflow-y-auto">
+            <ul className="space-y-2 p-4">
+              {menuItems.map((item) => (
+                <li key={item.path}>
+                  <Link
+                    to={`${basePath}/${item.path}`}
+                    className="flex items-center py-2 px-4 text-green-400 hover:bg-gray-700 hover:text-white rounded transition-colors duration-200"
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       </div>
-      <div className="flex-1 ml-16 p-6 overflow-y-auto bg-white">
-        <div className="p-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Settings</h2>
+
+      {/* Main content */}
+      <div className="flex-1 transition-all duration-300 ease-in-out ml-0 md:ml-64">
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              onClick={toggleSidebar}
+              className="text-gray-500 focus:outline-none mr-4"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <Bars3Icon className="w-6 h-6" />
+            </button>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Account Settings
+            </h1>
+            <button onClick={onClose} className="text-gray-500 focus:outline-none">
+              <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
-          <div className="h-full mt-6 w-full overflow-y-scroll ">
+        </header>
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 bg-white">
+          <div className="px-4 py-6 sm:px-0">
             <Outlet />
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

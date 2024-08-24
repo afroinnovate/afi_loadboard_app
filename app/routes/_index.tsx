@@ -10,11 +10,10 @@ export default function Index() {
           <p className="text-xl text-gray-300 mb-4">
             Your One-Stop Solution for Freight Transportation
           </p>
-          <blockquote className="text-2xl italic text-orange-600 font-medium mb-8">
-            Creating one Africa one load at a time.<br/>
-            AfroInnovate: Where
-            Africa's trade meets the world.
+          <blockquote className="text-2xl italic text-white shadow-md font-medium mb-8">
+            Creating one Africa one load at a time.
           </blockquote>
+          <p> AfroInnovate: Where Africa's trade meets the world.</p>
         </div>
 
         <div className="bg-[#2b2b40] rounded-lg p-8 space-y-8 shadow-lg">
@@ -54,7 +53,7 @@ export default function Index() {
   );
 }
 
-function BenefitCard({ title, description, action }) {
+function BenefitCard({ title, description, action }: any) {
   return (
     <div className="bg-[#323248] rounded-lg p-6 space-y-4 hover:bg-[#3a3a54] transition duration-300">
       <h2 className="text-2xl font-semibold">{title}</h2>

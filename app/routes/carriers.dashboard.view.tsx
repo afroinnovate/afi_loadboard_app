@@ -58,13 +58,13 @@ export const loader: LoaderFunction = async ({ request }) => {
     const expires = new Date(Date.now() + EXPIRES_IN);
 
     if (user?.user.userType === "shipper") {
-      return redirect("/dashboard/")
+      return redirect("/shipper/dashboard/")
     }
 
     // check if the user is authorized to access this page, else redircdt them the appropriate page
     const shipperDashboard = await redirectUser(user?.user);
     if (shipperDashboard) {
-      return redirect("/dashboard/", {
+      return redirect("/shipper/dashboard/", {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
@@ -372,7 +372,7 @@ export default function CarrierViewLoads() {
                           aria-label="Contact Carrier"
                         >
                           <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
-                          Message Carrier
+                          Message Shipper
                         </button>
                       </form>
                     )}
@@ -407,7 +407,6 @@ export default function CarrierViewLoads() {
                               ? "cursor-not-allowed"
                               : ""
                           }`}
-                          // className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none"
                           aria-label="Place Bid"
                         >
                           <CurrencyDollarIcon className="w-5 h-5 mr-2" />

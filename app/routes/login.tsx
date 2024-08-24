@@ -19,8 +19,6 @@ import { commitSession, getSession } from "../api/services/session";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import {
-  EyeIcon,
-  EyeOffIcon,
   Github,
   FacebookIcon,
   MailIcon,
@@ -43,7 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   if (user) {
     return redirect(
-      user?.user.userType === "shipper" ? "/dashboard/" : "/carriers/dashboard/"
+      user?.user.userType === "shipper" ? "/shipper/dashboard/" : "/carriers/dashboard/"
     );
   }
 
@@ -59,7 +57,7 @@ export const action: ActionFunction = async ({ request }) => {
     session.set(authenticator.sessionKey, user);
     const redirectUrl =
       user?.user.userType === "shipper"
-        ? "/dashboard/"
+        ? "/shipper/dashboard/"
         : "/carriers/dashboard/";
     return redirect(redirectUrl, {
       headers: {

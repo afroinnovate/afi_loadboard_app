@@ -15,7 +15,6 @@ import {
 import UpdateLoadView from "~/components/updateload";
 import { authenticator } from "~/api/services/auth.server";
 import { type ShipperUser } from "../api/models/shipperUser";
-import { ErrorBoundary } from "~/components/errorBoundary";
 import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
 import { useState, memo } from "react";
 import {
@@ -144,15 +143,15 @@ export const action: ActionFunction = async ({ request }) => {
       };
 
       await UpdateLoad(user.token, Id, requestBody);
-      return redirect("/dashboard/");
+      return redirect("/shipper/dashboard/");
     } else if (action === "delete" && loadId) {
       console.log("Deleting Load with ID: ", loadId);
       return json({ status: "confirmation", loadId: loadId });
     } else if (action === "delete_confirmed") {
       await DeleteLoad(user.token, loadId);
-      return redirect("/dashboard/loads/view/");
+      return redirect("/shipper/dashboard/loads/view/");
     } else if (action === "cancel") {
-      return redirect("/dashboard/loads/view/");
+      return redirect("/shipper/dashboard/loads/view/");
     } else {
       throw JSON.stringify({
         data: {
@@ -182,7 +181,7 @@ export default function ViewLoads() {
     setSelectedLoad(null);
   };
 
-  const handleEditClick = (load) => {
+  const handleEditClick = (load: any) => {
     setSelectedLoad(load);
     setIsUpdateModalOpen(true);
   };
@@ -197,7 +196,7 @@ export default function ViewLoads() {
 
       {!hasAccess && (
         <NavLink
-          to="/shipper/profile"
+          to="/shipper/dashboard/account/profile"
           className="block w-full max-w-md mx-auto bg-blue-500 text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-blue-600 transition duration-300"
         >
           Complete your profile to manage loads
@@ -206,7 +205,7 @@ export default function ViewLoads() {
 
       {hasAccess && (
         <div className="space-y-6">
-          {loads.map((load) => (
+          {loads.map((load: any) => (
             <Disclosure key={load.loadId}>
               {({ open }) => (
                 <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
@@ -322,7 +321,7 @@ const LoadStatusBadge = memo(({ status }) => {
   );
 });
 
-const DetailItem = memo(({ label, value }) => {
+const DetailItem = memo(({ label, value }: {label: string, value: string}) => {
   return (
     <div>
       <span className="font-medium text-gray-300">{label}: </span>
@@ -331,7 +330,7 @@ const DetailItem = memo(({ label, value }) => {
   );
 });
 
-const ActionButton = memo(({ type, loadId, load, onEdit }) => {
+const ActionButton = memo(({ type, loadId, load, onEdit }: any) => {
   const config = {
     edit: {
       icon: PencilIcon,
@@ -367,7 +366,7 @@ const ActionButton = memo(({ type, loadId, load, onEdit }) => {
   );
 });
 
-const DeleteConfirmationModal = memo(({ loadId }) => {
+const DeleteConfirmationModal = memo(({ loadId }: {loadId: any}) => {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">

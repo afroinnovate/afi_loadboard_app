@@ -18,13 +18,13 @@ export default function Header({ user }) {
 
   const isLoadOperationsActive =
     location.pathname === "/carriers/dashboard/view/" ||
-    location.pathname === "/dashboard/loads/view/";
+    location.pathname === "/shipper/dashboard/loads/view/";
   const isAuthenticated =
-    location.pathname.startsWith("/dashboard/") ||
+    location.pathname.startsWith("/shipper/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
 
   const baseUrl =
-    location.pathname === "/dashboard/" ? "/dashboard" : "/carriers/dashboard";
+    location.pathname === "/dashboard/" ? "/shipper/dashboard" : "/carriers/dashboard";
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSettings = () => setIsSettingsOpen(!isSettingsOpen);
@@ -61,7 +61,7 @@ export default function Header({ user }) {
         </div>
 
         {(location.pathname.startsWith("/carriers/dashboard") ||
-          location.pathname.startsWith("/dashboard/")) && (
+          location.pathname.startsWith("/shipper/dashboard/")) && (
           <div className="hidden lg:flex items-center space-x-4">
             {!isAuthenticated ? (
               <>
@@ -88,9 +88,9 @@ export default function Header({ user }) {
                     PickUp Load Now
                   </Link>
                 )}
-                {location.pathname === "/dashboard/" && (
+                {location.pathname === "/shipper/dashboard/" && (
                   <Link
-                    to="/dashboard/loads/view/"
+                    to="/shipper/dashboard/loads/view/"
                     className="bg-orange-500 text-white font-bold px-4 py-2 rounded hover:bg-orange-600 transition duration-300"
                   >
                     Manage loads
@@ -159,7 +159,7 @@ export default function Header({ user }) {
         )}
 
         {(location.pathname.startsWith("/carriers/dashboard") ||
-          location.pathname.startsWith("/dashboard/")) && (
+          location.pathname.startsWith("/shipper/dashboard/")) && (
           <button
             onClick={toggleMenu}
             className="lg:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500"
@@ -175,7 +175,7 @@ export default function Header({ user }) {
 
       {isMenuOpen &&
         (location.pathname.startsWith("/carriers/dashboard/") ||
-          location.pathname.startsWith("/dashboard/")) && (
+          location.pathname.startsWith("/shipper/dashboard/")) && (
           <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {/* Mobile menu items */}

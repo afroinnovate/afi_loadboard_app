@@ -111,7 +111,7 @@ export default function BidLoads() {
   if (!shipperHasAccess) {
     return (
       <AccessDenied
-        returnUrl="/dashboard/loads/view"
+        returnUrl="/shipper/dashboard/loads/view"
         message="You do not have enough access to see your biddings, Click Home to complete your profile"
       />
     );

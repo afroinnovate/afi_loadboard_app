@@ -12,8 +12,8 @@ const BidAdjustmentView = ({ loadId, initialBid }: { loadId: string, initialBid:
     setBidAmount(event.target.value);
   };
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white rounded-lg p-4" ref={popupRef}>
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center p-4 z-50">
+      <div className="bg-gray-200 text-green-900 rounded-lg p-4" ref={popupRef}>
         <h3 className="text-lg font-bold">Adjust Your Bid</h3>
         <Form method="post">
           <input type="hidden" name="bidLoadId" value={loadId} />

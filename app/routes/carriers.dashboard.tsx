@@ -60,7 +60,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const shipperDashboard = await redirectUser(user?.user);
 
     if (shipperDashboard) {
-      return redirect("/dashboard/", {
+      return redirect("/shipper/dashboard/", {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },

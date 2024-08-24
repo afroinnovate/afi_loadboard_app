@@ -13,19 +13,19 @@ const Overview = () => {
           <QuickLinkCard
             title="Post a Load"
             description="Create a new shipment request"
-            link="/dashboard/loads/add"
+            link="/shipper/dashboard/loads/add"
             icon="📦"
           />
           <QuickLinkCard
             title="View Loads"
             description="Manage your active and past shipments"
-            link="/dashboard/loads/view"
+            link="/shipper/dashboard/loads/view"
             icon="🚚"
           />
           <QuickLinkCard
             title="Bids"
             description="Review and manage carrier bids"
-            link="/dashboard/bids"
+            link="/shipper/dashboard/loads/bids"
             icon="💰"
           />
         </div>

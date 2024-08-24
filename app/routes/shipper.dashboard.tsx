@@ -23,7 +23,7 @@ import { redirectUser } from "~/components/redirectUser";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getUserInfo } from "~/api/services/user.service";
 import { type ShipperUser } from '../api/models/shipperUser';
-import { ErrorBoundary } from "./dashboard.loads.bids";
+import { ErrorBoundary } from "./shipper.dashboard.loads.bids";
 
 export const meta: MetaFunction = () => {
   return [
@@ -192,7 +192,7 @@ export default function Dashboard() {
           </button>
 
           <NavLink
-            to="/dashboard/"
+            to="/shipper/dashboard/"
             end
             className={({ isActive }) =>
               "text-black font-semibold " +
@@ -205,7 +205,7 @@ export default function Dashboard() {
           </NavLink>
 
           <NavLink
-            to="/dashboard/loads/view/"
+            to="/shipper/dashboard/loads/view/"
             className={() =>
               "text-black font-semibold " +
               (isLoadOperationsActive
@@ -231,7 +231,7 @@ export default function Dashboard() {
           {sidebarOpen && <Sidebar activeSection={activeSection} />}
         </div>
         <main className="w-full flex justify-center content-center p-3 shadow-lg mt-20">
-          {location.pathname === "/dashboard/" && <Overview />}
+          {location.pathname === "/shipper/dashboard/" && <Overview />}
           <Outlet />
         </main>
       </div>

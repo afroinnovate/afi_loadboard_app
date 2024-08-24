@@ -32,7 +32,7 @@ export default function ShipperHeader({ isAuthenticated, isLoadOperationsActive,
                 <div className="pt-4 pl-4 m-2">
                   <NavLink
                     onClick={toggleMenu}
-                    to="/dashboard/"
+                    to="/shipper/dashboard/"
                     end
                     className={({ isActive }) =>
                       "text-black font-semibold " +
@@ -47,7 +47,7 @@ export default function ShipperHeader({ isAuthenticated, isLoadOperationsActive,
                 <div className="pl-4 m-2"> 
                   <NavLink
                     onClick={toggleMenu}
-                    to="/dashboard/loads/view/"
+                    to="/shipper/dashboard/loads/view/"
                     className={() =>
                       "text-black font-semibold " +
                       (isLoadOperationsActive
@@ -61,7 +61,7 @@ export default function ShipperHeader({ isAuthenticated, isLoadOperationsActive,
                 <div className="pl-2 m-2">
                   <Link 
                     onClick={toggleMenu}
-                    to="/dashboard/" className="px-3 py-4 items-center text-green-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2">
+                    to="/shipper/dashboard/" className="px-3 py-4 items-center text-green-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2">
                     Manage Loads
                   </Link>
                 </div>
@@ -73,7 +73,7 @@ export default function ShipperHeader({ isAuthenticated, isLoadOperationsActive,
                 </Form>
                 <div className="mb-4 pl-8">
                   <Link
-                    to="/dashboard/help"
+                    to="/shipper/dashboard/help"
                     className="sm:text items-center text-blue-400 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
                   >
                     Help
