@@ -2,7 +2,7 @@ import { GetBidByLoadIdandCarrierId, PlaceBid, UpdateBid } from "./bid.service";
 
 export async function manageBidProcess(user: any, loadId: number, bidAmount: Number) {
   try {
-    const userId = user.userId ? user.userId : user.user.userId;
+    const userId = user.id ? user.id : user.user.userId;
     const bidResponse = await GetBidByLoadIdandCarrierId(
       Number(loadId),
       userId,
@@ -16,7 +16,8 @@ export async function manageBidProcess(user: any, loadId: number, bidAmount: Num
       const response = await PlaceBid(bidRequest, user.token);
       return handleBidResponse(response, bidRequest.bidAmount);
     }
-  }catch(error: any){
+  } catch (error: any) {
+    console.log("manage bid placement error: ", error)
     throw JSON.stringify({
       data: {
         message: error.statusText,
@@ -27,19 +28,18 @@ export async function manageBidProcess(user: any, loadId: number, bidAmount: Num
 }
 
 export function formatBidRequest(user: any, existingBid: any, bidAmount: Number, loadId: Number) {
-
   if (existingBid) {
     return {
       loadId: loadId,
-      carrierId: user.userId,
+      carrierId: user.id,
       bidAmount,
       bidStatus: existingBid.bidStatus,
-      updatedBy: user.userId,
+      updatedBy: user.id,
     };
   }
 
    // Get the first vehicle from the carrierVehicles array
-  const vehicle = user.businessProfile.carrierVehicles[0] || {};
+  const vehicle = user.user.businessProfile.carrierVehicles[0] || {};
   const mapCarrierRole = (role: string | number) => {
     switch (role) {
       case "ownerOperator":
@@ -52,28 +52,28 @@ export function formatBidRequest(user: any, existingBid: any, bidAmount: Number,
         return 0;
     }
   };
-  const carrierRole = mapCarrierRole(user.businessProfile?.carrierRole);
+  const carrierRole = mapCarrierRole(user.user.businessProfile?.carrierRole);
 
   return {
     loadId: loadId,
-    carrierId: user.userId,
+    carrierId: user.id,
     bidAmount,
     bidStatus: 0, // assuming status codes need to be defined
     biddingTime: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: {
-      userId: user.userId,
-      email: user.email,
-      firstName: user.firstName,
-      middleName: user.middleName,
-      lastName: user.lastName,
-      phone: user.phone,
-      userType: user.userType,
-      dotNumber: user.businessProfile.dotNumber,
-      motorCarrierNumber: user.businessProfile.motorCarrierNumber,
-      equipmentType: user.businessProfile.equipmentType,
-      availableCapacity: user.businessProfile.availableCapacity,
-      companyName: user.businessProfile.companyName,
+      userId: user.id,
+      email: user.user.email,
+      firstName: user.user.firstName,
+      middleName: user.user.middleName,
+      lastName: user.user.lastName,
+      phone: user.user.phone,
+      userType: user.user.userType,
+      dotNumber: user.user.businessProfile.dotNumber,
+      motorCarrierNumber: user.user.businessProfile.motorCarrierNumber,
+      equipmentType: user.user.businessProfile.equipmentType,
+      availableCapacity: user.user.businessProfile.availableCapacity,
+      companyName: user.user.businessProfile.companyName,
       carrierRole: carrierRole,
       name: vehicle.name,
       description: vehicle.description,

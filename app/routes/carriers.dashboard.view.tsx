@@ -149,17 +149,10 @@ export const action: ActionFunction = async ({ request }) => {
     }
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
-    throw error;
+    console.error("Bid process error:", error);
+    return json({ error: "Failed to process bid" }, { status: 500 });
   }
 };
 
