@@ -15,7 +15,7 @@ import {
 import { ChangePassword } from "~/api/services/auth.server";
 import { type PasswordResetRequest } from "~/api/models/passwordResetRequest";
 import invariant from "tiny-invariant";
-import { ErrorBoundary } from "./shipper.dashboard.loads.bids";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);

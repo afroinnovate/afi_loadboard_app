@@ -209,9 +209,13 @@ export default function CarrierViewLoads() {
     info = "No loads posted, please check back later";
   }
   
-  // User roles and permission checks
-  const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
-    checkUserRole(carrierProfile.roles, carrierProfile.user.businessProfile.carrierRole ?? "");
+  const carrierHasAccess =
+    carrierProfile.user.userType === "carrier" &&
+    carrierProfile.user.businessProfile.carrierRole !== null
+      ? true
+      : false;
+
+  const carrierAccess = carrierProfile.user.userType === "carrier" ? true : false;
   
   let contactMode =
     actionData && actionData.message === "contactMode"
