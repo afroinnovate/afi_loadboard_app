@@ -9,11 +9,10 @@ import {
   NavLink,
   useActionData,
   useLoaderData,
-  useRouteError,
 } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
-import { commitSession, getSession } from "../api/services/session";
+import { commitSession, destroySession, getSession } from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
@@ -29,11 +28,12 @@ import { manageBidProcess } from "~/api/services/bid.helper";
 import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
 import { ErrorBoundary } from "~/components/errorBoundary";
+import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
 
 export const meta: MetaFunction = () => {
   return [
     {
-      title: "Loadboard | View Loads",
+      title: "Afroinnovate | Loadboard  | View Loads",
       description: "Dashboard for viewing the loads",
     },
   ];
@@ -52,23 +52,19 @@ export const loader: LoaderFunction = async ({ request }) => {
     }
 
     if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
     if (user?.user.userType === "shipper") {
-      return redirect("/dashboard/")
+      return redirect("/shipper/dashboard/")
     }
 
     // check if the user is authorized to access this page, else redircdt them the appropriate page
     const shipperDashboard = await redirectUser(user?.user);
     if (shipperDashboard) {
-      return redirect("/dashboard/", {
+      return redirect("/shipper/dashboard/", {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
@@ -89,12 +85,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
       const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
+      
       return redirect("/login/", {
         headers: {
-          "Set-Cookie": await commitSession(session),
+          "Set-Cookie": await destroySession(session),
         },
       });
     }
@@ -295,7 +289,10 @@ export default function CarrierViewLoads() {
 
                 {/* Bid Adjustment View */}
                 {bidMode === "bidMode" && load.loadId && (
-                  <BidAdjustmentView loadId={loadIdToBeBid} initialBid={currentBid} />
+                  <BidAdjustmentView
+                    loadId={loadIdToBeBid}
+                    initialBid={currentBid}
+                  />
                 )}
 
                 <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
@@ -304,17 +301,13 @@ export default function CarrierViewLoads() {
                     <ArrowRightIcon className="w-6 h-6 text-red-400" />
                     <h2 className="text-lg font-bold">{load.destination}</h2>
                   </div>
-                  <div className="flex flex-col items-center justify-center flex-grow mx-4">
-                    <span className="text-xs text-gray-400">Posted by</span>
-                    <span className="text-sm font-medium text-gray-300">
-                      {load.createdBy
-                        ? `${load.createdBy.firstName} ${load.createdBy.lastName}`
-                        : ""}
-                    </span>
-                    <span className="text-lg font-semibold text-blue-400">
-                      {currency} {load.offerAmount}
-                    </span>
-                  </div>
+                  <LoadInfoDisplay
+                    load={load}
+                    currency={currency}
+                    background="bg-gray-800"
+                    shadow="shadow-lg"
+                    offerColor="white"
+                  />
                   <div className="flex items-center space-x-2">
                     <span
                       className={`text-xs font-medium py-1 px-2 rounded-full ${getStatusStyles(
@@ -366,7 +359,11 @@ export default function CarrierViewLoads() {
 
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="loadId" value={load.loadId} />
+                        <input
+                          type="hidden"
+                          name="loadId"
+                          value={load.loadId}
+                        />
                         <button
                           type="submit"
                           name="_action"
@@ -375,13 +372,17 @@ export default function CarrierViewLoads() {
                           aria-label="Contact Carrier"
                         >
                           <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
-                          Message Carrier
+                          Message Shipper
                         </button>
                       </form>
                     )}
                     {carrierHasAccess && (
                       <form method="post">
-                        <input type="hidden" name="bidLoadId" value={load.loadId} />
+                        <input
+                          type="hidden"
+                          name="bidLoadId"
+                          value={load.loadId}
+                        />
                         <input
                           type="hidden"
                           name="offerAmount"
@@ -406,7 +407,6 @@ export default function CarrierViewLoads() {
                               ? "cursor-not-allowed"
                               : ""
                           }`}
-                          // className="flex items-center px-4 py-2 text-sm font-medium text-blue-400 bg-gray-700 border border-blue-400 rounded hover:bg-blue-500 hover:text-white focus:outline-none"
                           aria-label="Place Bid"
                         >
                           <CurrencyDollarIcon className="w-5 h-5 mr-2" />

@@ -1,4 +1,3 @@
-
 export interface ShipperUser {
   id: string
   token: string;
@@ -9,14 +8,17 @@ export interface ShipperUser {
     email: string;
     phone: string;
     userType: string;
-    businessProfile: {
-      companyName: string;
-      businessType: string;
-      businessRegistrationNumber: string;
-      shipperRole: number;
-    },
+    businessProfile: businessProfile;
     roles: string[];
     confirmed: boolean;
     status: boolean;
   }
+}
+
+export interface businessProfile {
+  companyName: string;
+  businessType: string;
+  businessRegistrationNumber: string;
+  shipperRole: number;
+  idCardOrDriverLicenceNumber: string;
 }

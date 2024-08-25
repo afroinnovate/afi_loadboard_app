@@ -226,7 +226,7 @@ export async function UpdateLoad(
       case 404:
         throw JSON.stringify({
           data: {
-            message: "Bid with ID 0 not found",
+            message: "Load with ID 0 not found",
             status: 404,
           },
         });

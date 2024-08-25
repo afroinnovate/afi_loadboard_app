@@ -1,9 +1,16 @@
-import { useNavigation, Form, useActionData, Link, useRouteError } from "@remix-run/react";
+import {
+  useNavigation,
+  Form,
+  useActionData,
+  Link,
+  useRouteError,
+} from "@remix-run/react";
 import {
   type MetaFunction,
   type LinksFunction,
   type ActionFunction,
   json,
+  redirect,
 } from "@remix-run/node";
 import customStyles from "../styles/global.css";
 import { RequestResetPassword } from "~/api/services/auth.server";
@@ -33,14 +40,17 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     invariant(
-      typeof email === "string" && email.length > 6 && email.includes("@") && email.includes("."),
+      typeof email === "string" &&
+        email.length > 6 &&
+        email.includes("@") &&
+        email.includes("."),
       "Enter a valid email address"
     );
 
     await RequestResetPassword(email);
     return json({ success: true });
   } catch (error: any) {
-    throw error
+    throw error;
   }
 };
 
@@ -50,51 +60,42 @@ export default function ResetPasswordPage() {
   const actionData: any = useActionData();
   const [showModal, setShowModal] = useState(true);
 
-  const handleClose = () => {
-    setShowModal(false); // Hide the modal
-  };
-
   if (!showModal) {
     return null;
   }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div
-        className="bg-white bg-opacity-90 py-8 px-6 shadow-2xl rounded-lg sm:px-10"
-        style={{ maxWidth: "600px" }}
-      >
+      <div className="bg-white rounded-lg shadow-xl p-8 m-4 max-w-md max-h-full text-center relative">
         <Link
           to="/login/"
-          className="text-black--500 hover:text-gray-700 focus:outline-none flex justify-end"
+          className="absolute top-2 right-2 text-red-500 hover:text-white hover:bg-red-500 rounded-full p-1"
         >
-          <XMarkIcon className="h-6 w-6 ml-auto" />
+          <XMarkIcon className="h-6 w-6" />
         </Link>
-        <h1 className="text-center text-2xl font-extrabold text-green-1000 py-4">
+        <h1 className="text-2xl font-bold text-green-700 mb-6">
           Reset Your Password
         </h1>
 
         {actionData?.error && (
-          <p className="text-red-500 text-xs italic p-2 m-4">
-            {actionData.error}
-          </p>
+          <p className="text-red-500 text-sm mb-4">{actionData.error}</p>
         )}
 
         {actionData?.success ? (
-          <div className="text-center">
-            <p className="text-green-500 text-xs italic p-2">
+          <div>
+            <p className="text-green-600 mb-4">
               Check your email for the reset link. If you don't see the email,
               check your spam folder.
             </p>
             <Link
               to="/login/"
-              className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
+              className="inline-block px-6 py-2 text-white bg-green-600 rounded hover:bg-green-700 transition duration-200"
             >
               Close
             </Link>
           </div>
         ) : (
-          <Form reloadDocument method="post" className="mb-0 space-y-6">
+          <Form reloadDocument method="post" className="space-y-4 text-green-900">
             <fieldset>
               <FloatingLabelInput
                 name="email"
@@ -108,9 +109,11 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={ isSubmitting ? "bg-gray-400 text-gray-700 cursor-not-allowed "
-                        :"w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-orange-400 bg-green-500" 
-              }
+              className={`w-full py-2 px-4 rounded text-green-900  font-medium ${
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-200 border border-green-600 hover:bg-green-700 hover:text-white transition duration-200"
+              }`}
             >
               {isSubmitting ? "Sending Reset Link..." : "Send Reset Link"}
             </button>
@@ -120,6 +123,5 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-
 
 <ErrorBoundary />;

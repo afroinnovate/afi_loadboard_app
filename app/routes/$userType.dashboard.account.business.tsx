@@ -27,6 +27,7 @@ import { type UserBusinessProfile } from "~/api/models/carrierUser";
 import { CreateUser } from "~/api/services/user.service";
 import VehicleForm from "~/components/vehicleForm";
 import { ErrorBoundary } from "~/components/errorBoundary";
+import { businessProfile } from '../api/models/shipperUser';
 
 export const meta: MetaFunction = () => {
   return [
@@ -41,34 +42,41 @@ export const links = () => {
   return [{ rel: "stylesheet", href: customStyles }];
 };
 
-export let loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({ params, request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-    const carrierProfile = session.get("carrier");
+    const { userType } = params;
 
-    carrierProfile.phone = user.user.phoneNumber;
-    carrierProfile.email = user.user.email;
-    carrierProfile.firstName = user.user.firstName;
-    carrierProfile.middleName = user.user.middleName;
-    carrierProfile.lastName = user.user.lastName;
-    carrierProfile.roles = user.user.roles;
-    carrierProfile.userType = user.user
+    if (!user) {
+      return redirect("/login/");
+    }
+
+    if (!userType) {
+      return redirect("/logout/");
+    }
+
+    const userProfile = session.get(
+      userType === "carriers" ? "carrier" : userType
+    );
+
+    if (!userProfile) {
+      return redirect("/logout/");
+    }
+
+    userProfile.phone = user.user.phoneNumber;
+    userProfile.email = user.user.email;
+    userProfile.firstName = user.user.firstName;
+    userProfile.middleName = user.user.middleName;
+    userProfile.lastName = user.user.lastName;
+    userProfile.roles = user.user.roles;
+    userProfile.userType = user.user;
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
     if (isNaN(EXPIRES_IN)) {
       throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
     }
-
-    if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
-
     // update the session so the user can keep working long as they are active
     const expires = new Date(Date.now() + EXPIRES_IN);
     session.set(authenticator.sessionKey, user);
@@ -78,7 +86,7 @@ export let loader: LoaderFunction = async ({ request }) => {
       ? {
           "Owner Operator": "owner_operator",
           "Fleet Owner": "fleet_owner",
-          Dispatcher: "dispatcher",
+          "Dispatcher": "dispatcher",
         }
       : {
           "Independent Shipper": "independent_shipper",
@@ -86,38 +94,32 @@ export let loader: LoaderFunction = async ({ request }) => {
           "Corporate Shipper": "corporate_shipper",
         };
 
-    return json({ carrierProfile, roles });
-  } catch (e: any) {
-    if (JSON.parse(e).data.status === 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+    return json({ userProfile, roles });
+  } catch (error: any) {
+    if (JSON.parse(error).data.status === 401) {
+      return redirect("/logout/");
     }
-    throw e;
+    throw error;
   }
 };
 
-export let action: ActionFunction = async ({ request }) => {
+export let action: ActionFunction = async ({ params, request }: any) => {
   const session = await getSession(request.headers.get("Cookie"));
   let authUser = session.get(authenticator.sessionKey);
   const token = authUser.token;
 
   if (!authUser) {
-    return redirect("/login/", {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
+    return redirect("/logout/");
   }
-  
-  const carrierProfile = session.get("carrier");
-  let user = carrierProfile;
+
+  let userType = params.userType;
+  if (!userType) {
+    return redirect("/logout/");
+  }
+
+  const userProfile = session.get(userType === "carriers" ? "carrier" : userType);
+
+  let user = userProfile;
 
   user.phone = authUser.user.phoneNumber;
   user.email = authUser.user.email;
@@ -236,34 +238,44 @@ export let action: ActionFunction = async ({ request }) => {
         phone: user.phone,
         userType: user.userType,
         businessProfile: {
-          companyName: companyName,
-          motorCarrierNumber: registrationNumber,
-          dotNumber: registrationNumber,
-          equipmentType: vehicleType,
-          availableCapacity: parseInt(vehicleCapacity),
-          idCardOrDriverLicenceNumber: idCardOrDriverLicenceNumber,
-          insuranceName: "Best Insure",
-          businessType: businessType,
+          companyName: companyName ? companyName : user.businessProfile.companyName,
+          motorCarrierNumber: userType === "carriers" ? registrationNumber : "",
+          dotNumber: userType === "carriers" ? registrationNumber : "",
+          equipmentType: userType === "carriers" ? vehicleType : "",
+          availableCapacity:
+            userType === "carriers" ? parseInt(vehicleCapacity) : 0,
+          idCardOrDriverLicenceNumber: idCardOrDriverLicenceNumber
+            ? idCardOrDriverLicenceNumber
+            : user.businessProfile.idCardOrDriverLicenceNumber,
+          insuranceName: userType === "carriers" ? "Best Insure" : "",
+          businessType: businessType
+            ? businessType
+            : user.businessProfile.businessType,
           carrierRole: carrierRole,
           shipperRole: shipperRole,
-          businessRegistrationNumber: registrationNumber,
-          carrierVehicles: [
-            {
-              vehicleTypeId: 2,
-              name: vehicleName,
-              description: "This is my work vehicle",
-              imageUrl: "https://example.com/image2.jpg",
-              vin: registrationNumber,
-              licensePlate: registrationNumber,
-              make: vehicleType,
-              model: vehicleName,
-              year: "",
-              color: vehicleColor,
-              hasInsurance: hasInsurance === "on" ? true : false,
-              hasRegistration: registrationNumber ? true : false,
-              hasInspection: hasInspection === "on" ? true : false,
-            },
-          ],
+          businessRegistrationNumber: registrationNumber
+            ? registrationNumber
+            : user.businessProfile.businessRegistrationNumber,
+          carrierVehicles:
+            userType === "carriers"
+              ? [
+                  {
+                    vehicleTypeId: 2,
+                    name: vehicleName,
+                    description: "This is my work vehicle",
+                    imageUrl: "https://example.com/image2.jpg",
+                    vin: registrationNumber,
+                    licensePlate: registrationNumber,
+                    make: vehicleType,
+                    model: vehicleName,
+                    year: "",
+                    color: vehicleColor,
+                    hasInsurance: hasInsurance === "on" ? true : false,
+                    hasRegistration: registrationNumber ? true : false,
+                    hasInspection: hasInspection === "on" ? true : false,
+                  },
+                ]
+              : [],
         },
       };
 
@@ -286,7 +298,7 @@ export let action: ActionFunction = async ({ request }) => {
             businessProfile: business_req.businessProfile,
           },
         };
-        session.set("carrier", updatedUser);
+        session.set(userType === "carriers"? "carrier" : userType, updatedUser);
         await commitSession(session);
       }
 
@@ -322,12 +334,12 @@ export let action: ActionFunction = async ({ request }) => {
   }
 };
 
-export default function BusinessInformation() {
+export default function Business() {
   const LoaderData: any = useLoaderData();
   const actionData: any = useActionData();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const user: UserBusinessProfile = LoaderData?.carrierProfile;
+  const user: UserBusinessProfile = LoaderData?.userProfile;
   const roles = LoaderData?.roles;
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -620,14 +632,14 @@ export default function BusinessInformation() {
                 {!showCompleteProfileForm && (
                   <>
                     <div className="flex items-center mb-4">
-                      {user.businessProfile.carrierRole !== null ? (
+                      {user.businessProfile.carrierRole !== null || user.businessProfile.shipperRole !== null ? (
                         <>
                           <h3 className="mr-2">Business Profile Status:</h3>
                           <div className="relative group">
                             <span className="inline-block bg-green-500 text-white rounded-full p-2 text-center">
                               ✔
                             </span>
-                            <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
+                            { user.userType === "carrier" ? <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
                               Your business profile is complete. Start picking
                               up loads.
                               <Link
@@ -636,7 +648,18 @@ export default function BusinessInformation() {
                               >
                                 View Loads
                               </Link>
-                            </label>
+                            </label> :
+                              <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
+                                Your business profile is complete. Start posting
+                                loads.
+                                <Link
+                                  to="/shipper/dashboard/loads/view/"
+                                  className="text-blue-400 underline ml-1"
+                                >
+                                  View Loads
+                                </Link>
+                              </label>
+                            }
                           </div>
                         </>
                       ) : null}
@@ -662,11 +685,11 @@ export default function BusinessInformation() {
                       </div>
                     )}
 
-                    {user.businessProfile.carrierRole === null && (
+                    {user.businessProfile.carrierRole === null && user.businessProfile.shipperRole === null && (
                       <>
                         <p className="mb-4">
                           Your business profile is not complete. Please complete
-                          your profile to start picking up loads.
+                          your profile to start picking up or posting loads.
                         </p>
                         <button
                           className="bg-orange-500 text-white px-4 py-2 rounded"
@@ -891,5 +914,3 @@ export default function BusinessInformation() {
     </div>
   );
 }
-
-<ErrorBoundary />;

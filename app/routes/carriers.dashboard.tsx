@@ -4,8 +4,6 @@ import {
   useLoaderData,
   useLocation,
   NavLink,
-  useRouteError,
-  isRouteErrorResponse,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
 
@@ -21,7 +19,6 @@ import { commitSession, getSession } from "../api/services/session";
 import AccessDenied from "~/components/accessdenied";
 import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
-import ErrorDisplay from "~/components/ErrorDisplay";
 import { redirectUser } from "~/components/redirectUser";
 import { getUserInfo } from "~/api/services/user.service";
 import type {
@@ -31,7 +28,7 @@ import type {
 export const meta: MetaFunction = () => {
   return [
     {
-      title: "Loadboard | Carrier dashboard",
+      title: "Afroinnovate | Loadboard | Carrier dashboard",
       description: "Dashboard for carriers",
     },
   ];
@@ -47,11 +44,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     let user = session.get(authenticator.sessionKey);
 
     if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
@@ -67,7 +60,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const shipperDashboard = await redirectUser(user?.user);
 
     if (shipperDashboard) {
-      return redirect("/dashboard/", {
+      return redirect("/shipper/dashboard/", {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },

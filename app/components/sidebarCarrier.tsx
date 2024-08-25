@@ -2,10 +2,10 @@ import { NavLink } from "@remix-run/react";
 
 
 const sidebarLinks = [
-  { name: 'Overview', to: '/dashboard/'},
-  { name: 'View Loads', to: '/dashboard/loads/view/' },
-  { name: 'Add Loads', to: '/dashboard/loads/add/' },
-  { name: 'Bids', to: '/dashboard/loads/bids/' },
+  { name: 'Overview', to: '/shipper/dashboard/'},
+  { name: 'View Loads', to: '/shipper/dashboard/loads/view/' },
+  { name: 'Add Loads', to: '/shipper/dashboard/loads/add/' },
+  { name: 'Bids', to: '/shipper/dashboard/loads/bids/' },
   // ... other sub-task links
 ];
 

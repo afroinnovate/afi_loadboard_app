@@ -23,6 +23,7 @@ import { redirectUser } from "~/components/redirectUser";
 import ErrorDisplay from "~/components/ErrorDisplay";
 import { getUserInfo } from "~/api/services/user.service";
 import { type ShipperUser } from '../api/models/shipperUser';
+import { ErrorBoundary } from "./shipper.dashboard.loads.bids";
 
 export const meta: MetaFunction = () => {
   return [
@@ -41,13 +42,9 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-
+    
     if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
@@ -58,7 +55,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
-    console.log("shipper dashboard user", user)
     if (user?.user.userType === "carrier") {
       return redirect("/carriers/dashboard/")
     }
@@ -77,7 +73,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     if (userBusinessInfo && userBusinessInfo.userType === "shipper") {
       const shipperUser: ShipperUser = {
-        id: user.id,
+        id: user?.user.id,
         token: user.token,
         user: {
           firstName: userBusinessInfo.firstName,
@@ -86,16 +82,18 @@ export const loader: LoaderFunction = async ({ request }) => {
           email: userBusinessInfo.email,
           phone: userBusinessInfo.phone,
           userType: userBusinessInfo.userType,
-          roles: user.roles,
-          confirmed: user.confirmed,
-          status: user.status,
           businessProfile: {
             companyName: userBusinessInfo.businessProfile.companyName,
             businessType: userBusinessInfo.businessProfile.businessType,
             businessRegistrationNumber:
               userBusinessInfo.businessProfile.businessRegistrationNumber,
             shipperRole: userBusinessInfo.businessProfile.shipperRole,
+            idCardOrDriverLicenceNumber:
+              userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
           },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
         },
       };
       session.set("shipper", shipperUser);
@@ -131,9 +129,9 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
-
+    const shipperUser = session.get("shipper");
     return json(
-      { user, shipperDashboard },
+      { user: shipperUser, shipperDashboard },
       {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
@@ -192,8 +190,9 @@ export default function Dashboard() {
             {/* Replace with an appropriate icon or text */}
             &#9776;
           </button>
+
           <NavLink
-            to="/dashboard/"
+            to="/shipper/dashboard/"
             end
             className={({ isActive }) =>
               "text-black font-semibold " +
@@ -206,7 +205,7 @@ export default function Dashboard() {
           </NavLink>
 
           <NavLink
-            to="/dashboard/loads/view/"
+            to="/shipper/dashboard/loads/view/"
             className={() =>
               "text-black font-semibold " +
               (isLoadOperationsActive
@@ -227,12 +226,12 @@ export default function Dashboard() {
           </h2>
         </div>
       </header>
-      <div className="flex pt-14 mt-14">
-        <div className="hidden lg:flex">
+      <div className="flex pt-16 mt-20">
+        <div className="hidden lg:flex top-30">
           {sidebarOpen && <Sidebar activeSection={activeSection} />}
         </div>
         <main className="w-full flex justify-center content-center p-3 shadow-lg mt-20">
-          {location.pathname === "/dashboard/" && <Overview />}
+          {location.pathname === "/shipper/dashboard/" && <Overview />}
           <Outlet />
         </main>
       </div>
@@ -240,22 +239,4 @@ export default function Dashboard() {
   );
 }
 
-export function ErrorBoundary() {
-  const errorResponse: any = useRouteError();
-  if (isRouteErrorResponse(errorResponse)) {
-    // const jsonError = JSON.parse(errorResponse);
-    const error = {
-      message: errorResponse.data.message,
-      status: errorResponse.data.status,
-    };
-
-    return <ErrorDisplay error={error} />;
-  }
-  return (
-    <div className="flex content-center bg-red-800 text-white">
-      <h1>Uh oh ...</h1>
-      <p>Something went wrong.</p>
-      <pre>{errorResponse}</pre>
-    </div>
-  );
-}
+<ErrorBoundary />

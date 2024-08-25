@@ -1,80 +1,69 @@
-import type { LinksFunction, MetaFunction } from '@remix-run/node';
-import { Link } from 'react-router-dom';
-import styles from '../styles/global.css';
-
-export const links: LinksFunction = () => [
-  ...(styles ? [{ rel: "stylesheet", href: styles }] : []),
-];
-
-export const meta: MetaFunction = () => {
-  return [{
-    title: 'Loadboard | Home',
-    description: 'Welcome to AfroInnovate LoadBoard App'
-  }];
-};
+import React from "react";
+import { Link } from "@remix-run/react";
 
 export default function Index() {
   return (
-    <div className="font-serif">
-        {/* ... rest of your nav component ... */}
-      <header className="page-header">
-        <h1 className="title">Welcome to the Load Board</h1>
-        <p className="description">Your One-Stop Solution for Freight Transportation</p>
-        <Link to="/login/" className="primary-action hover:bg-blue-700">Get Started</Link>
-      </header>
+    <div className="font-sans bg-[#1e1e2d] min-h-screen text-white flex items-center justify-center py-12">
+      <div className="w-full max-w-2xl p-8 space-y-10">
+        <div className="text-center">
+          <h1 className="text-5xl font-bold mb-3">AFI LoadBoard</h1>
+          <p className="text-xl text-gray-300 mb-4">
+            Your One-Stop Solution for Freight Transportation
+          </p>
+          <blockquote className="text-2xl italic text-white shadow-md font-medium mb-8">
+            Creating one Africa one load at a time.
+          </blockquote>
+          <p> AfroInnovate: Where Africa's trade meets the world.</p>
+        </div>
 
-      <body className='main-section'>
-        {/* Main benefits row */}
-        <h2 className='section-title'>
-          {/* Wherever You Roll, We're Your Road: Partner with Us for Profitable Journeys   */}
-          Shipper's Benefits
-        </h2>
+        <div className="bg-[#2b2b40] rounded-lg p-8 space-y-8 shadow-lg">
+          <BenefitCard
+            title="For Shippers"
+            description="List loads effortlessly and connect with top carriers instantly. Our streamlined process ensures your cargo moves without delay."
+            action="Post a Load"
+          />
+          <BenefitCard
+            title="For Carriers"
+            description="Access premium loads, optimize your routes for maximum profit, and reduce empty miles. Find the perfect hauls for your fleet."
+            action="Find Loads"
+          />
+        </div>
 
-        <div className='benefit-section'>
-          <Link to="/login/" className='main-benefit' >
-            <h2>Unlock Your Earning Potential</h2>
-            <p>Gain access to premium loads tailored to your route preferences and boost your profits with our smart match technology.</p>
-            <p className='secondary-action'>Explore Opportunities</p>
+        <div className="space-y-4">
+          <Link
+            to="/signup/"
+            className="block w-full px-6 py-4 text-center text-lg font-medium text-white bg-[#ff4d4f] rounded-md hover:bg-[#ff7875] transition duration-300 shadow-md"
+          >
+            Get Started
           </Link>
-
-          <Link to="/login/" className='main-benefit' >
-            <h2>Effortless Load Listing</h2>
-            <p>Connect with top carriers instantly. Listing is simple, fast, and effective, ensuring your loads are moved without delay.</p>
-            <p className='secondary-action'>List Your Loads Now</p>
-          </Link>
-
-          <Link to="/login/" className='main-benefit' >
-            <h2>Competitive Bidding Platform</h2>
-            <p>Enter the bidding arena and secure the best rates. Our real-time platform puts you in control of pricing.</p>
-            <p className='secondary-action'>Engage Bidders</p>
+          <Link
+            to="/login/"
+            className="block w-full px-6 py-4 text-center text-lg font-medium text-[#ff4d4f] bg-transparent border-2 border-[#ff4d4f] rounded-md hover:bg-[#ff4d4f] hover:text-white transition duration-300"
+          >
+            Sign In
           </Link>
         </div>
 
-        {/* Additional benefits for shipper*/}
-        <h2 className='section-title'>
-          {/* Local Startups to Global Giants: Your Cargo, Delivered with Precision and Care */}
-          Carrier's Benefits
-        </h2>
-        <div className='benefit-section'>
-          <Link to="/login/" className='main-benefit' >
-            <h2>Carrier Connections at a Click</h2>
-            <p>Find dependable carriers instantly. Our streamlined system brings you a network of professionals with just one click.</p>
-            <p className='secondary-action'>View Carrier Bids</p>
-          </Link>
+        <p className="text-center text-lg text-gray-300">
+          Experience the future of freight transportation. Join AFI LoadBoard
+          today!
+        </p>
+      </div>
+    </div>
+  );
+}
 
-          <Link to="/login/" className='main-benefit' >
-            <h2>Seamless Load Posting</h2>
-            <p>Get your loads on the road with ease. Our intuitive interface simplifies the posting process to save you time and hassle.</p>
-            <p className='secondary-action'>Post Loads Effortlessly</p>
-          </Link>
-
-          <Link to="/login/" className='main-benefit' >
-            <h2>Streamline Your Operations</h2>
-            <p>Take charge of your load management with our comprehensive dashboard. Organize, track, and update your shipments on the fly.</p>
-            <p className='secondary-action'>Manage Loads Smartly</p>
-          </Link>
-        </div>
-      </body>
+function BenefitCard({ title, description, action }: any) {
+  return (
+    <div className="bg-[#323248] rounded-lg p-6 space-y-4 hover:bg-[#3a3a54] transition duration-300">
+      <h2 className="text-2xl font-semibold">{title}</h2>
+      <p className="text-gray-300 text-lg leading-relaxed">{description}</p>
+      <Link
+        to="/signup/"
+        className="inline-block text-[#ff4d4f] hover:text-[#ff7875] text-lg font-medium"
+      >
+        {action} →
+      </Link>
     </div>
   );
 }

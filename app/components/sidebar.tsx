@@ -2,25 +2,23 @@ import { NavLink } from "@remix-run/react";
 
 
 const sidebarLinks = [
-  { name: 'Overview', to: '/dashboard/'},
-  { name: 'View Loads', to: '/dashboard/loads/view/' },
-  { name: 'Add Loads', to: '/dashboard/loads/add/' },
-  { name: 'Bids', to: '/dashboard/loads/bids/' },
+  { name: "Overview", to: "/shipper/dashboard/" },
+  { name: "View Loads", to: "/shipper/dashboard/loads/view/" },
+  { name: "Add Loads", to: "/shipper/dashboard/loads/add/" },
+  { name: "Bids", to: "/shipper/dashboard/loads/bids/" },
   // ... other sub-task links
 ];
 
 export default function Sidebar({ activeSection }) {
   var renderingLinks = sidebarLinks
   if (activeSection === "home"){
-    renderingLinks = [
-      { name: 'Overview', to: '/dashboard/'},
-    ]
+    renderingLinks = [{ name: "Overview", to: "/shipper/dashboard/" }];
   }else {
     renderingLinks = [
-      { name: 'View Loads', to: '/dashboard/loads/view/' },
-      { name: 'Add Loads', to: '/dashboard/loads/add/' },
-      { name: 'Bids', to: '/dashboard/loads/bids/' },
-    ]
+      { name: "View Loads", to: "/shipper/dashboard/loads/view/" },
+      { name: "Add Loads", to: "/shipper/dashboard/loads/add/" },
+      { name: "Bids", to: "/shipper/dashboard/loads/bids/" },
+    ];
   }
   return (
     <aside className="w-64 shadow-lg h-screen overflow-y-auto py-4 px-3 bg-gray-200 text-black rounded" aria-label="Sidebar">
