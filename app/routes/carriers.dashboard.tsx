@@ -56,141 +56,49 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
 
-    // Redirect to the appropriate dashboard based on the user role
-    const shipperDashboard = await redirectUser(user?.user);
-
-    if (shipperDashboard) {
-      return redirect("/shipper/dashboard/", {
-        headers: {
-          "Set-Cookie": await commitSession(session, { expires }),
-        },
-      });
+    // Redirect user to the appropriate dashboard
+    if (user?.user.userType === "shipper") {
+      return redirect("/shippers/dashboard/");
     }
 
-    var userBusinessProfile: any;
-    try {
-      userBusinessProfile = await getUserInfo(user?.user.id, user?.token);
-    } catch (error: any) {
-      userBusinessProfile = null;
-      if (JSON.parse(error).data.status === 401) {
-        session.set("user", null);
-        session.set("carrier", null);
-        session.set("shipper", null);
-        return redirect("/login/", {
-          headers: {
-            "Set-Cookie": await commitSession(session),
-          },
-        });
-      }
-    }
-
-    const mapCarrierRole = (role: number | null) => {
-      switch (role) {
-        case 0:
-          return "ownerOperator";
-        case 1:
-          return "fleetOwner";
-        case 2:
-          return "Dispatch";
-        default:
-          return null;
-      }
-    };
-
-    // convert the userType to lowercase
-    if (
-      typeof userBusinessProfile === "object" &&
-      userBusinessProfile !== null &&
-      !userBusinessProfile.data
-    ) {
-        const carrierUser: any = {
-          userId: user?.user.id,
-          firstName: userBusinessProfile.firstName,
-          middleName: userBusinessProfile.middleName,
-          lastName: userBusinessProfile.lastName,
-          email: userBusinessProfile.email,
-          phone: userBusinessProfile.phone,
-          userType: userBusinessProfile.userType,
-          businessProfile: {
-            companyName: userBusinessProfile.businessProfile.companyName,
-            motorCarrierNumber:
-              userBusinessProfile.businessProfile.motorCarrierNumber,
-            dotNumber: userBusinessProfile.businessProfile.dotNumber,
-            equipmentType: userBusinessProfile.businessProfile.equipmentType,
-            availableCapacity:
-              userBusinessProfile.businessProfile.availableCapacity,
-            idCardOrDriverLicenceNumber:
-              userBusinessProfile.businessProfile.idCardOrDriverLicenceNumber,
-            insuranceName: userBusinessProfile.businessProfile.insuranceName,
-            businessType: userBusinessProfile.businessProfile.businessType,
-            carrierRole: mapCarrierRole(
-              userBusinessProfile.businessProfile.carrierRole
-            ),
-            shipperRole: userBusinessProfile.businessProfile.shipperRole,
-            businessRegistrationNumber:
-              userBusinessProfile.businessProfile.businessRegistrationNumber,
-            carrierVehicles:
-              userBusinessProfile.businessProfile.carrierVehicles?.map(
-                (vehicle: CarrierVehicle) => ({
-                  id: vehicle.id,
-                  vehicleTypeId: vehicle.vehicleTypeId,
-                  name: vehicle.name,
-                  description: vehicle.description,
-                  imageUrl: vehicle.imageUrl,
-                  vin: vehicle.vin,
-                  licensePlate: vehicle.licensePlate,
-                  make: vehicle.make,
-                  model: vehicle.model,
-                  year: vehicle.year,
-                  color: vehicle.color,
-                  hasInsurance: vehicle.hasInsurance,
-                  hasRegistration: vehicle.hasRegistration,
-                  hasInspection: vehicle.hasInspection,
-                })
-              ),
-          },
-          roles: user?.user.roles,
-          confirmed: user?.user.confirmed,
-          status: user?.user.status,
-        };
-        // Set the session for the carrier user (hydrate application with carrier data)
-        session.set("carrier", carrierUser);
-    } else if (JSON.parse(userBusinessProfile).data.status === 404) {
-        console.error("User's business profile not found");
-        const carrierProfile = {
-          userId: user?.user.id,
-          firstName: user?.user.firstName,
-          middleName: user?.user.middleName,
-          lastName: user?.user.lastName,
+    var userBusinessInfo: any = await getUserInfo(user?.user.id, user?.token);
+    if (userBusinessInfo && userBusinessInfo.userType === "carrier") {
+      const carrierUser: any = {
+        id: user?.user.id,
+        token: user.token,
+        user: {
           email: user?.user.email,
-          phone: user?.user.phoneNumber,
-          userType: user?.user.userType,
+          firstName: userBusinessInfo.firstName,
+          middleName: userBusinessInfo.middleName,
+          lastName: userBusinessInfo.lastName,
+          phone: userBusinessInfo.phone,
+          userType: userBusinessInfo.userType,
           businessProfile: {
-            companyName: "",
-            motorCarrierNumber: "",
-            dotNumber: "",
-            equipmentType: "",
-            availableCapacity: 0,
-            idCardOrDriverLicenceNumber: "",
-            insuranceName: "",
-            businessType: "",
-            carrierRole: null,
+            companyName: userBusinessInfo.businessProfile.companyName,
+            motorCarrierNumber: userBusinessInfo.businessProfile.motorCarrierNumber,
+            dotNumber: userBusinessInfo.businessProfile.dotNumber,
+            equipmentType: userBusinessInfo.businessProfile.equipmentType,
+            availableCapacity: userBusinessInfo.businessProfile.availableCapacity,
+            idCardOrDriverLicenceNumber: userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
+            insuranceName: userBusinessInfo.businessProfile.insuranceName,
+            businessType: userBusinessInfo.businessProfile.businessType,
+            carrierRole: userBusinessInfo.businessProfile.carrierRole,
             shipperRole: null,
-            businessRegistrationNumber: "",
-            carrierVehicles: [],
+            businessRegistrationNumber: userBusinessInfo.businessProfile.businessRegistrationNumber,
+            carrierVehicles: userBusinessInfo.businessProfile.carrierVehicles,
           },
-          roles: user?.user.roles,
-          confirmed: user?.user.confirmed,
-          status: user?.user.status,
-        };
-        session.set("carrier", carrierProfile);
+        }
+      };
+      session.set("carrier", carrierUser);
     } else {
-        const carrierProfile = {
-          userId: user?.user.id,
+      const carrierProfile = {
+        id: user?.user.id,
+        token: user.token,
+        user: {
+          email: user?.user.email,
           firstName: user?.user.firstName,
           middleName: user?.user.middleName,
           lastName: user?.user.lastName,
-          email: user?.user.email,
           phone: user?.user.phoneNumber,
           userType: user?.user.userType,
           businessProfile: {
@@ -207,18 +115,16 @@ export const loader: LoaderFunction = async ({ request }) => {
             businessRegistrationNumber: "",
             carrierVehicles: [],
           },
-          roles: user?.user.roles,
-          confirmed: user?.user.confirmed,
-          status: user?.user.status,
-        };
-        session.set("carrier", carrierProfile);
-      }
+        },
+      };
+      session.set("carrier", carrierProfile);
+    }
 
-    // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
+    var carrierProfile = session.get("carrier");
 
     return json(
-      { user, shipperDashboard },
+      { user: carrierProfile },
       {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
@@ -228,15 +134,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   } catch (error: any) {
     console.error("carrier dashboard action error: ", JSON.parse(error  ));
     if (JSON.parse(error).data.status == 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
     throw error;
   }
@@ -273,7 +171,7 @@ export default function CarrierDashboard() {
   }, []); // Empty dependency array ensures this runs once on mount
 
   // User roles and permission checks
-  if (loaderData && loaderData.shipperDashboard) {
+  if (loaderData.user.user.userType !== "carrier") {
     return (
       <AccessDenied
         returnUrl="/"
@@ -281,6 +179,7 @@ export default function CarrierDashboard() {
       />
     );
   }
+
   // If the carrier logged in
   return (
     <>

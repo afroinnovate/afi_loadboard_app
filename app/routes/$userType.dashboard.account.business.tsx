@@ -23,11 +23,11 @@ import { authenticator, CompleteProfile } from "~/api/services/auth.server";
 import { type CompleteProfileRequest } from "../api/models/profileCompletionRequest";
 import { Loader } from "~/components/loader";
 import Modal from "~/components/popup";
-import { type UserBusinessProfile } from "~/api/models/carrierUser";
 import { CreateUser } from "~/api/services/user.service";
 import VehicleForm from "~/components/vehicleForm";
 import { ErrorBoundary } from "~/components/errorBoundary";
-import { businessProfile } from '../api/models/shipperUser';
+import { CheckCircleIcon } from "@heroicons/react/20/solid";
+import { businessProfile } from "../api/models/shipperUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -46,31 +46,89 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-    const { userType } = params;
+    let { userType } = params;
+    userType =
+      userType === user?.user.userType ? userType : user?.user.userType;
 
     if (!user) {
-      return redirect("/login/");
+      return redirect("/logout/");
     }
 
     if (!userType) {
       return redirect("/logout/");
     }
 
-    const userProfile = session.get(
-      userType === "carriers" ? "carrier" : userType
-    );
+    const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
+    const userProfile = session.get(userTypeFiltered);
+
+    console.log("User Profile", userProfile);
 
     if (!userProfile) {
       return redirect("/logout/");
     }
 
-    userProfile.phone = user.user.phoneNumber;
-    userProfile.email = user.user.email;
-    userProfile.firstName = user.user.firstName;
-    userProfile.middleName = user.user.middleName;
-    userProfile.lastName = user.user.lastName;
-    userProfile.roles = user.user.roles;
-    userProfile.userType = user.user;
+    userProfile.user.phone = user.user.phoneNumber;
+    userProfile.user.email = user.user.email;
+    userProfile.user.firstName = user.user.firstName;
+    userProfile.user.middleName = user.user.middleName;
+    userProfile.user.lastName = user.user.lastName;
+    userProfile.user.roles = user.user.roles;
+    userProfile.user.userType = user.user.userType;
+    userProfile.user.businessProfile.carrierRole =
+      userProfile.user.businessProfile.carrierRole !== null ||
+      userProfile.user.businessProfile.carrierRole !== undefined
+        ? userProfile.user.businessProfile.carrierRole
+        : null;
+    userProfile.user.businessProfile.shipperRole =
+      userProfile.user.businessProfile.shipperRole !== null ||
+      userProfile.user.businessProfile.shipperRole !== undefined
+        ? userProfile.user.businessProfile.shipperRole
+        : null;
+
+    const roles = user.user.roles.includes("carrier")
+      ? {
+          "Owner Operator": "owner_operator",
+          "Fleet Owner": "fleet_owner",
+          Dispatcher: "dispatcher",
+        }
+      : {
+          "Independent Shipper": "independent_shipper",
+          "Government Shipper": "govt_shipper",
+          "Corporate Shipper": "corporate_shipper",
+        };
+    if (
+      userProfile.user.businessProfile.carrierRole !== null ||
+      userProfile.user.businessProfile.shipperRole !== null
+    ) {
+      switch (userProfile.user.businessProfile.carrierRole) {
+        case 0:
+          userProfile.user.businessProfile.carrierRole = "owner_operator";
+          break;
+        case 1:
+          userProfile.user.businessProfile.carrierRole = "fleet_owner";
+          break;
+        case 2:
+          userProfile.user.businessProfile.carrierRole = "dispatcher";
+          break;
+        default:
+          userProfile.user.businessProfile.carrierRole = null;
+          break;
+      }
+      switch (userProfile.user.businessProfile.shipperRole) {
+        case 0:
+          userProfile.user.businessProfile.shipperRole = "independent_shipper";
+          break;
+        case 1:
+          userProfile.user.businessProfile.shipperRole = "corporate_shipper";
+          break;
+        case 2:
+          userProfile.user.businessProfile.shipperRole = "govt_shipper";
+          break;
+        default:
+          userProfile.user.businessProfile.shipperRole = null;
+          break;
+      }
+    }
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
     const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -82,20 +140,9 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     session.set(authenticator.sessionKey, user);
     await commitSession(session, { expires });
 
-    const roles = user.user.roles.includes("carrier")
-      ? {
-          "Owner Operator": "owner_operator",
-          "Fleet Owner": "fleet_owner",
-          "Dispatcher": "dispatcher",
-        }
-      : {
-          "Independent Shipper": "independent_shipper",
-          "Government Shipper": "government_shipper",
-          "Corporate Shipper": "corporate_shipper",
-        };
-
     return json({ userProfile, roles });
   } catch (error: any) {
+    console.log("Profile Error: ", error);
     if (JSON.parse(error).data.status === 401) {
       return redirect("/logout/");
     }
@@ -112,22 +159,27 @@ export let action: ActionFunction = async ({ params, request }: any) => {
     return redirect("/logout/");
   }
 
-  let userType = params.userType;
+  let { userType } = params;
+  userType =
+    userType === authUser?.user.userType ? userType : authUser?.user.userType;
+
   if (!userType) {
     return redirect("/logout/");
   }
+  const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
 
-  const userProfile = session.get(userType === "carriers" ? "carrier" : userType);
-
+  const userProfile = session.get(userTypeFiltered);
   let user = userProfile;
 
-  user.phone = authUser.user.phoneNumber;
-  user.email = authUser.user.email;
-  user.firstName = authUser.user.firstName;
-  user.middleName = authUser.user.middleName;
-  user.lastName = authUser.user.lastName;
-  user.roles = authUser.user.roles;
-  user.userType = authUser.user.userType;
+  user.user.phone = authUser.user.phoneNumber;
+  user.user.email = authUser.user.email;
+  user.user.firstName = authUser.user.firstName;
+  user.user.middleName = authUser.user.middleName;
+  user.user.lastName = authUser.user.lastName;
+  user.user.roles = authUser.user.roles;
+  user.user.userType = authUser.user.userType;
+
+  console.log("User Profile", user);
 
   const mapCarrierRole = (role: string | null) => {
     switch (role) {
@@ -209,7 +261,7 @@ export let action: ActionFunction = async ({ params, request }: any) => {
       const registrationNumber = body.get("registrationNumber");
       const hasInsurance = body.get("hasInsurance");
       const hasInspection = body.get("hasInspection");
-      const businessType = body.get("businessType");
+      const businessType = body.get("role");
       const idCardOrDriverLicenceNumber = body.get(
         "idCardOrDriverLicenceNumber"
       );
@@ -230,34 +282,36 @@ export let action: ActionFunction = async ({ params, request }: any) => {
 
       // Construct the business profile request object
       const business_req: any = {
-        userId: user.userId,
-        email: user.email,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-        phone: user.phone,
-        userType: user.userType,
+        userId: user.id,
+        email: user.user.email,
+        firstName: user.user.firstName,
+        middleName: user.user.middleName,
+        lastName: user.user.lastName,
+        phone: user.user.phone,
+        userType: user.user.userType,
         businessProfile: {
-          companyName: companyName ? companyName : user.businessProfile.companyName,
-          motorCarrierNumber: userType === "carriers" ? registrationNumber : "",
-          dotNumber: userType === "carriers" ? registrationNumber : "",
-          equipmentType: userType === "carriers" ? vehicleType : "",
+          companyName: companyName
+            ? companyName
+            : user.user.businessProfile.companyName,
+          motorCarrierNumber: user.user.userType === "carrier" ? registrationNumber : "",
+          dotNumber: user.user.userType === "carrier" ? registrationNumber : "",
+          equipmentType: userType === "carrier" ? vehicleType : "",
           availableCapacity:
-            userType === "carriers" ? parseInt(vehicleCapacity) : 0,
+            user.user.userType === "carrier" ? parseInt(vehicleCapacity) : 0,
           idCardOrDriverLicenceNumber: idCardOrDriverLicenceNumber
             ? idCardOrDriverLicenceNumber
-            : user.businessProfile.idCardOrDriverLicenceNumber,
-          insuranceName: userType === "carriers" ? "Best Insure" : "",
+            : user.user.businessProfile.idCardOrDriverLicenceNumber,
+          insuranceName: user.user.userType === "carrier" ? "Place holder Insure" : "",
           businessType: businessType
             ? businessType
-            : user.businessProfile.businessType,
+            : user.user.businessProfile.businessType,
           carrierRole: carrierRole,
           shipperRole: shipperRole,
           businessRegistrationNumber: registrationNumber
             ? registrationNumber
-            : user.businessProfile.businessRegistrationNumber,
+            : user.user.businessProfile.businessRegistrationNumber,
           carrierVehicles:
-            userType === "carriers"
+            user.user.userType === "carrier"
               ? [
                   {
                     vehicleTypeId: 2,
@@ -267,8 +321,9 @@ export let action: ActionFunction = async ({ params, request }: any) => {
                     vin: registrationNumber,
                     licensePlate: registrationNumber,
                     make: vehicleType,
+                    vehicleCapacity: vehicleCapacity,
                     model: vehicleName,
-                    year: "",
+                    year: "2010",
                     color: vehicleColor,
                     hasInsurance: hasInsurance === "on" ? true : false,
                     hasRegistration: registrationNumber ? true : false,
@@ -278,27 +333,29 @@ export let action: ActionFunction = async ({ params, request }: any) => {
               : [],
         },
       };
+      console.log("Business Request", business_req);
 
       // update the userinformation
       var response: any = await CreateUser(business_req, token);
       if (response) {
         var updatedUser = {
-          userId: user.userId,
+          userId: authUser.id,
           token: user.token,
           user: {
-            firstName: user.firstName,
-            middleName: user.middleName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            userType: user.userType,
-            roles: user.roles,
-            confirmed: user.confirmed,
-            status: user.status,
+            firstName: user.user.firstName,
+            middleName: user.user.middleName,
+            lastName: user.user.lastName,
+            email: user.user.email,
+            phone: user.user.phone,
+            userType: user.user.userType,
+            roles: user.user.roles,
+            confirmed: user.user.confirmed,
+            status: user.user.status,
             businessProfile: business_req.businessProfile,
           },
         };
-        session.set(userType === "carriers"? "carrier" : userType, updatedUser);
+        const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
+        session.set(userTypeFiltered, updatedUser);
         await commitSession(session);
       }
 
@@ -339,7 +396,7 @@ export default function Business() {
   const actionData: any = useActionData();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const user: UserBusinessProfile = LoaderData?.userProfile;
+  const user: any = LoaderData?.userProfile;
   const roles = LoaderData?.roles;
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -402,11 +459,11 @@ export default function Business() {
   };
 
   const [formValues, setFormValues] = useState({
-    firstName: user?.firstName || "",
-    middleName: user?.middleName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
+    firstName: user?.user.firstName || "",
+    middleName: user?.user.middleName || "",
+    lastName: user?.user.lastName || "",
+    email: user?.user.email || "",
+    phone: user?.user.phone || "",
   });
 
   const isFormValid = () => {
@@ -429,6 +486,7 @@ export default function Business() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    console.log("Selected Role", selectedRole);
     const requiredDocs = documents;
     if (selectedRole === "owner_operator") {
       const isVehicleSelected = Object.values(vehicleTypes).some(
@@ -443,6 +501,22 @@ export default function Business() {
       );
       const requiredDocCount = requiredDocs.length >= 2;
       const isValid = isVehicleSelected && requiredDocCount;
+      setIsUpdateEnabled(isValid);
+    } else if (selectedRole === "dispatcher") {
+      const requiredDocCount = requiredDocs.length >= 2;
+      const isValid = requiredDocCount;
+      setIsUpdateEnabled(isValid);
+    } else if (selectedRole === "independent_shipper") {
+      const requiredDocCount = requiredDocs.length >= 2;
+      const isValid = requiredDocCount;
+      setIsUpdateEnabled(isValid);
+    } else if (selectedRole === "corporate_shipper") {
+      const requiredDocCount = requiredDocs.length >= 2;
+      const isValid = requiredDocCount;
+      setIsUpdateEnabled(isValid);
+    } else if (selectedRole === "govt_shipper") {
+      const requiredDocCount = requiredDocs.length >= 2;
+      const isValid = requiredDocCount;
       setIsUpdateEnabled(isValid);
     } else {
       setIsUpdateEnabled(false);
@@ -557,7 +631,7 @@ export default function Business() {
                       <label className="w-1/3 font-semibold text-green-700">
                         {field.label}
                       </label>
-                      <span className="w-2/3">{user[field.name]}</span>
+                      <span className="w-2/3">{user.user[field.name]}</span>
                     </div>
                   ))}
                 </div>
@@ -626,240 +700,450 @@ export default function Business() {
           )}
 
           {activeTab === "business" && (
-            <div className="text-lg font-semibold mb-4 text-green-800">
-              <h3 className="border-b-1">Business Information</h3>
-              <div className="mt-6">
+            <div className="bg-white shadow-lg rounded-lg p-4">
+              <h3 className="text-2xl font-bold mb-4 text-green9800 border-b pb-2">
+                Business Information
+              </h3>
+              <div className="space-y-6">
                 {!showCompleteProfileForm && (
                   <>
-                    <div className="flex items-center mb-4">
-                      {user.businessProfile.carrierRole !== null || user.businessProfile.shipperRole !== null ? (
+                    <div className="flex items-center mb-2">
+                      {user?.user.businessProfile.carrierRole !== null ||
+                      user?.user.businessProfile.shipperRole !== null ? (
                         <>
-                          <h3 className="mr-2">Business Profile Status:</h3>
-                          <div className="relative group">
-                            <span className="inline-block bg-green-500 text-white rounded-full p-2 text-center">
-                              ✔
-                            </span>
-                            { user.userType === "carrier" ? <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
-                              Your business profile is complete. Start picking
-                              up loads.
-                              <Link
-                                to="/carriers/dashboard/view/"
-                                className="text-blue-400 underline ml-1"
-                              >
-                                View Loads
-                              </Link>
-                            </label> :
-                              <label className="absolute bottom-full mb-2 w-max p-2 bg-gray-800 text-white text-sm rounded-md">
-                                Your business profile is complete. Start posting
-                                loads.
-                                <Link
-                                  to="/shipper/dashboard/loads/view/"
-                                  className="text-blue-400 underline ml-1"
-                                >
-                                  View Loads
-                                </Link>
-                              </label>
-                            }
-                          </div>
+                          <p className="p-2 mr-2 font-semibold">
+                            Profile Status:
+                          </p>
+                          <CheckCircleIcon className="w-6 h-6 text-green-600 ml-6"></CheckCircleIcon>
                         </>
                       ) : null}
                     </div>
 
-                    <div className="mb-4 border border-gray-300">
-                      <label className="block font-semibold">
-                        Current Role:{" "}
-                        <span className="font-normal px-9">
-                          {user.roles[0]}
+                    <div className="p-2 rounded-lg">
+                      <p className="font-semibold">
+                        Current Role:
+                        <span className="font-normal ml-12 text-green-600">
+                          {user.user.businessProfile.carrierRole ||
+                            user.user.businessProfile.shipperRole}
                         </span>
-                      </label>
+                      </p>
                     </div>
 
-                    {user.status && user.businessProfile.companyName && (
-                      <div className="mb-4 border border-gray-300">
-                        <label className="block font-semibold">
-                          Company Name:
-                          <span className="font-normal px-6">
-                            {user.businessProfile.companyName}
-                          </span>
-                        </label>
-                      </div>
-                    )}
+                    {user.user.status &&
+                      user.user.businessProfile.companyName && (
+                        <div className="p-2 rounded-lg">
+                          <p className="font-semibold">
+                            Company Name:
+                            <span className="font-normal ml-5 text-green-600">
+                              {user.user.businessProfile.companyName}
+                            </span>
+                          </p>
+                        </div>
+                      )}
 
-                    {user.businessProfile.carrierRole === null && user.businessProfile.shipperRole === null && (
-                      <>
-                        <p className="mb-4">
-                          Your business profile is not complete. Please complete
-                          your profile to start picking up or posting loads.
-                        </p>
-                        <button
-                          className="bg-orange-500 text-white px-4 py-2 rounded"
-                          onClick={() => setShowCompleteProfileForm(true)}
-                        >
-                          Complete your Profile
-                        </button>
-                      </>
-                    )}
+                    {user.user.userType === "carrier" &&
+                      user.user.businessProfile.carrierRole !== null && (
+                        <div className="bg-green-50 border border-blue-200 p-4    rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            Your business profile is complete. Start picking up
+                            loads.
+                            <Link
+                              to="/carriers/dashboard/view/"
+                              className="text-blue-600 underline ml-1 hover:text-blue-800"
+                            >
+                              View Loads
+                            </Link>
+                          </p>
+                        </div>
+                      )}
+
+                    {user.user.userType === "shipper" &&
+                      user.user.businessProfile.shipperRole !== null && (
+                        <div className="bg-green-50 border border-blue-200 p-4 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            Your business profile is complete. Start posting
+                            loads.
+                            <Link
+                              to="/shipper/dashboard/loads/view/"
+                              className="text-blue-600 underline ml-1 hover:text-blue-800"
+                            >
+                              View Loads
+                            </Link>
+                          </p>
+                        </div>
+                      )}
+
+                    {user.user.businessProfile.carrierRole === null &&
+                      user.user.businessProfile.shipperRole === null && (
+                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                          <p className="text-sm text-yellow-800 mb-4">
+                            Your business profile is not complete. Please
+                            complete your profile to start picking up or posting
+                            loads.
+                          </p>
+                          <button
+                            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition duration-300"
+                            onClick={() => setShowCompleteProfileForm(true)}
+                          >
+                            Complete your Profile
+                          </button>
+                        </div>
+                      )}
                   </>
                 )}
 
-                {showCompleteProfileForm && (
-                  <Form method="post" encType="multipart/form-data">
-                    <div className="mb-4">
-                      <FloatingLabelInput
-                        type="text"
-                        name="companyName"
-                        defaultValue={user.businessProfile.companyName}
-                        required
-                        placeholder="Company Name"
-                        className="block w-full mt-1 rounded-md border-gray-300"
-                        onChange={function (
-                          name: string,
-                          value: string,
-                          isValid: boolean
-                        ): void {
-                          throw new Error("Function not implemented.");
-                        }}
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <select
-                        name="role"
-                        className="block w-full mt-1 rounded-md border-gray-300 mb-4"
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        required
-                      >
-                        <option defaultChecked value="">
-                          Select Role
-                        </option>
-                        {Object.entries(roles).map(([name, value]) => (
-                          <option key={value as string} value={value as string}>
-                            {name}
+                {showCompleteProfileForm &&
+                  user.user.userType === "carrier" && (
+                    <Form
+                      method="post"
+                      encType="multipart/form-data"
+                      className="space-y-4"
+                    >
+                      <div className="mt-2">
+                        <FloatingLabelInput
+                          type="text"
+                          name="companyName"
+                          defaultValue={user.user.businessProfile.companyName}
+                          required
+                          placeholder="Company Name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={function (
+                            name: string,
+                            value: string,
+                            isValid: boolean
+                          ): void {
+                            throw new Error("Function not implemented.");
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <select
+                          name="role"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          required
+                        >
+                          <option value="" className="text-gray-500">
+                            Select Role
                           </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedRole === "owner_operator" && (
-                        <div className="col-span-2 flex flex-wrap gap-4">
-                          <input
-                            type="hidden"
-                            name="vehicleTypes"
-                            value={JSON.stringify(vehicleTypes)}
-                          />
-                          {["Trucks", "Boats", "Vans"].map((vehicle) => (
-                            <div key={vehicle} className="flex items-center">
-                              <label className="flex pl-4 items-center space-x-2">
-                                <input
-                                  type="radio"
-                                  name="vehicleType"
-                                  checked={vehicleTypes[vehicle].selected}
-                                  value={vehicle}
-                                  onChange={handleVehicleChange}
-                                />
-                                <span>{vehicle}</span>
-                              </label>
-                            </div>
+                          {Object.entries(roles).map(([name, value]) => (
+                            <option
+                              key={value as string}
+                              value={value as string}
+                            >
+                              {name}
+                            </option>
                           ))}
-                        </div>
-                      )}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {selectedRole === "owner_operator" && (
+                          <div className="col-span-2 flex flex-wrap gap-4">
+                            <input
+                              type="hidden"
+                              name="vehicleTypes"
+                              value={JSON.stringify(vehicleTypes)}
+                            />
 
-                      {selectedRole === "fleet_owner" && (
-                        <div className="col-span-2">
-                          <input
-                            type="hidden"
-                            name="vehicleTypes"
-                            value={JSON.stringify(vehicleTypes)}
-                          />
-                          <p className="font-medium">Fleet:</p>
-                          <div className="grid grid-cols-2 gap-4">
                             {["Trucks", "Boats", "Vans"].map((vehicle) => (
-                              <div
-                                key={vehicle}
-                                className="flex items-center space-x-2"
-                              >
-                                <label className="flex items-center space-x-2">
+                              <div key={vehicle} className="flex items-center">
+                                <label className="flex items-center space-x-2 cursor-pointer">
                                   <input
-                                    type="checkbox"
-                                    name={vehicle}
+                                    type="radio"
+                                    name="vehicleType"
+                                    checked={vehicleTypes[vehicle].selected}
+                                    value={vehicle}
                                     onChange={handleVehicleChange}
+                                    className="form-radio text-blue-600"
                                   />
                                   <span>{vehicle}</span>
                                 </label>
-                                {vehicleTypes[vehicle].selected && (
-                                  <input
-                                    type="number"
-                                    required
-                                    name={`${vehicle.toLowerCase()}Quantity`}
-                                    className="w-20 ml-auto"
-                                    placeholder="Qty"
-                                    value={vehicleTypes[vehicle].quantity}
-                                    onChange={(e) =>
-                                      handleVehicleQuantityChange(e, vehicle)
-                                    }
-                                  />
-                                )}
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Show VehicleForm if a vehicle type is selected */}
-                      {selectedVehicleType && (
-                        <VehicleForm selectedVehicle={selectedVehicleType} />
-                      )}
-                    </div>
-                    <div className="mb-4 mt-6">
-                      <label className="block text-green-700">
-                        Upload Required Documents
-                      </label>
-                      <p className="text-gray-500 text-sm">
-                        Upload the following documents to complete your profile
-                        <br />
-                        {selectedRole === "owner_operator" && (
-                          <>
-                            <span className="text-red-700 italic">
-                              * Driver's License,{" "}
-                            </span>
-                            <span className="text-red-700">
-                              * Vehicle Registration,{" "}
-                            </span>
-                          </>
-                        )}
                         {selectedRole === "fleet_owner" && (
-                          <>
-                            <span className="text-red-700 italic">
-                              * Company's License,{" "}
-                            </span>
-                            <span className="text-red-700">* ID, </span>
-                          </>
+                          <div className="col-span-2">
+                            <input
+                              type="hidden"
+                              name="vehicleTypes"
+                              value={JSON.stringify(vehicleTypes)}
+                            />
+                            <p className="font-medium mb-2">Fleet:</p>
+                            <div className="grid grid-cols-2 gap-4">
+                              {["Trucks", "Boats", "Vans"].map((vehicle) => (
+                                <div
+                                  key={vehicle}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      name={vehicle}
+                                      onChange={handleVehicleChange}
+                                      className="form-checkbox text-blue-600"
+                                    />
+                                    <span>{vehicle}</span>
+                                  </label>
+                                  {vehicleTypes[vehicle].selected && (
+                                    <input
+                                      type="number"
+                                      required
+                                      name={`${vehicle.toLowerCase()}Quantity`}
+                                      className="w-20 px-2 py-1 border border-gray-300 rounded-md"
+                                      placeholder="Qty"
+                                      value={vehicleTypes[vehicle].quantity}
+                                      onChange={(e) =>
+                                        handleVehicleQuantityChange(e, vehicle)
+                                      }
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
-                        and any other relevant documents.
-                      </p>
+
+                        {selectedVehicleType && (
+                          <VehicleForm selectedVehicle={selectedVehicleType} />
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-green-700 font-medium">
+                          Upload Required Documents
+                        </label>
+                        <p className="text-gray-500 text-sm">
+                          Upload the following documents to complete your
+                          profile
+                          <br />
+                          {selectedRole === "owner_operator" && (
+                            <>
+                              <span className="text-red-700 italic">
+                                * Driver's License,{" "}
+                              </span>
+                              <span className="text-red-700">
+                                * Vehicle Registration,{" "}
+                              </span>
+                            </>
+                          )}
+                          {selectedRole === "fleet_owner" && (
+                            <>
+                              <span className="text-red-700 italic">
+                                * Company's License,{" "}
+                              </span>
+                              <span className="text-red-700">* ID, </span>
+                            </>
+                          )}
+                          and any other relevant documents.
+                        </p>
+                        {selectedRole && (
+                          <div className="mt-2">
+                            <input
+                              type="file"
+                              onChange={handleFileChange}
+                              multiple
+                              name="documents"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="block w-full text-sm text-gray-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-blue-50 file:text-blue-700
+                                        hover:file:bg-blue-100"
+                            />
+                            <ul className="mt-2 space-y-1">
+                              {documents.map((file, index) => (
+                                <li
+                                  key={index}
+                                  className="flex justify-between items-center bg-gray-100 px-3 py-1 rounded"
+                                >
+                                  <span className="text-sm truncate">
+                                    {file.name}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveFile(index)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                      ></path>
+                                    </svg>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCompleteProfileForm(false);
+                            setIsEditingField(null);
+                          }}
+                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition duration-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          name="_action"
+                          value="business"
+                          className={`px-4 py-2 rounded ${
+                            isUpdateEnabled
+                              ? "bg-green-500 text-white hover:bg-green-600"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          } transition duration-300`}
+                          disabled={!isUpdateEnabled}
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </Form>
+                  )}
+
+                {showCompleteProfileForm &&
+                  user.user.userType === "shipper" && (
+                    <Form
+                      method="post"
+                      encType="multipart/form-data"
+                      className="space-y-6"
+                    >
+                      <div className="mt-2">
+                        <FloatingLabelInput
+                          type="text"
+                          name="companyName"
+                          defaultValue={user.user.businessProfile.companyName}
+                          required
+                          placeholder="Company Name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={function (
+                            name: string,
+                            value: string,
+                            isValid: boolean
+                          ): void {
+                            throw new Error("Function not implemented.");
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <select
+                          name="role"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          required
+                        >
+                          <option value="" className="text-gray-500">
+                            Select Role
+                          </option>
+                          {Object.entries(roles).map(([name, value]) => (
+                            <option
+                              key={value as string}
+                              value={value as string}
+                            >
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <FloatingLabelInput
+                          type="text"
+                          name="registrationNumber"
+                          defaultValue={
+                            user.user.businessProfile.businessRegistrationNumber
+                          }
+                          required
+                          placeholder="Registration Number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={function (
+                            name: string,
+                            value: string,
+                            isValid: boolean
+                          ): void {
+                            throw new Error("Function not implemented.");
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <FloatingLabelInput
+                          type="text"
+                          name="idCardOrDriverLicenceNumber"
+                          defaultValue={
+                            user.user.businessProfile
+                              .idCardOrDriverLicenceNumber
+                          }
+                          required
+                          placeholder="* ID Card/Driver's License Number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={function (
+                            name: string,
+                            value: string,
+                            isValid: boolean
+                          ): void {
+                            throw new Error("Function not implemented.");
+                          }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-gray-500 text-sm">
+                          Upload the following documents to complete your
+                          profile
+                          <br />
+                          <span className="text-red-700 italic">
+                            * Company's License, * ID, and any other relevant
+                            documents.
+                          </span>
+                        </p>
+                      </div>
+
                       {selectedRole && (
-                        <div className="mt-4">
+                        <div className="mt-2">
                           <input
                             type="file"
                             onChange={handleFileChange}
                             multiple
                             name="documents"
                             accept=".pdf,.jpg,.jpeg,.png"
-                            className="block w-full mt-1 rounded-md border-gray-300 p-2"
+                            className="block w-full text-sm text-gray-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-blue-50 file:text-blue-700
+                                        hover:file:bg-blue-100"
                           />
-                          <ul className="mt-2">
+                          <ul className="mt-2 space-y-1">
                             {documents.map((file, index) => (
                               <li
                                 key={index}
-                                className="flex space-x-10 items-center mt-2"
+                                className="flex justify-between items-center bg-gray-100 px-3 py-1 rounded"
                               >
-                                <span className="text-sm">{file.name}</span>
+                                <span className="text-sm truncate">
+                                  {file.name}
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveFile(index)}
                                   className="text-red-500 hover:text-red-700"
                                 >
                                   <svg
-                                    className="w-4 h-4 font-bold hover:text-red-800"
+                                    className="w-4 h-4"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -878,34 +1162,34 @@ export default function Business() {
                           </ul>
                         </div>
                       )}
-                    </div>
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowCompleteProfileForm(false);
-                          setIsEditingField(null);
-                        }}
-                        className="bg-gray-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-orange-400"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        name="_action"
-                        value="business"
-                        className={`px-4 py-2 rounded ${
-                          isUpdateEnabled
-                            ? "bg-green-500 text-white cursor-pointer hover:bg-orange-400"
-                            : "bg-gray-500 text-black cursor-not-allowed"
-                        }`}
-                        disabled={!isUpdateEnabled}
-                      >
-                        Update
-                      </button>
-                    </div>
-                  </Form>
-                )}
+
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCompleteProfileForm(false);
+                            setIsEditingField(null);
+                          }}
+                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition duration-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          name="_action"
+                          value="business"
+                          className={`px-4 py-2 rounded ${
+                            isUpdateEnabled
+                              ? "bg-green-500 text-white hover:bg-green-600"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          } transition duration-300`}
+                          disabled={!isUpdateEnabled}
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </Form>
+                  )}
               </div>
             </div>
           )}
@@ -914,3 +1198,5 @@ export default function Business() {
     </div>
   );
 }
+
+<ErrorBoundary />;

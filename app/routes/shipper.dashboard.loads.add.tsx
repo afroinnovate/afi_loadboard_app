@@ -23,6 +23,7 @@ import type { ShipperUser } from "~/api/models/shipperUser";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { DateInput } from "~/components/dateInput";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { the } from '../api/services/session';
 
 export const meta: MetaFunction = () => {
   return [
@@ -62,7 +63,10 @@ export const loader: LoaderFunction = async ({ request }) => {
     }
 
     if (isNaN(EXPIRES_IN)) {
-      throw JSON.stringify({ message: "SESSION_EXPIRATION is not set or is not a valid number", status: 401 });
+      throw JSON.stringify({
+        message: "SESSION_EXPIRATION is not set or is not a valid number",
+        status: 401,
+      });
     }
 
     if (user.user.userType === "carrier") {
@@ -72,11 +76,15 @@ export const loader: LoaderFunction = async ({ request }) => {
         },
       });
     }
- 
-    const shipperRole = mapRoles[shipper.user.businessProfile.shipperRole];
-    const hasAccess = ["independentShipper", "corporateShipper", "govtShipper"].includes(shipperRole);
 
-    return json({ user, shipper, hasAccess });
+    const shipperRole = mapRoles[shipper.user.businessProfile.shipperRole];
+    const hasAccess = [
+      "independentShipper",
+      "corporateShipper",
+      "govtShipper",
+    ].includes(shipperRole);
+
+    return json({ user, shipper, hasAccess, theme: "dark" }, { status: 200 });
   } catch (error: any) {
     console.error(" Add load  error: ", error);
     if (JSON.parse(error).data.status === 401) {
@@ -87,105 +95,105 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-   try {
-     const session = await getSession(request.headers.get("Cookie"));
-     const user = session.get(authenticator.sessionKey);
-     const shipperProfile: ShipperUser = session.get("shipper");
+  try {
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
+    const shipperProfile: ShipperUser = session.get("shipper");
 
-     if (!user || !shipperProfile) {
-       return redirect("/logout/");
-     }
+    if (!user || !shipperProfile) {
+      return redirect("/logout/");
+    }
 
-     const formData = await request.formData();
+    const formData = await request.formData();
 
-     const requiredFields = [
-       "origin",
-       "destination",
-       "pickupDate",
-       "deliveryDate",
-       "commodity",
-       "weight",
-       "offerAmount",
-       "loadDetails",
-     ];
+    const requiredFields = [
+      "origin",
+      "destination",
+      "pickupDate",
+      "deliveryDate",
+      "commodity",
+      "weight",
+      "offerAmount",
+      "loadDetails",
+    ];
 
-     const errors: { [key: string]: string } = {};
+    const errors: { [key: string]: string } = {};
 
-     for (const field of requiredFields) {
-       const value = formData.get(field);
-       if (!value || value.toString().trim() === "") {
-         errors[field] = `${field} is required`;
-       }
-     }
+    for (const field of requiredFields) {
+      const value = formData.get(field);
+      if (!value || value.toString().trim() === "") {
+        errors[field] = `${field} is required`;
+      }
+    }
 
-     if (Object.keys(errors).length > 0) {
-       return json({ errors }, { status: 400 });
-     }
+    if (Object.keys(errors).length > 0) {
+      return json({ errors }, { status: 400 });
+    }
 
-     const pickupDate = new Date(formData.get("pickupDate") as string);
-     const deliveryDate = new Date(formData.get("deliveryDate") as string);
-     const today = new Date();
-     today.setHours(0, 0, 0, 0);
+    const pickupDate = new Date(formData.get("pickupDate") as string);
+    const deliveryDate = new Date(formData.get("deliveryDate") as string);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-     if (pickupDate < today) {
-       errors.pickupDate = "Pick-up date cannot be in the past";
-     }
+    if (pickupDate < today) {
+      errors.pickupDate = "Pick-up date cannot be in the past";
+    }
 
-     if (deliveryDate < pickupDate) {
-       errors.deliveryDate =
-         "Estimated delivery date must be on or after the pick-up date";
-     }
+    if (deliveryDate < pickupDate) {
+      errors.deliveryDate =
+        "Estimated delivery date must be on or after the pick-up date";
+    }
 
-     if (Object.keys(errors).length > 0) {
-       return json({ errors }, { status: 400 });
-     }
+    if (Object.keys(errors).length > 0) {
+      return json({ errors }, { status: 400 });
+    }
 
-     const loadRequest: LoadRequest = {
-       shipperUserId: user.user.id,
-       origin: formData.get("origin") as string,
-       destination: formData.get("destination") as string,
-       pickupDate: pickupDate.toISOString(),
-       deliveryDate: deliveryDate.toISOString(),
-       commodity: formData.get("commodity") as string,
-       estimatedDistance: Number(formData.get("estimatedDistance")),
-       weight: Number(formData.get("weight")),
-       offerAmount: Number(formData.get("offerAmount")),
-       loadDetails: formData.get("loadDetails") as string,
-       loadStatus: "Open",
-       createdAt: new Date().toISOString(),
-       createdBy: {
-         userId: user.user.id,
-         email: user.user.email,
-         firstName: user.user.firstName,
-         middleName: user.user.middleName || "",
-         lastName: user.user.lastName,
-         phone: user.user.phone,
-         userType: "shipper",
-         businessType: shipperProfile.user.businessProfile.businessType,
-         businessRegistrationNumber:
-           shipperProfile.user.businessProfile.businessRegistrationNumber,
-         companyName: shipperProfile.user.businessProfile.companyName,
-         idCardOrDriverLicenceNumber:
-           shipperProfile.user.businessProfile.idCardOrDriverLicenceNumber,
-         shipperRole: shipperProfile.user.businessProfile.shipperRole,
-       },
-     };
+    const loadRequest: LoadRequest = {
+      shipperUserId: user.user.id,
+      origin: formData.get("origin") as string,
+      destination: formData.get("destination") as string,
+      pickupDate: pickupDate.toISOString(),
+      deliveryDate: deliveryDate.toISOString(),
+      commodity: formData.get("commodity") as string,
+      estimatedDistance: Number(formData.get("estimatedDistance")),
+      weight: Number(formData.get("weight")),
+      offerAmount: Number(formData.get("offerAmount")),
+      loadDetails: formData.get("loadDetails") as string,
+      loadStatus: "Open",
+      createdAt: new Date().toISOString(),
+      createdBy: {
+        userId: user.user.id,
+        email: user.user.email,
+        firstName: user.user.firstName,
+        middleName: user.user.middleName || "",
+        lastName: user.user.lastName,
+        phone: user.user.phone,
+        userType: "shipper",
+        businessType: shipperProfile.user.businessProfile.businessType,
+        businessRegistrationNumber:
+          shipperProfile.user.businessProfile.businessRegistrationNumber,
+        companyName: shipperProfile.user.businessProfile.companyName,
+        idCardOrDriverLicenceNumber:
+          shipperProfile.user.businessProfile.idCardOrDriverLicenceNumber,
+        shipperRole: shipperProfile.user.businessProfile.shipperRole,
+      },
+    };
 
-     const response: any = await AddLoads(loadRequest, user.token);
-     if (Object.keys(response).length > 0 && response.origin !== undefined) {
-       return redirect("/shipper/dashboard/loads/view");
-     } else {
-       return json(
-         { error: "Failed to add load. Please try again." },
-         { status: 500 }
-       );
-     }
-   } catch (error: any) {
-     if (JSON.parse(error).data.status === 401) {
-       return redirect("/logout/");
-     }
-     return error;
-   }
+    const response: any = await AddLoads(loadRequest, user.token);
+    if (Object.keys(response).length > 0 && response.origin !== undefined) {
+      return redirect("/shipper/dashboard/loads/view");
+    } else {
+      return json(
+        { error: "Failed to add load. Please try again." },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    if (JSON.parse(error).data.status === 401) {
+      return redirect("/logout/");
+    }
+    return error;
+  }
 };
 
 // Define the shape of our form data
@@ -202,7 +210,6 @@ interface formData {
   offerAmount: string;
   [key: string]: string; // Index signature to allow string indexing
 }
-
 
 const loadTypes = [
   "Clothing",
@@ -227,8 +234,11 @@ const loadTypes = [
 ];
 
 export default function AddLoad() {
-  const actionData = useActionData<{ errors?: { [key: string]: string }, error?: string }>();
-  const { user, shipper, hasAccess } = useLoaderData<typeof loader>();
+  const actionData = useActionData<{
+    errors?: { [key: string]: string };
+    error?: string;
+  }>();
+  var { user, shipper, hasAccess, theme } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [offerType, setOfferType] = useState("flat");
   const today = new Date().toISOString().split("T")[0];
@@ -247,7 +257,7 @@ export default function AddLoad() {
     weight: "",
     offerAmount: "",
   });
-  
+
   if (!hasAccess) {
     return (
       <AccessDenied
@@ -282,11 +292,13 @@ export default function AddLoad() {
     setIsFormValid(isValid);
   }, [formData]);
 
-  const currency = 'ETB';
+  const currency = "ETB";
+
+  theme = theme || "light";
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-green-600">
+    <div className="container mx-auto p-4 max-w-4xl bg-[#1a1e2e] text-white">
+      <h1 className="text-3xl font-bold mb-6 text-center text-[#ff6b6b]">
         Add New Load Offer
       </h1>
 
@@ -308,6 +320,7 @@ export default function AddLoad() {
             required={false}
             onChange={handleInputChange}
             error={actionData?.errors?.title}
+            className="bg-[#2a2f3f] text-white border-[#3a3f4f] focus:border-[#ff6b6b]"
           />
 
           <FloatingLabelInput
@@ -316,6 +329,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.loadDetails}
+            theme="dark"
           />
 
           <FloatingLabelInput
@@ -324,6 +338,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.origin}
+            theme="dark"
           />
 
           <FloatingLabelInput
@@ -332,6 +347,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.destination}
+            theme="dark"
           />
 
           <DateInput
@@ -341,6 +357,7 @@ export default function AddLoad() {
             min={today}
             onChange={handleInputChange}
             error={actionData?.errors?.pickupDate}
+            theme={theme} // Explicitly set to dark theme
           />
 
           <DateInput
@@ -350,6 +367,7 @@ export default function AddLoad() {
             min={today}
             onChange={handleInputChange}
             error={actionData?.errors?.deliveryDate}
+            theme={theme} // Explicitly set to dark theme
           />
 
           <FloatingLabelInput
@@ -361,6 +379,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.estimatedDistance}
+            theme="dark"
           />
 
           <FloatingLabelInput
@@ -371,12 +390,13 @@ export default function AddLoad() {
             min={1}
             onChange={handleInputChange}
             error={actionData?.errors?.weight}
+            theme="dark"
           />
 
           <div className="col-span-2 relative">
             <label
               htmlFor="commodity"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-white mb-1"
             >
               Load Type (Commodity)
             </label>
@@ -386,7 +406,7 @@ export default function AddLoad() {
                 name="commodity"
                 value={selectedLoadType}
                 onChange={handleLoadTypeChange}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md appearance-none bg-white"
+                className="block w-full pl-3 pr-10 py-2 text-base border-[#3a3f4f] focus:outline-none focus:ring-[#ff6b6b] focus:border-[#ff6b6b] sm:text-sm rounded-md appearance-none bg-[#2a2f3f] text-white"
                 required
               >
                 <option value="">Select a load type</option>
@@ -396,26 +416,16 @@ export default function AddLoad() {
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#ff6b6b]">
                 <ChevronDownIcon className="h-4 w-4" />
               </div>
             </div>
             {actionData?.errors?.commodity && (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-1 text-sm text-red-400">
                 {actionData.errors.commodity}
               </p>
             )}
           </div>
-
-          {selectedLoadType === "Other" && (
-            <FloatingLabelInput
-              name="commodity"
-              placeholder="Custom Load Type"
-              required
-              onChange={handleInputChange}
-              error={actionData?.errors?.commodity}
-            />
-          )}
         </div>
 
         <div className="space-y-4">
@@ -427,7 +437,7 @@ export default function AddLoad() {
                 value="flat"
                 checked={offerType === "flat"}
                 onChange={() => setOfferType("flat")}
-                className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                className="form-radio h-4 w-4 text-[#ff6b6b] border-[#3a3f4f] focus:ring-[#ff6b6b]"
               />
               <span className="ml-2">Flat Offer</span>
             </label>
@@ -438,7 +448,7 @@ export default function AddLoad() {
                 value="negotiable"
                 checked={offerType === "negotiable"}
                 onChange={() => setOfferType("negotiable")}
-                className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                className="form-radio h-4 w-4 text-[#ff6b6b] border-[#3a3f4f] focus:ring-[#ff6b6b]"
               />
               <span className="ml-2">Negotiable</span>
             </label>
@@ -453,6 +463,7 @@ export default function AddLoad() {
               min="1"
               onChange={handleInputChange}
               error={actionData?.errors?.offerAmount}
+              className="bg-[#2a2f3f] text-white border-[#3a3f4f] focus:border-[#ff6b6b]"
             />
           )}
         </div>
@@ -462,8 +473,8 @@ export default function AddLoad() {
             type="submit"
             className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
               isFormValid
-                ? "bg-green-500 hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                : "bg-gray-500 cursor-not-allowed"
+                ? "bg-[#ff6b6b] hover:bg-[#ff8c8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff6b6b]"
+                : "bg-[#3a3f4f] cursor-not-allowed"
             }`}
             disabled={!isFormValid || navigation.state === "submitting"}
           >
