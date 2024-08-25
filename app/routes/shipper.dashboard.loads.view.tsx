@@ -186,6 +186,12 @@ export default function ViewLoads() {
     setIsUpdateModalOpen(true);
   };
 
+  let info = "";
+  
+  if (Object.keys(loads).length === 0) {
+    info = "No loads posted, please check back later";
+  }
+
   const currency = "ETB";
 
   return (
@@ -201,6 +207,11 @@ export default function ViewLoads() {
         >
           Complete your profile to manage loads
         </NavLink>
+      )}
+      {info && (
+        <div className="p-4 mb-2 text-center text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-300">
+          {info}
+        </div>
       )}
 
       {hasAccess && (

@@ -58,18 +58,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     if (user?.user.userType === "carrier") {
       return redirect("/carriers/dashboard/")
     }
-    // Redirect to the appropriate dashboard based on the user role
-    const shipperDashboard = await redirectUser(user?.user);
-    if (!shipperDashboard) {
-      return redirect("/carriers/dashboard/", {
-        headers: {
-          "Set-Cookie": await commitSession(session, { expires }),
-        },
-      });
-    }
-
+    
     // hydrate session user with shipper data
-    var userBusinessInfo: any = await getUserInfo(user?.user?.id, user?.token);
+    var userBusinessInfo: any = await getUserInfo(user?.user.id, user?.token);
 
     if (userBusinessInfo && userBusinessInfo.userType === "shipper") {
       const shipperUser: ShipperUser = {
@@ -99,30 +90,33 @@ export const loader: LoaderFunction = async ({ request }) => {
       session.set("shipper", shipperUser);
     } else {
         const shipperProfile = {
-          userId: user?.user.id,
-          firstName: user?.user.firstName,
-          middleName: user?.user.middleName,
-          lastName: user?.user.lastName,
-          email: user?.user.email,
-          phone: user?.user.phoneNumber,
-          userType: user?.user.userType,
-          businessProfile: {
-            companyName: "",
-            motorCarrierNumber: "",
-            dotNumber: "",
-            equipmentType: "",
-            availableCapacity: 0,
-            idCardOrDriverLicenceNumber: "",
-            insuranceName: "",
-            businessType: "",
-            carrierRole: null,
-            shipperRole: 0,
-            businessRegistrationNumber: "",
-            carrierVehicles: [],
-          },
-          roles: user?.user.roles,
-          confirmed: user?.user.confirmed,
-          status: user?.user.status,
+          id: user?.user.id,
+          token: user.token,
+          user: {
+            firstName: user?.user.firstName,
+            middleName: user?.user.middleName,
+            lastName: user?.user.lastName,
+            email: user?.user.email,
+            phone: user?.user.phoneNumber,
+            userType: user?.user.userType,
+            businessProfile: {
+              companyName: "",
+              motorCarrierNumber: "",
+              dotNumber: "",
+              equipmentType: "",
+              availableCapacity: 0,
+              idCardOrDriverLicenceNumber: "",
+              insuranceName: "",
+              businessType: "",
+              carrierRole: null,
+              shipperRole: null,
+              businessRegistrationNumber: "",
+              carrierVehicles: [],
+            },
+            roles: user?.user.roles,
+            confirmed: user?.user.confirmed,
+            status: user?.user.status,
+          }
         };
       session.set("shipper", shipperProfile);
     }
@@ -130,12 +124,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     // Set the session for the auth user
     session.set(authenticator.sessionKey, user);
     const shipperUser = session.get("shipper");
+
     return json(
-      { user: shipperUser, shipperDashboard },
+      { user: shipperUser },
       {
-        headers: {
-          "Set-Cookie": await commitSession(session, { expires }),
-        },
+        headers:
+        {
+          "Set-Cookie": await commitSession(session, { expires })
+        }
       }
     );
   } catch (error: any) {
@@ -165,11 +161,8 @@ export default function Dashboard() {
 
   // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";
-
   // User roles and permission checks
-  if (
-   loaderData?.shipperDashboard === false
-  ) {
+  if ( loaderData.user.user.userType !== "shipper") {
     return (
       <AccessDenied
         returnUrl="/"

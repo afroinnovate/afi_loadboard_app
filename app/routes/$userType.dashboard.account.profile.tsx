@@ -15,18 +15,23 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
     if (!user) {
-      console.log("no user found");
+      console.log("no auth user found");
       return redirect("/login/");
     }
 
-    const { userType } = params;
+    let { userType } = params;
+    userType = userType === user?.user.userType ? userType : user?.user.userType;
+    
     if (!userType) {
-      console.log("Something went wrong while retrieving user type: ", userType);
       return redirect("/logout/");
     }
-
-    const userProfile = session.get(userType === "carriers"? "carrier" : userType);
+    const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
+    console.log("user type: ", userTypeFiltered);
+    
+    const userProfile = session.get(userTypeFiltered);
+    console.log("user profile: ", userProfile);
     if (!userProfile) {
+      console.log("no user profile found");
       return redirect("/logout/");
     }
 
@@ -42,10 +47,10 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
 
 export let action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get(authenticator.sessionKey);
   const carrierProfile = session.get("carrier");
+  const shipperProfile = session.get("shipper");
 
-  if (!carrierProfile) {
+  if (!carrierProfile && !shipperProfile) {
     return json({ error: "Unauthorized", status: 401 }, { status: 401 });
   }
 

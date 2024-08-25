@@ -72,9 +72,9 @@ export default function UpdateLoadView({
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-600 bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl update-load-form">
-        <h2 className="text-2xl font-bold mb-6 text-center text-green-700">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
+      <div className="bg-[#1f2937] p-8 rounded-lg shadow-xl w-full max-w-2xl update-load-form">
+        <h2 className="text-2xl font-bold mb-6 text-center text-[#ff6b6b]">
           Update Load
         </h2>
         <Form method="post" className="space-y-6">
@@ -84,24 +84,26 @@ export default function UpdateLoadView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FloatingLabelInput
               name="origin"
-              placeholder={loadInfo.origin}
+              placeholder="Origin"
               defaultValue={loadInfo.origin}
               onChange={handleChange}
               required
+              theme="dark"
             />
             <FloatingLabelInput
               name="destination"
-              placeholder={loadInfo.destination}
+              placeholder="Destination"
               defaultValue={loadInfo.destination}
               onChange={handleChange}
               required
+              theme="dark"
             />
             <div className="relative">
               <select
                 name="loadStatus"
                 value={loadInfo.loadStatus}
                 onChange={(e) => handleChange("loadStatus", e.target.value)}
-                className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                className="block w-full px-4 py-2 mt-2 text-white bg-[#2a2f3f] border border-[#3a3f4f] rounded-md shadow-sm focus:outline-none focus:ring-[#ff6b6b] focus:border-[#ff6b6b]"
                 required
               >
                 <option value="" disabled>
@@ -113,32 +115,35 @@ export default function UpdateLoadView({
                   </option>
                 ))}
               </select>
-              <label className="absolute left-3 -top-2.5 bg-white px-1 text-sm text-gray-600">
+              <label className="absolute left-3 -top-2.5 bg-[#1f2937] px-1 text-sm text-gray-400">
                 Load Status
               </label>
             </div>
             <FloatingLabelInput
               name="weight"
-              placeholder={loadInfo.weight}
+              placeholder="Weight"
               type="number"
               defaultValue={loadInfo.weight}
               onChange={handleChange}
               required
+              theme="dark"
             />
             <FloatingLabelInput
               name="offerAmount"
-              placeholder={`Offer Amount ${loadInfo.offerAmount} (ETB)`}
+              placeholder="Offer Amount (ETB)"
               type="number"
               defaultValue={loadInfo.offerAmount}
               onChange={handleChange}
               required
+              theme="dark"
             />
             <FloatingLabelInput
               name="commodity"
-              placeholder={`Load Type: ${loadInfo.commodity}`}
+              placeholder="Load Type"
               defaultValue={loadInfo.commodity}
               onChange={handleChange}
               required
+              theme="dark"
             />
             <DateInput
               name="pickupDate"
@@ -147,6 +152,7 @@ export default function UpdateLoadView({
               onChange={handleChange}
               min={today}
               required
+              theme="dark"
             />
             <DateInput
               name="deliveryDate"
@@ -155,18 +161,18 @@ export default function UpdateLoadView({
               onChange={handleChange}
               min={today}
               required
+              theme="dark"
             />
           </div>
 
           <div className="col-span-2">
             <textarea
-              className="w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+              className="w-full px-4 py-2 mt-2 text-white bg-[#2a2f3f] border border-[#3a3f4f] rounded-md shadow-sm focus:outline-none focus:ring-[#ff6b6b] focus:border-[#ff6b6b]"
               name="loadDetails"
-              placeholder={loadInfo.loadDetails}
+              placeholder="Load Details"
               defaultValue={loadInfo.loadDetails}
-              onChange={handleChange}
+              onChange={(e) => handleChange("loadDetails", e.target.value)}
               required
-              as="textarea"
               rows={4}
             />
           </div>
@@ -175,7 +181,7 @@ export default function UpdateLoadView({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 transition duration-200"
+              className="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200"
             >
               Cancel
             </button>
@@ -183,7 +189,7 @@ export default function UpdateLoadView({
               type="submit"
               name="_action"
               value="save_changes"
-              className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200"
+              className="px-6 py-2 bg-[#ff6b6b] text-white rounded hover:bg-[#ff8c8c] focus:outline-none focus:ring-2 focus:ring-[#ff6b6b] focus:ring-opacity-50 transition duration-200"
               disabled={isSubmitting}
             >
               {isSubmitting ? <Loader /> : "Update Load"}

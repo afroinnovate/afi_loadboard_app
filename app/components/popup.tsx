@@ -23,7 +23,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, title, message, onClose }) => {
         <div className="flex justify-between items-center pb-3">
           <h2 className="text-2xl font-semibold">{title}</h2>
           <button
-            className="text-gray-600 hover:text-gray-800"
+            className="text-red-600 hover:bg-red-800 hover:text-white"
             onClick={onClose}
           >
             <svg

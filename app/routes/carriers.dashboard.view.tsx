@@ -211,7 +211,7 @@ export default function CarrierViewLoads() {
   
   // User roles and permission checks
   const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
-    checkUserRole(carrierProfile.roles, carrierProfile.businessProfile.carrierRole ?? "");
+    checkUserRole(carrierProfile.roles, carrierProfile.user.businessProfile.carrierRole ?? "");
   
   let contactMode =
     actionData && actionData.message === "contactMode"
@@ -238,12 +238,7 @@ export default function CarrierViewLoads() {
   };
 
   // Conditional rendering for access denied or valid dashboard
-  if (
-    !shipperHasAccess &&
-    !carrierHasAccess &&
-    !adminAccess &&
-    !carrierAccess
-  ) {
+  if (carrierProfile.user.userType !== "carrier") {
     return (
       <AccessDenied
         returnUrl="/"

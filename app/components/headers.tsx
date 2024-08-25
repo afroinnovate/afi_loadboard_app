@@ -35,7 +35,7 @@ export default function Header({ user }) {
   }`;
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event: any) => {
       if (settingsRef.current && !settingsRef.current.contains(event.target)) {
         closeSettings();
       }
