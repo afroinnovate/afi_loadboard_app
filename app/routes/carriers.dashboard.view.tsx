@@ -149,17 +149,10 @@ export const action: ActionFunction = async ({ request }) => {
     }
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
-    throw error;
+    console.error("Bid process error:", error);
+    return json({ error: "Failed to process bid" }, { status: 500 });
   }
 };
 
@@ -209,9 +202,13 @@ export default function CarrierViewLoads() {
     info = "No loads posted, please check back later";
   }
   
-  // User roles and permission checks
-  const [, shipperHasAccess, adminAccess, carrierAccess, carrierHasAccess] =
-    checkUserRole(carrierProfile.roles, carrierProfile.user.businessProfile.carrierRole ?? "");
+  const carrierHasAccess =
+    carrierProfile.user.userType === "carrier" &&
+    carrierProfile.user.businessProfile.carrierRole !== null
+      ? true
+      : false;
+
+  const carrierAccess = carrierProfile.user.userType === "carrier" ? true : false;
   
   let contactMode =
     actionData && actionData.message === "contactMode"

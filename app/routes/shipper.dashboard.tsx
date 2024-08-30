@@ -4,8 +4,6 @@ import {
   useLoaderData,
   useLocation,
   NavLink,
-  useRouteError,
-  isRouteErrorResponse,
 } from "@remix-run/react";
 import type {
   MetaFunction,
@@ -19,11 +17,9 @@ import { commitSession, getSession } from "../api/services/session";
 import Sidebar from "../components/sidebar";
 import Overview from "../components/overview";
 import AccessDenied from "~/components/accessdenied";
-import { redirectUser } from "~/components/redirectUser";
-import ErrorDisplay from "~/components/ErrorDisplay";
 import { getUserInfo } from "~/api/services/user.service";
 import { type ShipperUser } from '../api/models/shipperUser';
-import { ErrorBoundary } from "./shipper.dashboard.loads.bids";
+import { ErrorBoundary } from "~/components/errorBoundary";
 
 export const meta: MetaFunction = () => {
   return [

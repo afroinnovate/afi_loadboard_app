@@ -1,185 +1,413 @@
-// routes/dashboard/bids.tsx
+import React, { useState } from "react";
 import {
+  useLoaderData,
   useActionData,
   Form,
-  type MetaFunction,
-  useLoaderData,
-  useNavigate,
+  useSubmit,
+  useNavigation,
+  Link,
 } from "@remix-run/react";
-import { authenticator } from "../api/services/auth.server";
-import { commitSession, getSession } from "../api/services/session";
-import { BidRequest } from "~/api/models/bidRequest";
-import customStyles from "../styles/global.css";
-import type { BidResponse } from "~/api/models/bidResponse";
+import { json, LoaderFunction, ActionFunction } from "@remix-run/node";
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  PhoneIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CameraIcon
+} from "@heroicons/react/20/solid";
 import { GetBids } from "~/api/services/bid.service";
-import { LoaderFunction, json, redirect } from "@remix-run/node";
-import { BidCard } from "~/components/BidCard";
-import { useRouteError } from "@remix-run/react";
-import { useEffect } from "react";
 import { checkUserRole } from "~/components/checkroles";
-import ErrorDisplay from "~/components/ErrorDisplay";
 import AccessDenied from "~/components/accessdenied";
+import { ErrorBoundary } from "~/components/errorBoundary";
+import { commitSession, getSession } from "~/api/services/session";
+import ContactShipperView from "~/components/contactshipper";
+import { authenticator } from "~/api/services/auth.server";
 
-export const meta: MetaFunction = () => {
-  return [
-    {
-      title: "Loadboard | Shipper's Bidding dashboard",
-      description: "Bidding Dashboard for Shippers",
-    },
-  ];
-};
-export const links: LinksFunction = () => [
-  ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
-];
-
-// const userData: LoginResponse = {
-//   token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YzEzNGVmMC1lZmY4LTQ2NmUtOTU1ZS1lMTk1NzAwZDg2OTYiLCJnaXZlbl9uYW1lIjoiVGFuZ28iLCJmYW1pbHlfbmFtZSI6IldhciIsImVtYWlsIjoidGFuZ290ZXdAZ21haWwuY29tIiwibmFtZWlkIjoiN2MxMzRlZjAtZWZmOC00NjZlLTk1NWUtZTE5NTcwMGQ4Njk2IiwianRpIjoiMDRhYWZhZGEtM2NlOS00YWUxLThiOTctZWIyYzhkMDE1YTUyIiwibmJmIjoxNzE1NTQzMTc3LCJleHAiOjE3MTU1NDY3ODIsImlhdCI6MTcxNTU0MzE4MiwiaXNzIjoiYWZyb2lubm92YXRlLmNvbSIsImF1ZCI6ImFwcC5sb2FkYm9hcmQuYWZyb2lubm92YXRlLmNvbSJ9.s0SWf6H1Duv1861mGWz-vcrgXh9sVekiQjXzzGYS6oc",
-//   tokenType: "Bearer",
-//   refreshToken: "eyJhbGci",
-//   expiresIn: 3600,
-//   user: {
-//     "id": "4cc116f0-8f07-4305-824f-4580a23f2700",
-//     "userName": "tangogatdet76@gmail.com",
-//     "email": "tangogatdet76@gmail.com",
-//     "firstName": "Gatluak",
-//     "lastName": "Deng",
-//     "roles": [
-//         "shipper"
-//     ],
-//     "companyName": "GatLuak LLCs",
-//     "dotNumber": "SH12345"
-//   }
-// };
-
-// Server-side data fetching
 export const loader: LoaderFunction = async ({ request }) => {
-  try {
-    // Find the parent route match containing the user and token
-    const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get("user");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user: any = session.get(authenticator.sessionKey);
+  var shipperProfile = session.get("shipper");
 
-    // const user: any = userData;
+  const session_expiration: any = process.env.SESSION_EXPIRATION;
+  const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+  if (isNaN(EXPIRES_IN)) {
+    throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+  }
 
-    if (!user) {
-      throw JSON.stringify({
-        data: {
-          message: "User not found",
-          status: 401,
-        },
-      });
-    }
+  const expires = new Date(Date.now() + EXPIRES_IN);
 
-    const bidsResponse = await GetBids(user.token);
-    // // Convert the bids object to an array if it's not already
-    const bidsArray = Array.isArray(bidsResponse)
-      ? bidsResponse
-      : Object.values(bidsResponse);
+  if (!user) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
 
-    if (bidsArray.length <= 0) {
-      throw new Response("No bids available", { status: 404 });
-    }
+  //refresh user session
+  session.set("user", user);
 
-    return json({ bidsArray, user });
-  } catch (error: any) {
-    if (JSON.parse(error).data.status === 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      session.set("shipper", null);
-      return redirect("/login/", {
+  const bids = await GetBids(user.token);
+  if (bids === null) {
+    return json(
+      { bids: [], user: shipperProfile, theme: "dark" },
+      {
         headers: {
-          "Set-Cookie": await commitSession(session),
+          "Set-Cookie": await commitSession(session, { expires }),
         },
-      });
-    }
-    throw error;
+      }
+    );
+  }
+  return json({ bids, user, theme: "dark" },
+    { headers: { "Set-Cookie": await commitSession(session, { expires }) } });
+};
+
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData();
+  const action = formData.get("_action");
+  const bidId = formData.get("bidId");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user: any = session.get("user");
+
+  switch (action) {
+    case "accept":
+      // await AcceptBid(bidId, user.token);
+      return json({ success: true, message: "Bid accepted" });
+    case "reject":
+      // await RejectBid(bidId, user.token);
+      return json({ success: true, message: "Bid rejected" });
+    case "closeContact":
+      return json({ closeContact: true });
+    default:
+      return json({ error: "Invalid action" }, { status: 400 });
   }
 };
 
-export default function BidLoads() {
-  const { bids, user } = useLoaderData();
+
+export default function BidsView() {
+  const { bids, user, theme }: any = useLoaderData();
   const actionData = useActionData();
+  const navigation = useNavigation();
+  const submit = useSubmit();
 
-  const [
-    shipperAccess,
-    shipperHasAccess,
-    adminAccess,
-    carrierAccess,
-    carrierHasAccess,
-  ] = checkUserRole(user.user?.roles);
+  const [expandedBid, setExpandedBid] = useState(null);
+  const [filterConfig, setFilterConfig] = useState({
+    status: "all",
+    minAmount: 0,
+  });
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "ascending",
+  });
+  const [selectedCarrier, setSelectedCarrier] = useState(null);
 
-  if (!shipperHasAccess) {
+  if (user.user.userType !== "shipper") {
     return (
       <AccessDenied
         returnUrl="/shipper/dashboard/loads/view"
-        message="You do not have enough access to see your biddings, Click Home to complete your profile"
+        message="You do not have enough access to see your biddings. Click Home to complete your profile."
       />
     );
-  } else {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center shadow-md border-spacing-3 mb-1">
-          <h1 className="text-2xl font-san font-serif mb-2 p-3 text-center text-green-700 shadow-md shadow-gray-600">
-            Review Bids
-          </h1>
-        </div>
-        <div className="col-span-2">
-          <div className="bg-gray-100 p-3 text-gray-600 text-sm">
-            <div className="grid grid-cols-3">
-              <span></span>
-              <span>Bid Amount</span>
-              <span>Bid By</span>
-            </div>
-          </div>
-          {bids.map((bid) => (
-            <Form method="post" key={bid.id}>
-              <BidCard bid={bid} shipperHasAccess={shipperHasAccess} />
-            </Form>
-          ))}
-        </div>
-      </div>
-    );
   }
-}
 
-export function ErrorBoundary() {
-  let error: any = useRouteError();
-  console.log("Error: ", error);
-  const jsonError = JSON.parse(error);
-  error = {
-    message: jsonError.data.message,
-    status: jsonError.data.status,
+  const handleSort = (key: any) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction:
+        prevConfig.key === key && prevConfig.direction === "ascending"
+          ? "descending"
+          : "ascending",
+    }));
   };
 
-  if (error.status === 404) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
-          <h1 className="text-2xl font-san font-serif mb-4 p-3 text-center text-green-700 shadow-md shadow-gray-600">
-            Review Bids
-          </h1>
-        </div>
-        <h1 className="flex justify-center items-center pt-6 text-blue-400 animate-pulse text-justify font-medium">
-          There are no bids added yet, Check again later
-        </h1>
+  const handleFilter = (e: any) => {
+    const { name, value } = e.target;
+    setFilterConfig((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleExpand = (id: any) => {
+    setExpandedBid(expandedBid === id ? null : id);
+  };
+
+  const handleAction = (action, bidId) => {
+    const formData = new FormData();
+    formData.append("_action", action);
+    formData.append("bidId", bidId);
+    submit(formData, { method: "post" });
+  };
+
+  const filteredAndSortedBids = bids
+    .filter(
+      (bid: any) =>
+        filterConfig.status === "all" || bid.bidStatus === filterConfig.status
+    )
+    .filter((bid: any) => bid.bidAmount >= filterConfig.minAmount)
+    .sort((a: any, b: any) => {
+      if (sortConfig.key) {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        if (aValue < bValue)
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        if (aValue > bValue)
+          return sortConfig.direction === "ascending" ? 1 : -1;
+      }
+      return 0;
+    });
+
+  const themeClasses = {
+    container:
+      theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black",
+    header: theme === "dark" ? "text-red-500" : "text-green-700",
+    table: theme === "dark" ? "bg-gray-800" : "bg-white",
+    tableHeader:
+      theme === "dark" ? "bg-green-800 text-white" : "bg-green-600 text-white",
+    tableRow:
+      theme === "dark"
+        ? "border-gray-700 hover:bg-gray-700"
+        : "border-gray-200 hover:bg-gray-50",
+    expandedRow: theme === "dark" ? "bg-gray-700" : "bg-gray-50",
+    input:
+      theme === "dark"
+        ? "bg-gray-700 border-green-600 text-white"
+        : "border-green-300 focus:ring-green-500",
+    button:
+      theme === "dark"
+        ? "text-green-400 hover:text-green-300"
+        : "text-green-600 hover:text-green-800",
+    loader: theme === "dark" ? "border-green-400" : "border-green-500",
+  };
+
+  return (
+    <div className={`container mx-auto px-4 py-8 ${themeClasses.container}`}>
+      <h1
+        className={`text-3xl font-bold mb-8 text-center ${themeClasses.header}`}
+      >
+        Review Bids
+      </h1>
+
+      <div className="mb-4 flex items-center">
+        <CameraIcon className={`w-5 h-5 mr-2 ${themeClasses.button}`} />
+        <select
+          name="status"
+          onChange={handleFilter}
+          className={`mr-2 p-2 rounded ${themeClasses.input}`}
+        >
+          <option value="all">All Status</option>
+          <option value={0}>Pending</option>
+          <option value={1}>Accepted</option>
+          <option value={2}>Rejected</option>
+        </select>
+        <input
+          type="number"
+          name="minAmount"
+          placeholder="Min Amount"
+          onChange={handleFilter}
+          className={`p-2 rounded ${themeClasses.input}`}
+        />
       </div>
-    );
-  } else if (error.status === 401) {
-    console.log("redirecting to login");
-    return null;
-  } else {
-    // Handle other kinds of errors or unknown errors
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center shadow-md border-spacing-3 mb-3">
-          <h1 className="text-2xl font-san font-serif mb-4 p-3 text-center text-green-700 shadow-md shadow-gray-600">
-            Review Bids
-          </h1>
-        </div>
-        <h1 className="flex justify-center items-center pt-3 text-red-400">
-          Hmm, something went wrong!
-        </h1>
+
+      <div
+        className={`overflow-x-auto rounded-lg shadow ${themeClasses.table}`}
+      >
+        <table className="w-full">
+          <thead>
+            <tr className={themeClasses.tableHeader}>
+              <th
+                onClick={() => handleSort("carrier.firstName")}
+                className="p-2 cursor-pointer"
+              >
+                Carrier
+              </th>
+              <th
+                onClick={() => handleSort("bidAmount")}
+                className="p-2 cursor-pointer"
+              >
+                Bid Amount
+              </th>
+              <th
+                onClick={() => handleSort("bidStatus")}
+                className="p-2 cursor-pointer"
+              >
+                Status
+              </th>
+              <th className="p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredAndSortedBids.map((bid: any) => (
+              <React.Fragment key={bid.id}>
+                <tr
+                  className={`border-b ${themeClasses.tableRow} cursor-pointer`}
+                  onClick={() => handleExpand(bid.id)}
+                >
+                  <td className="p-2 text-center">{`${bid.carrier.firstName} ${bid.carrier.lastName}`}</td>
+                  <td className="p-2 text-center">${bid.bidAmount}</td>
+                  <td className="p-2 text-center">
+                    {["Pending", "Accepted", "Rejected"][bid.bidStatus]}
+                  </td>
+                  <td className="p-2 text-center">
+                    {expandedBid !== bid.id && (
+                      <div className="flex justify-center items-center space-x-2">
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="accept"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("accept", bid.id);
+                            }}
+                            className={`mr-2 ${themeClasses.button}`}
+                          >
+                            <CheckCircleIcon className="w-5 h-5 text-green-600 hover:text-green-800" />
+                          </button>
+                        </Form>
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="reject"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("reject", bid.id);
+                            }}
+                            className={`mr-2 ${
+                              theme === "dark"
+                                ? "text-red-400 hover:text-red-300"
+                                : "text-red-600 hover:text-red-800"
+                            }`}
+                          >
+                            <XCircleIcon className="w-5 h-5" />
+                          </button>
+                        </Form>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCarrier(bid.carrier);
+                          }}
+                          className={
+                            theme === "dark"
+                              ? "text-blue-400 hover:text-blue-300"
+                              : "text-blue-600 hover:text-blue-800"
+                          }
+                        >
+                          <PhoneIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
+                    {expandedBid === bid.id && (
+                      <ChevronUpIcon className="w-5 h-5" />
+                    )}
+                  </td>
+                </tr>
+                {expandedBid === bid.id && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className={`p-4 ${themeClasses.expandedRow}`}
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h3 className={`font-bold ${themeClasses.header}`}>
+                            Carrier Details
+                          </h3>
+                          <p className="text-gray-200">
+                            Name:{" "}
+                            {`${bid.carrier.firstName} ${bid.carrier.lastName}`}
+                          </p>
+                          <p className="text-gray-200">
+                            Phone: {bid.carrier.phone}
+                          </p>
+                          <p className="text-gray-200">
+                            Email: {bid.carrier.email}
+                          </p>
+                          <p className="text-gray-200">
+                            Company: {bid.carrier.companyName || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className={`font-bold ${themeClasses.header}`}>
+                            Load Details
+                          </h3>
+                          <p className="text-gray-200">
+                            Origin: {bid.load.origin}
+                          </p>
+                          <p className="text-gray-200">
+                            Destination: {bid.load.destination}
+                          </p>
+                          <p className="text-gray-200">
+                            Pickup Date: {bid.load.pickupDate}
+                          </p>
+                          <p className="text-gray-200">
+                            Delivery Date: {bid.load.deliveryDate}
+                          </p>
+                          <p className="text-gray-200">
+                            Commodity: {bid.load.commodity}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-4">
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="accept"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("accept", bid.id);
+                            }}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                          >
+                            Accept
+                          </button>
+                        </Form>
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="reject"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("reject", bid.id);
+                            }}
+                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                          >
+                            Reject
+                          </button>
+                        </Form>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCarrier(bid.carrier);
+                          }}
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                          Contact
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
-    );
-  }
+
+      {navigation.state === "submitting" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div
+            className={`animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 ${themeClasses.loader}`}
+          ></div>
+        </div>
+      )}
+
+      {selectedCarrier && (
+        <ContactShipperView
+          shipper={selectedCarrier}
+          load={null}
+          onClose={() => setSelectedCarrier(null)}
+        />
+      )}
+    </div>
+  );
 }
+
+<ErrorBoundary />;

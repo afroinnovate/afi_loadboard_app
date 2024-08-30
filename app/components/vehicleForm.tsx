@@ -9,18 +9,59 @@ export default function VehicleForm({
         Enter {selectedVehicle} Details
       </h3>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Vehicle Name
-        </label>
-        <input
-          type="text"
-          name="vehicleName"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Enter vehicle name"
-          required
-        />
-      </div>
+      {/* Conditional rendering for Truck Types */}
+      {selectedVehicle === "Trucks" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Truck Type
+          </label>
+          <select
+            name="vehicleName"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            required
+          >
+            <option value="Flatbed">Flatbed</option>
+            <option value="Dry Van">Dry Van</option>
+            <option value="Refrigerated">Refrigerated</option>
+            <option value="Tanker">Tanker</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      )}
+
+      {/* Conditional rendering for Boat Types */}
+      {selectedVehicle === "Boats" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Boat Type
+          </label>
+          <select
+            name="vehicleName"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            required
+          >
+            <option value="Full Length">Full Length</option>
+            <option value="Semi">Semi</option>
+            <option value="Speed Boat">Speed Boat</option>
+          </select>
+        </div>
+      )}
+
+      {/* Conditional rendering for Truck Length */}
+      {selectedVehicle === "Trucks" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Truck Length (in feet)
+          </label>
+          <input
+            type="number"
+            name="truckLength"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            placeholder="Enter truck length"
+            required
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700">
@@ -48,13 +89,23 @@ export default function VehicleForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700">
-          Registration Number (VIN)
+          {selectedVehicle === "Trucks"
+            ? "Truck Number (VIN)"
+            : selectedVehicle === "Boats"
+            ? "Boat Number"
+            : "Van Number (VIN)"}
         </label>
         <input
           type="text"
           name="registrationNumber"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Enter VIN"
+          placeholder={
+            selectedVehicle === "Trucks"
+              ? "Enter Truck Number"
+              : selectedVehicle === "Boats"
+              ? "Enter Boat Number"
+              : "Enter VIN"
+          }
           required
         />
       </div>

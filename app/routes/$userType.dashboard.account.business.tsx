@@ -27,7 +27,6 @@ import { CreateUser } from "~/api/services/user.service";
 import VehicleForm from "~/components/vehicleForm";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { CheckCircleIcon } from "@heroicons/react/20/solid";
-import { businessProfile } from "../api/models/shipperUser";
 
 export const meta: MetaFunction = () => {
   return [
@@ -229,7 +228,7 @@ export let action: ActionFunction = async ({ params, request }: any) => {
         email: email,
         role: "",
         phoneNumber: phoneNumber,
-        userType: user.userType,
+        userType: user.user.userType,
         status: true,
       };
       let updatedUserSession = {
@@ -799,7 +798,7 @@ export default function Business() {
                       encType="multipart/form-data"
                       className="space-y-4"
                     >
-                      <div className="mt-2">
+                      <div className="mt-4">
                         <FloatingLabelInput
                           type="text"
                           name="companyName"
@@ -814,6 +813,7 @@ export default function Business() {
                           ): void {
                             throw new Error("Function not implemented.");
                           }}
+                          theme='light'
                         />
                       </div>
                       <div>

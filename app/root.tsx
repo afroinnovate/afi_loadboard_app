@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import {
   type LinksFunction,
   type LoaderFunction,
@@ -65,6 +66,9 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
+  const [theme, setTheme] = useState("dark");
+  const [isFooterVisible, setIsFooterVisible] = useState(true);
+
   let user = loaderData?.user;
   if (loaderData === "/" || location.pathname === "/") {
     user = null;
@@ -72,33 +76,72 @@ export default function App() {
     user = loaderData?.user;
   }
 
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      if (documentHeight - (scrollPosition + windowHeight) < 100) {
+        setIsFooterVisible(true);
+      } else {
+        setIsFooterVisible(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const themeClasses = {
+    html: theme === "dark" ? "bg-gray-900" : "bg-gray-100",
+    body: theme === "dark" ? "text-white" : "text-gray-900",
+    footer:
+      theme === "dark"
+        ? "bg-gray-800 text-gray-300"
+        : "bg-gray-200 text-gray-700",
+    link: theme === "dark" ? "hover:text-orange-400" : "hover:text-orange-600",
+  };
+
   return (
-    <html lang="en" className="h-full bg-gray-900">
+    <html lang="en" className={`h-full ${themeClasses.html}`}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="h-full text-white">
+      <body className={`h-full ${themeClasses.body}`}>
         <div className="min-h-screen flex flex-col">
-          <Header user={user} />
+          <Header user={user} theme={theme} toggleTheme={toggleTheme} />
           <main className="flex-grow">
-            <Outlet />
+            <Outlet context={{ theme }} />
           </main>
-          <footer className="bg-gray-800 text-gray-300 py-6 fixed bottom-0 right-0 left-0">
+          <footer
+            className={`${
+              themeClasses.footer
+            } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
+              isFooterVisible ? "translate-y-0" : "translate-y-full"
+            }`}
+            onMouseEnter={() => setIsFooterVisible(true)}
+            onMouseLeave={() => setIsFooterVisible(false)}
+          >
             <div className="container mx-auto text-center">
               <nav className="flex justify-center space-x-4">
-                <Link to="/features" className="hover:text-orange-400">
+                <Link to="/features" className={themeClasses.link}>
                   Features
                 </Link>
-                <Link to="/how-it-works" className="hover:text-orange-400">
+                <Link to="/how-it-works" className={themeClasses.link}>
                   How It Works
                 </Link>
-                <Link to="/pricing" className="hover:text-orange-400">
+                <Link to="/pricing" className={themeClasses.link}>
                   Pricing
                 </Link>
-                <Link to="/contact" className="hover:text-orange-400">
+                <Link to="/contact" className={themeClasses.link}>
                   Contacts
                 </Link>
               </nav>
