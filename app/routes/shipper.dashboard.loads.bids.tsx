@@ -45,7 +45,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   session.set("user", user);
 
   const bids = await GetBids(user.token);
-  if (!bids) {
+  if (bids === null) {
     return json(
       { bids: [], user: shipperProfile, theme: "dark" },
       {
@@ -55,7 +55,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   }
-  return json({ bids, user, theme: "light" },
+  return json({ bids, user, theme: "dark" },
     { headers: { "Set-Cookie": await commitSession(session, { expires }) } });
 };
 
@@ -86,12 +86,6 @@ export default function BidsView() {
   const actionData = useActionData();
   const navigation = useNavigation();
   const submit = useSubmit();
-
-  let info = "";
-  if (bids.length === 0) {
-    info =
-      "Your load have not been bid yet, check back later or adjust the proposed amount";
-  }
 
   const [expandedBid, setExpandedBid] = useState(null);
   const [filterConfig, setFilterConfig] = useState({
@@ -141,11 +135,11 @@ export default function BidsView() {
 
   const filteredAndSortedBids = bids
     .filter(
-      (bid) =>
-        filterConfig.status === "all" || bid.status === filterConfig.status
+      (bid: any) =>
+        filterConfig.status === "all" || bid.bidStatus === filterConfig.status
     )
-    .filter((bid) => bid.amount >= filterConfig.minAmount)
-    .sort((a, b) => {
+    .filter((bid: any) => bid.bidAmount >= filterConfig.minAmount)
+    .sort((a: any, b: any) => {
       if (sortConfig.key) {
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
@@ -156,7 +150,7 @@ export default function BidsView() {
       }
       return 0;
     });
-  
+
   const themeClasses = {
     container:
       theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black",
@@ -196,9 +190,9 @@ export default function BidsView() {
           className={`mr-2 p-2 rounded ${themeClasses.input}`}
         >
           <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="accepted">Accepted</option>
-          <option value="rejected">Rejected</option>
+          <option value={0}>Pending</option>
+          <option value={1}>Accepted</option>
+          <option value={2}>Rejected</option>
         </select>
         <input
           type="number"
@@ -216,19 +210,19 @@ export default function BidsView() {
           <thead>
             <tr className={themeClasses.tableHeader}>
               <th
-                onClick={() => handleSort("carrier")}
+                onClick={() => handleSort("carrier.firstName")}
                 className="p-2 cursor-pointer"
               >
                 Carrier
               </th>
               <th
-                onClick={() => handleSort("amount")}
+                onClick={() => handleSort("bidAmount")}
                 className="p-2 cursor-pointer"
               >
                 Bid Amount
               </th>
               <th
-                onClick={() => handleSort("status")}
+                onClick={() => handleSort("bidStatus")}
                 className="p-2 cursor-pointer"
               >
                 Status
@@ -237,68 +231,70 @@ export default function BidsView() {
             </tr>
           </thead>
           <tbody>
-            {info && (
-              <p
-                className={`p-4 m-4 text-center ${
-                  theme === "dark" ? "text-green-300" : "text-green-700"
-                } rounded-md animate-pulse`}
-              >
-                {info}
-              </p>
-            )}
-            {filteredAndSortedBids.map((bid) => (
+            {filteredAndSortedBids.map((bid: any) => (
               <React.Fragment key={bid.id}>
-                <tr className={`border-b ${themeClasses.tableRow}`}>
-                  <td className="p-2">{bid.carrier}</td>
-                  <td className="p-2">${bid.amount}</td>
-                  <td className="p-2">{bid.status}</td>
-                  <td className="p-2">
-                    <button
-                      onClick={() => handleExpand(bid.id)}
-                      className={`mr-2 ${themeClasses.button}`}
-                    >
-                      {expandedBid === bid.id ? (
-                        <ChevronUpIcon className="w-5 h-5" />
-                      ) : (
-                        <ChevronDownIcon className="w-5 h-5" />
-                      )}
-                    </button>
-                    <Form method="post" className="inline">
-                      <button
-                        type="submit"
-                        name="_action"
-                        value="accept"
-                        onClick={() => handleAction("accept", bid.id)}
-                        className={`mr-2 ${themeClasses.button}`}
-                      >
-                        <CheckCircleIcon className="w-5 h-5" />
-                      </button>
-                    </Form>
-                    <Form method="post" className="inline">
-                      <button
-                        type="submit"
-                        name="_action"
-                        value="reject"
-                        onClick={() => handleAction("reject", bid.id)}
-                        className={`mr-2 ${
-                          theme === "dark"
-                            ? "text-red-400 hover:text-red-300"
-                            : "text-red-600 hover:text-red-800"
-                        }`}
-                      >
-                        <XCircleIcon className="w-5 h-5" />
-                      </button>
-                    </Form>
-                    <button
-                      onClick={() => setSelectedCarrier(bid.carrier)}
-                      className={
-                        theme === "dark"
-                          ? "text-blue-400 hover:text-blue-300"
-                          : "text-blue-600 hover:text-blue-800"
-                      }
-                    >
-                      <PhoneIcon className="w-5 h-5" />
-                    </button>
+                <tr
+                  className={`border-b ${themeClasses.tableRow} cursor-pointer`}
+                  onClick={() => handleExpand(bid.id)}
+                >
+                  <td className="p-2 text-center">{`${bid.carrier.firstName} ${bid.carrier.lastName}`}</td>
+                  <td className="p-2 text-center">${bid.bidAmount}</td>
+                  <td className="p-2 text-center">
+                    {["Pending", "Accepted", "Rejected"][bid.bidStatus]}
+                  </td>
+                  <td className="p-2 text-center">
+                    {expandedBid !== bid.id && (
+                      <div className="flex justify-center items-center space-x-2">
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="accept"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("accept", bid.id);
+                            }}
+                            className={`mr-2 ${themeClasses.button}`}
+                          >
+                            <CheckCircleIcon className="w-5 h-5 text-green-600 hover:text-green-800" />
+                          </button>
+                        </Form>
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="reject"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("reject", bid.id);
+                            }}
+                            className={`mr-2 ${
+                              theme === "dark"
+                                ? "text-red-400 hover:text-red-300"
+                                : "text-red-600 hover:text-red-800"
+                            }`}
+                          >
+                            <XCircleIcon className="w-5 h-5" />
+                          </button>
+                        </Form>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCarrier(bid.carrier);
+                          }}
+                          className={
+                            theme === "dark"
+                              ? "text-blue-400 hover:text-blue-300"
+                              : "text-blue-600 hover:text-blue-800"
+                          }
+                        >
+                          <PhoneIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
+                    {expandedBid === bid.id && (
+                      <ChevronUpIcon className="w-5 h-5" />
+                    )}
                   </td>
                 </tr>
                 {expandedBid === bid.id && (
@@ -312,16 +308,79 @@ export default function BidsView() {
                           <h3 className={`font-bold ${themeClasses.header}`}>
                             Carrier Details
                           </h3>
-                          <p>Name: {bid.carrierName}</p>
-                          <p>Phone: {bid.carrierPhone}</p>
+                          <p className="text-gray-200">
+                            Name:{" "}
+                            {`${bid.carrier.firstName} ${bid.carrier.lastName}`}
+                          </p>
+                          <p className="text-gray-200">
+                            Phone: {bid.carrier.phone}
+                          </p>
+                          <p className="text-gray-200">
+                            Email: {bid.carrier.email}
+                          </p>
+                          <p className="text-gray-200">
+                            Company: {bid.carrier.companyName || "N/A"}
+                          </p>
                         </div>
                         <div>
                           <h3 className={`font-bold ${themeClasses.header}`}>
-                            Bid Details
+                            Load Details
                           </h3>
-                          <p>Proposed Pickup: {bid.proposedPickup}</p>
-                          <p>Proposed Delivery: {bid.proposedDelivery}</p>
+                          <p className="text-gray-200">
+                            Origin: {bid.load.origin}
+                          </p>
+                          <p className="text-gray-200">
+                            Destination: {bid.load.destination}
+                          </p>
+                          <p className="text-gray-200">
+                            Pickup Date: {bid.load.pickupDate}
+                          </p>
+                          <p className="text-gray-200">
+                            Delivery Date: {bid.load.deliveryDate}
+                          </p>
+                          <p className="text-gray-200">
+                            Commodity: {bid.load.commodity}
+                          </p>
                         </div>
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-4">
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="accept"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("accept", bid.id);
+                            }}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                          >
+                            Accept
+                          </button>
+                        </Form>
+                        <Form method="post" className="inline">
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="reject"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction("reject", bid.id);
+                            }}
+                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                          >
+                            Reject
+                          </button>
+                        </Form>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCarrier(bid.carrier);
+                          }}
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                          Contact
+                        </button>
                       </div>
                     </td>
                   </tr>
