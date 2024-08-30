@@ -798,7 +798,7 @@ export default function Business() {
                       encType="multipart/form-data"
                       className="space-y-4"
                     >
-                      <div className="mt-2">
+                      <div className="mt-4">
                         <FloatingLabelInput
                           type="text"
                           name="companyName"
@@ -813,6 +813,7 @@ export default function Business() {
                           ): void {
                             throw new Error("Function not implemented.");
                           }}
+                          theme='light'
                         />
                       </div>
                       <div>
