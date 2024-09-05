@@ -1,6 +1,6 @@
 import { GetBidByLoadIdandCarrierId, PlaceBid, UpdateBid } from "./bid.service";
 
-export async function manageBidProcess(user: any, loadId: number, bidAmount: Number) {
+export async function manageBidProcess(user: any, loadId: number, bidAmount: Number, bidStatus: Number = 0) {
   try {
     const userId = user.id ? user.id : user.user.userId;
     const bidResponse = await GetBidByLoadIdandCarrierId(
@@ -8,7 +8,7 @@ export async function manageBidProcess(user: any, loadId: number, bidAmount: Num
       userId,
       user.token
     );
-    let bidRequest: any = formatBidRequest(user, bidResponse, bidAmount, loadId);
+    let bidRequest: any = formatBidRequest(user, bidResponse, bidAmount, loadId, bidStatus);
     if (bidResponse !== null && bidResponse.carrierId === user.userId) {
       const response = await UpdateBid(user.token, bidResponse.id, bidRequest);
       return handleBidResponse(response, Number(bidRequest.bidAmount));
@@ -27,13 +27,11 @@ export async function manageBidProcess(user: any, loadId: number, bidAmount: Num
   }
 }
 
-export function formatBidRequest(user: any, existingBid: any, bidAmount: Number, loadId: Number) {
+export function formatBidRequest(user: any, existingBid: any, bidAmount: Number, loadId: Number, bidStatus: Number = 0) {
   if (existingBid) {
     return {
-      loadId: loadId,
-      carrierId: user.id,
       bidAmount,
-      bidStatus: existingBid.bidStatus,
+      bidStatus: bidStatus,
       updatedBy: user.id,
     };
   }
@@ -96,5 +94,5 @@ export function handleBidResponse(response: any, bidAmount: number) {
   if (response.error) {
     return { "message": "bidNotPlaced", "amount": bidAmount };
   }
-  return { "message": "bidPlaced", "amount": bidAmount };
+  return { "message": "bidPlaced/Updated", "amount": bidAmount, "Status": response.bidStatus };
 }

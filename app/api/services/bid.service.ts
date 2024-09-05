@@ -1,4 +1,4 @@
-import type { BidRequest } from "../models/bidRequest";
+import type { BidRequest, BidUpdateRequest } from "../models/bidRequest";
 import type { BidResponse } from "../models/bidResponse";
 
 const baseUrl = "https://api.frieght.afroinnovate.com/";
@@ -337,7 +337,7 @@ export async function DeleteBid(token: string, id: Number) {
 export async function UpdateBid(
   token: string,
   id: Number,
-  bidRequest: BidRequest
+  bidRequest: BidUpdateRequest
 ) {
   try {
     const url = `${baseUrl}bids/${id}`;

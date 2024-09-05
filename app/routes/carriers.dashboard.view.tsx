@@ -23,7 +23,6 @@ import {
 import AccessDenied from "~/components/accessdenied";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import ContactShipperView from "~/components/contactshipper";
-import { checkUserRole } from "~/components/checkroles";
 import { manageBidProcess } from "~/api/services/bid.helper";
 import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
@@ -133,7 +132,7 @@ export const action: ActionFunction = async ({ request }) => {
         const bidDetails = await manageBidProcess(
           carrierProfile,
           Number(bidLoadId),
-          Number(bidAmount)
+          Number(bidAmount),
         );
         return json({
           error: "",

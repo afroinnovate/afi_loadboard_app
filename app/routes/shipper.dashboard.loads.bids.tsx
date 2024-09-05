@@ -7,7 +7,7 @@ import {
   useNavigation,
   Link,
 } from "@remix-run/react";
-import { json, LoaderFunction, ActionFunction } from "@remix-run/node";
+import { json, LoaderFunction, ActionFunction, redirect } from "@remix-run/node";
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -16,13 +16,15 @@ import {
   ChevronUpIcon,
   CameraIcon
 } from "@heroicons/react/20/solid";
-import { GetBids } from "~/api/services/bid.service";
+import { GetBids, UpdateBid } from "~/api/services/bid.service";
 import { checkUserRole } from "~/components/checkroles";
 import AccessDenied from "~/components/accessdenied";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { commitSession, getSession } from "~/api/services/session";
 import ContactShipperView from "~/components/contactshipper";
 import { authenticator } from "~/api/services/auth.server";
+import { manageBidProcess } from "~/api/services/bid.helper";
+import { BidUpdateRequest } from "~/api/models/bidRequest";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
@@ -60,16 +62,34 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+  const shipper: any = session.get("shipper");
+  
+  if (!shipper) {
+    return redirect("logout");
+  }
+
   const formData = await request.formData();
   const action = formData.get("_action");
   const bidId = formData.get("bidId");
-  const session = await getSession(request.headers.get("Cookie"));
-  const user: any = session.get("user");
+  const loadId = formData.get("loadId");
+  const bidStatus = formData.get("bidStatus");
 
   switch (action) {
     case "accept":
-      // await AcceptBid(bidId, user.token);
-      return json({ success: true, message: "Bid accepted" });
+      const request: BidUpdateRequest = {
+        bidStatus: 1,
+        updatedBy: shipper.id,
+        bidAmount: 0,
+      };
+      try {
+        const id = Number(bidId);
+        await UpdateBid(shipper.token, id, request);
+        return json({ success: true, message: "Bid status is changed to Accepted" });
+      } catch (error: any) {
+        console.log("Error accepting bid: ", error);
+        return json({ error: JSON.parse(error).data.message }, { status: JSON.parse(error).data.status});
+      }
     case "reject":
       // await RejectBid(bidId, user.token);
       return json({ success: true, message: "Bid rejected" });
@@ -126,7 +146,7 @@ export default function BidsView() {
     setExpandedBid(expandedBid === id ? null : id);
   };
 
-  const handleAction = (action, bidId) => {
+  const handleAction = (action: any, bidId: any) => {
     const formData = new FormData();
     formData.append("_action", action);
     formData.append("bidId", bidId);
