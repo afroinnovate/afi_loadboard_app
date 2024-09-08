@@ -1,19 +1,27 @@
-import { Form, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
-import { type ActionFunction, json, type LoaderFunction, redirect } from "@remix-run/node";
-import { ErrorBoundary } from "~/components/errorBoundary";
-import { authenticator, UpdatePasswordInProfile } from "~/api/services/auth.server";
-import { getSession, commitSession } from "~/api/services/session";
-import invariant from "tiny-invariant";
-import { type PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
-import { PencilIcon } from "lucide-react";
 import { useState } from "react";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+} from "@remix-run/react";
+import { ErrorBoundary } from "~/components/errorBoundary";
+import { PencilIcon } from "lucide-react";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
+import { type ActionFunction, json, type LoaderFunction, redirect } from "@remix-run/node";
+import { commitSession, getSession } from "~/api/services/session";
+import { authenticator, UpdatePasswordInProfile } from "~/api/services/auth.server";
+import invariant from "tiny-invariant";
+import { type PasswordUpdateRequest } from "~/api/models/paswordUpdateRequest";
 
 export const loader: LoaderFunction = async ({ params, request }: any) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
+    let theme = session.get("theme");
+    theme = theme ?? "dark";
+    
     if (!user) {
       console.log("no auth user found");
       return redirect("/login/");
@@ -26,16 +34,21 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
       return redirect("/logout/");
     }
     const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
-    console.log("user type: ", userTypeFiltered);
+
     
     const userProfile = session.get(userTypeFiltered);
-    console.log("user profile: ", userProfile);
+
     if (!userProfile) {
       console.log("no user profile found");
       return redirect("/logout/");
     }
 
-    return json({ user, userType }, { status: 200 });
+    session.set("theme", theme)
+
+    return json(
+      { user, userType, "theme": theme },
+      { headers: { "Set-Cookie": await commitSession(session) } }
+    );
   } catch (error: any) {
     console.log("Profile Error: ", error);
     if (JSON.parse(error).data.status === 401) {
@@ -99,6 +112,7 @@ export default function Profile() {
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const theme = LoaderData?.theme || "light"; // Assuming theme is passed from the loader
 
   const isPasswordValid = newPassword !== "" && newPassword === confirmPassword;
 
@@ -110,16 +124,43 @@ export default function Profile() {
     }
   };
 
+  const themeClasses = {
+    container:
+      theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black",
+    header: theme === "dark" ? "text-green-400" : "text-green-700",
+    input:
+      theme === "dark"
+        ? "bg-gray-800 border-gray-700 text-white focus:border-blue-500 focus:ring-blue-500"
+        : "bg-white border-gray-300 text-black focus:border-blue-500 focus:ring-blue-500",
+    button:
+      theme === "dark"
+        ? "bg-green-600 text-white hover:bg-green-700"
+        : "bg-green-500 text-white hover:bg-green-600",
+    cancelButton:
+      theme === "dark"
+        ? "bg-gray-600 text-white hover:bg-gray-700"
+        : "bg-gray-500 text-white hover:bg-gray-600",
+    border: theme === "dark" ? "border-gray-700" : "border-gray-200",
+    editIcon:
+      theme === "dark"
+        ? "text-blue-400 hover:text-orange-300"
+        : "text-blue-500 hover:text-orange-400",
+  };
+
   return (
-    <div className="w-full">
+    <div className={`w-full ${themeClasses.container}`}>
       {actionData?.error && (
         <p className="text-red-500 text-xs italic mb-4">{actionData.error}</p>
       )}
       <Form method="post">
-        <div className="space-y-4 max-w-full">
+        <div className="space-y-4 max-w-full p-5">
           {/* Email Row */}
-          <div className="flex justify-between items-center border-b py-3">
-            <span className="font-semibold text-green-700">Email:</span>
+          <div
+            className={`flex justify-between items-center border-b py-3 ${themeClasses.border}`}
+          >
+            <span className={`font-semibold ${themeClasses.header}`}>
+              Email:
+            </span>
             <div>
               <input type="hidden" name="email" value={user.email} />
               {isEditingField === "email" ? (
@@ -131,6 +172,8 @@ export default function Profile() {
                   required
                   placeholder="Email"
                   onChange={() => {}}
+                  className={themeClasses.input}
+                  theme={theme}
                 />
               ) : (
                 <span>{user.email}</span>
@@ -139,16 +182,22 @@ export default function Profile() {
           </div>
 
           {/* Name Row */}
-          <div className="flex justify-between items-center border-b py-3">
-            <span className="font-semibold text-green-700">Name:</span>
+          <div
+            className={`flex justify-between items-center border-b py-3 ${themeClasses.border}`}
+          >
+            <span className={`font-semibold ${themeClasses.header}`}>
+              Name:
+            </span>
             <span>
               {user.firstName} {user.lastName}
             </span>
           </div>
 
           {/* Password Row */}
-          <div className="flex justify-between items-center border-b py-2 space-x-4 ">
-            <div className="flex items-center ">
+          <div
+            className={`flex justify-between items-center border-b py-2 space-x-4 ${themeClasses.border}`}
+          >
+            <div className="flex items-center">
               {isEditingPassword ? (
                 <div className="space-y-7">
                   <FloatingPasswordInput
@@ -156,12 +205,16 @@ export default function Profile() {
                     placeholder="Current Password"
                     required
                     onChange={() => {}}
+                    className={themeClasses.input}
+                    theme={theme}
                   />
                   <FloatingPasswordInput
                     name="newpassword"
                     placeholder="New Password"
                     required
                     onChange={handlePasswordChange}
+                    className={themeClasses.input}
+                    theme={theme}
                   />
                   <FloatingPasswordInput
                     name="confirmpassword"
@@ -169,11 +222,15 @@ export default function Profile() {
                     required
                     onChange={handlePasswordChange}
                     newPassword={newPassword}
+                    className={themeClasses.input}
+                    theme={theme}
                   />
                 </div>
               ) : (
                 <div className="flex justify-between">
-                  <span className="font-semibold text-green-700 items-start">
+                  <span
+                    className={`font-semibold ${themeClasses.header} items-start`}
+                  >
                     Password:
                   </span>
                   <span className="ml-12 items-end">********</span>
@@ -183,7 +240,7 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => setIsEditingPassword(true)}
-                  className="ml-2 text-blue-500 hover:text-orange-400"
+                  className={`ml-2 ${themeClasses.editIcon}`}
                 >
                   <PencilIcon className="w-4 h-4" />
                 </button>
@@ -203,7 +260,7 @@ export default function Profile() {
                 setNewPassword("");
                 setConfirmPassword("");
               }}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              className={`px-4 py-2 rounded ${themeClasses.cancelButton}`}
             >
               Cancel
             </button>
@@ -211,8 +268,10 @@ export default function Profile() {
               type="submit"
               className={`px-4 py-2 rounded text-white ${
                 isPasswordValid
-                  ? "bg-green-500 hover:bg-orange-400"
-                  : "bg-gray-700 cursor-not-allowed"
+                  ? themeClasses.button
+                  : theme === "dark"
+                  ? "bg-gray-700 cursor-not-allowed"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
               disabled={!isPasswordValid || isSubmitting}
             >

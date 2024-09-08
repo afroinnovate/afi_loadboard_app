@@ -5,31 +5,30 @@ import {
   Form,
   useSubmit,
   useNavigation,
-  Link,
 } from "@remix-run/react";
-import { json, LoaderFunction, ActionFunction, redirect } from "@remix-run/node";
+import { json, type LoaderFunction, type ActionFunction, redirect } from "@remix-run/node";
 import {
   CheckCircleIcon,
   XCircleIcon,
   PhoneIcon,
-  ChevronDownIcon,
   ChevronUpIcon,
   CameraIcon
 } from "@heroicons/react/20/solid";
 import { GetBids, UpdateBid } from "~/api/services/bid.service";
-import { checkUserRole } from "~/components/checkroles";
 import AccessDenied from "~/components/accessdenied";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { commitSession, getSession } from "~/api/services/session";
 import ContactShipperView from "~/components/contactshipper";
 import { authenticator } from "~/api/services/auth.server";
-import { manageBidProcess } from "~/api/services/bid.helper";
-import { BidUpdateRequest } from "~/api/models/bidRequest";
+import { type BidUpdateRequest } from "~/api/models/bidRequest";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user: any = session.get(authenticator.sessionKey);
   var shipperProfile = session.get("shipper");
+
+  let theme = session.get("theme")
+  theme = theme ?? 'dark'
 
   const session_expiration: any = process.env.SESSION_EXPIRATION;
   const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -57,7 +56,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   }
-  return json({ bids, user, theme: "dark" },
+  return json({ bids, user, theme: theme },
     { headers: { "Set-Cookie": await commitSession(session, { expires }) } });
 };
 
@@ -72,8 +71,6 @@ export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const action = formData.get("_action");
   const bidId = formData.get("bidId");
-  const loadId = formData.get("loadId");
-  const bidStatus = formData.get("bidStatus");
 
   switch (action) {
     case "accept":

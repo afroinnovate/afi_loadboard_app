@@ -90,6 +90,7 @@ export async function getUserInfo(userId: string, token: string) {
         const responseData: UserResponse = { ...data }
         return responseData;
     } catch (error: any) {
+        console.log("Get user info error", error)
         switch (error.status) {
             case 404:
                 return JSON.stringify({

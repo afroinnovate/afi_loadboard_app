@@ -218,9 +218,6 @@ export async function ChangePassword(request: PasswordResetRequest) {
       },
       body: JSON.stringify(request),
     });
-
-    console.log("Response from change password", response);
-
     // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 200) {
       throw response

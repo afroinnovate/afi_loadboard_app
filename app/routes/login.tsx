@@ -38,15 +38,19 @@ export const links: LinksFunction = () => [
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user: any = await session.get(authenticator.sessionKey);
+  let theme = session?.get("theme") || "dark";
 
   if (user) {
     return redirect(
       user?.user.userType === "shipper" ? "/shipper/dashboard/" : "/carriers/dashboard/"
     );
   }
-
+  session.set("theme", theme)
   const errorMessage = session.get(authenticator.sessionErrorKey) || null;
-  return json({ message: errorMessage });
+  return json(
+    { message: errorMessage },
+    { headers: { "Set-Cookie": await commitSession(session) } }
+  );
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -55,6 +59,7 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     const user: any = await authenticator.authenticate("user-pass", request);
     session.set(authenticator.sessionKey, user);
+    session.set("theme", session.get("theme") || 'dark');
     const redirectUrl =
       user?.user.userType === "shipper"
         ? "/shipper/dashboard/"
