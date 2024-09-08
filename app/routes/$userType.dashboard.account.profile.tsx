@@ -24,7 +24,7 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
     
     if (!user) {
       console.log("no auth user found");
-      return redirect("/login/");
+      return redirect("/logout/");
     }
 
     let { userType } = params;

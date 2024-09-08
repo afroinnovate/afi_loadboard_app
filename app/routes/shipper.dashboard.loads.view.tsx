@@ -51,7 +51,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const user: any = session.get(authenticator.sessionKey);
 
     if (!user) {
-      return redirect("/login/");
+      return redirect("/logout/");
     }
 
     const shipperProfile: ShipperUser = session.get("shipper");

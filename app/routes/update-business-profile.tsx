@@ -76,7 +76,7 @@ export const action: ActionFunction = async ({ request }) => {
     console.error("Error during profile completion: ", error);
     if (error.status === 401)
     {
-      return redirect("/login/");
+      return redirect("/logout/");
     }
     return json({ error: error.message });
   }

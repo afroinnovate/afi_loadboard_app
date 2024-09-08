@@ -336,7 +336,7 @@ export let action: ActionFunction = async ({ params, request }: any) => {
         },
       };
       console.log("Business Request", business_req);
-
+      console.log("Creating a user");
       // update the userinformation
       var response: any = await CreateUser(business_req, token);
       if (response) {
