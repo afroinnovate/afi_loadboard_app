@@ -4,8 +4,9 @@ import {
   json,
   type ActionFunction,
   type MetaFunction,
+  type LoaderArgs,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, Form } from "@remix-run/react";
+import { NavLink, useActionData, useLoaderData, Form, useNavigation, useSubmit } from "@remix-run/react";
 import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure, Transition } from "@headlessui/react";
 import {
@@ -14,7 +15,6 @@ import {
 } from "../api/services/session";
 import UpdateLoadView from "~/components/updateload";
 import { authenticator } from "~/api/services/auth.server";
-import { type ShipperUser } from "../api/models/shipperUser";
 import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
 import { useState, memo } from "react";
 import {
@@ -29,6 +29,7 @@ import {
   EllipsisHorizontalCircleIcon,
   ArrowRightIcon,
 } from "@heroicons/react/20/solid";
+import FilterComponent from "~/components/filterComponent";
 
 export const meta: MetaFunction = () => {
   return [
@@ -45,24 +46,44 @@ const mapRoles: { [key: number]: string } = {
   2: "govtShipper",
 };
 
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader = async ({ request }: LoaderArgs) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user: any = session.get(authenticator.sessionKey);
+    const user = session.get(authenticator.sessionKey);
 
     if (!user) {
       return redirect("/logout/");
     }
 
-    const shipperProfile: ShipperUser = session.get("shipper");
+    const shipperProfile = session.get("shipper");
     if (!shipperProfile) {
       return redirect("/logout/");
     }
 
-    const response: any = await GetLoads(user.token);
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status") || "all";
+    const minAmount = url.searchParams.get("minAmount") || "";
+    const origin = url.searchParams.get("origin") || "";
+    const destination = url.searchParams.get("destination") || "";
+
+    console.log("loader: ", status, minAmount, origin, destination);
+
+    const response = await GetLoads(user.token);
     if (response && typeof response === "string") {
       throw new Error(response);
     }
+
+    const filteredLoads = response.filter((load: any) => {
+      return (
+        (status === "all" ||
+          load.loadStatus.toLowerCase() === status.toLowerCase()) &&
+        (minAmount === "" || load.offerAmount >= parseFloat(minAmount)) &&
+        (origin === "" ||
+          load.origin.toLowerCase().includes(origin.toLowerCase())) &&
+        (destination === "" ||
+          load.destination.toLowerCase().includes(destination.toLowerCase()))
+      );
+    });
 
     const shipperRole =
       mapRoles[shipperProfile.user.businessProfile.shipperRole];
@@ -72,7 +93,13 @@ export const loader: LoaderFunction = async ({ request }) => {
       "govtShipper",
     ].includes(shipperRole);
 
-    return json({ profile: shipperProfile, loads: response, hasAccess });
+    return json({
+      profile: shipperProfile,
+      loads: filteredLoads,
+      totalLoads: response.length,
+      hasAccess,
+      filterConfig: { status, minAmount, origin, destination },
+    });
   } catch (error: any) {
     if (JSON.parse(error).data.status === 401) {
       return redirect("/logout/");
@@ -124,7 +151,7 @@ export const action: ActionFunction = async ({ request }) => {
       ).toISOString();
       const formattedDate = new Date().toISOString();
       const Id =
-        Number(formData.get("loadId")) !== 0
+        Number(formData.get("loadId")) !== 0 && Number(formData.get("loadId")) !== undefined
           ? Number(formData.get("loadId"))
           : 99999;
       const requestBody: any = {
@@ -152,7 +179,10 @@ export const action: ActionFunction = async ({ request }) => {
       return redirect("/shipper/dashboard/loads/view/");
     } else if (action === "cancel") {
       return redirect("/shipper/dashboard/loads/view/");
-    } else {
+    } else if (action === "clear") {
+      console.log("Clearing Filters");
+      return redirect("/shipper/dashboard/loads/view/");
+    }else {
       throw JSON.stringify({
         data: {
           message: "Invalid Action",
@@ -169,12 +199,21 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
+// Add this interface near the top of your file
+interface ActionData {
+  status?: string;
+  loadId?: number;
+}
+
 export default function ViewLoads() {
-  const { profile, loads, hasAccess } = useLoaderData();
+  const { profile, loads, hasAccess, filterConfig, totalLoads } =
+    useLoaderData();
+  const actionData = useActionData() as ActionData;
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const actionData = useActionData();
+  const navigation = useNavigation();
+  const submit = useSubmit();
 
   const handleCloseUpdateModal = () => {
     setIsUpdateModalOpen(false);
@@ -192,6 +231,14 @@ export default function ViewLoads() {
     info = "No loads posted, please check back later";
   }
 
+  const handleFilterChange = (event: React.FormEvent<HTMLFormElement>) => {
+    submit(event.currentTarget);
+  };
+
+  const handleClearFilters = () => {
+    submit({});
+  };
+
   const currency = "ETB";
 
   return (
@@ -203,7 +250,7 @@ export default function ViewLoads() {
       {!hasAccess && (
         <NavLink
           to="/shipper/dashboard/account/profile"
-          className="block w-full max-w-md mx-auto border border-green-200  text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-green-700 hover:text-white transition duration-300 animate-pulse"
+          className="block w-full max-w-md mx-auto border border-green-200 text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-green-700 hover:text-white transition duration-300 animate-pulse"
         >
           Complete your profile to manage loads
         </NavLink>
@@ -215,91 +262,110 @@ export default function ViewLoads() {
       )}
 
       {hasAccess && (
-        <div className="space-y-6">
-          {loads.map((load: any) => (
-            <Disclosure key={load.loadId}>
-              {({ open }) => (
-                <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
-                  <Disclosure.Button className="w-full px-6 py-4 text-left focus:outline-none focus-visible:ring focus-visible:ring-red-400 focus-visible:ring-opacity-50">
-                    <div className="flex justify-between items-center">
-                      <div className="pl-2 flex items-center space-x-3">
-                        <h2 className="text-lg font-bold text-white">
-                          {load.origin}
-                        </h2>
-                        <ArrowRightIcon className="w-6 h-6 text-red-400" />
-                        <h2 className="text-lg font-bold text-white">
-                          {load.destination}
-                        </h2>
-                      </div>
-                      <LoadInfoDisplay
-                        load={load}
-                        currency={currency}
-                        background="bg-gray-700"
-                        shadow="shadow-md"
-                        offerColor="text-red-400"
-                      />
-                      <div className="flex items-center space-x-4">
-                        <LoadStatusBadge status={load.loadStatus} />
-                        <ChevronUpIcon
-                          className={`${
-                            open ? "transform rotate-180" : ""
-                          } w-5 h-5 text-red-400`}
-                        />
-                      </div>
-                    </div>
-                  </Disclosure.Button>
-                  <Transition
-                    enter="transition duration-100 ease-out"
-                    enterFrom="transform scale-95 opacity-0"
-                    enterTo="transform scale-100 opacity-100"
-                    leave="transition duration-75 ease-out"
-                    leaveFrom="transform scale-100 opacity-100"
-                    leaveTo="transform scale-95 opacity-0"
-                  >
-                    <Disclosure.Panel className="px-6 pt-2 pb-4 bg-gray-700 text-white">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <DetailItem
-                          label="Pickup Date"
-                          value={new Date(load.pickupDate).toLocaleDateString()}
-                        />
-                        <DetailItem
-                          label="Delivery Date"
-                          value={new Date(
-                            load.deliveryDate
-                          ).toLocaleDateString()}
-                        />
-                        <DetailItem label="Commodity" value={load.commodity} />
-                        <DetailItem
-                          label="Weight"
-                          value={`${load.weight} kg`}
-                        />
-                        <DetailItem
-                          label="Offer Amount"
-                          value={`${currency} ${load.offerAmount}`}
-                        />
-                        <DetailItem label="Details" value={load.loadDetails} />
-                      </div>
-                      <div className="mt-4 flex justify-end space-x-2">
-                        <ActionButton
-                          type="edit"
-                          loadId={load.loadId}
+        <>
+          <Form method="get" onChange={handleFilterChange}>
+            <FilterComponent
+              filterConfig={filterConfig}
+              filteredLoadsCount={loads.length}
+              totalLoadsCount={totalLoads}
+              isSubmitting={navigation.state === "submitting"}
+              onClear={handleClearFilters}
+            />
+          </Form>
+          <div className="space-y-6">
+            {loads.map((load: any) => (
+              <Disclosure key={load.loadId}>
+                {({ open }) => (
+                  <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <Disclosure.Button className="w-full px-6 py-4 text-left focus:outline-none focus-visible:ring focus-visible:ring-red-400 focus-visible:ring-opacity-50">
+                      <div className="flex justify-between items-center">
+                        <div className="pl-2 flex items-center space-x-3">
+                          <h2 className="text-lg font-bold text-white">
+                            {load.origin}
+                          </h2>
+                          <ArrowRightIcon className="w-6 h-6 text-red-400" />
+                          <h2 className="text-lg font-bold text-white">
+                            {load.destination}
+                          </h2>
+                        </div>
+                        <LoadInfoDisplay
                           load={load}
-                          onEdit={() => handleEditClick(load)}
+                          currency={currency}
+                          background="bg-gray-700"
+                          shadow="shadow-md"
+                          offerColor="text-red-400"
                         />
-                        <ActionButton type="delete" loadId={load.loadId} />
+                        <div className="flex items-center space-x-4">
+                          <LoadStatusBadge status={load.loadStatus} />
+                          <ChevronUpIcon
+                            className={`${
+                              open ? "transform rotate-180" : ""
+                            } w-5 h-5 text-red-400`}
+                          />
+                        </div>
                       </div>
-                    </Disclosure.Panel>
-                  </Transition>
-                </div>
-              )}
-            </Disclosure>
-          ))}
-        </div>
+                    </Disclosure.Button>
+                    <Transition
+                      enter="transition duration-100 ease-out"
+                      enterFrom="transform scale-95 opacity-0"
+                      enterTo="transform scale-100 opacity-100"
+                      leave="transition duration-75 ease-out"
+                      leaveFrom="transform scale-100 opacity-100"
+                      leaveTo="transform scale-95 opacity-0"
+                    >
+                      <Disclosure.Panel className="px-6 pt-2 pb-4 bg-gray-700 text-white">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <DetailItem
+                            label="Pickup Date"
+                            value={new Date(
+                              load.pickupDate
+                            ).toLocaleDateString()}
+                          />
+                          <DetailItem
+                            label="Delivery Date"
+                            value={new Date(
+                              load.deliveryDate
+                            ).toLocaleDateString()}
+                          />
+                          <DetailItem
+                            label="Commodity"
+                            value={load.commodity}
+                          />
+                          <DetailItem
+                            label="Weight"
+                            value={`${load.weight} kg`}
+                          />
+                          <DetailItem
+                            label="Offer Amount"
+                            value={`${currency} ${load.offerAmount}`}
+                          />
+                          <DetailItem
+                            label="Details"
+                            value={load.loadDetails}
+                          />
+                        </div>
+                        <div className="mt-4 flex justify-end space-x-2">
+                          <ActionButton
+                            type="edit"
+                            loadId={load.loadId}
+                            load={load}
+                            onEdit={() => handleEditClick(load)}
+                          />
+                          <ActionButton type="delete" loadId={load.loadId} />
+                        </div>
+                      </Disclosure.Panel>
+                    </Transition>
+                  </div>
+                )}
+              </Disclosure>
+            ))}
+          </div>
+        </>
       )}
 
       {isUpdateModalOpen && selectedLoad && (
         <UpdateLoadView
-          {...selectedLoad}
+          {...(selectedLoad as Object)}
           onClose={handleCloseUpdateModal}
           isSuccess={isSuccess}
         />
