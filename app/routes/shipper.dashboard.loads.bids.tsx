@@ -100,7 +100,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 export default function BidsView() {
   const { bids, user, theme }: any = useLoaderData();
-  const actionData = useActionData();
+  const actionData: any = useActionData();
   const navigation = useNavigation();
   const submit = useSubmit();
 
@@ -136,7 +136,10 @@ export default function BidsView() {
 
   const handleFilter = (e: any) => {
     const { name, value } = e.target;
-    setFilterConfig((prev) => ({ ...prev, [name]: value }));
+    setFilterConfig((prev) => ({ 
+      ...prev, 
+      [name]: name === 'minAmount' ? (value === '' ? 0 : parseFloat(value)) : value 
+    }));
   };
 
   const handleExpand = (id: any) => {
@@ -151,11 +154,16 @@ export default function BidsView() {
   };
 
   const filteredAndSortedBids = bids
-    .filter(
-      (bid: any) =>
-        filterConfig.status === "all" || bid.bidStatus === filterConfig.status
-    )
-    .filter((bid: any) => bid.bidAmount >= filterConfig.minAmount)
+    .filter((bid: any) => {
+      if (filterConfig.status === "all") {
+        return true;
+      } else {
+        return bid.bidStatus === parseInt(filterConfig.status);
+      }
+    })
+    .filter((bid: any) => {
+      return bid.bidAmount >= filterConfig.minAmount;
+    })
     .sort((a: any, b: any) => {
       if (sortConfig.key) {
         const aValue = a[sortConfig.key];
