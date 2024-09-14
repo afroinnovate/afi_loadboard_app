@@ -11,3 +11,4 @@
 * []: Make the session retention a configured environment variable
 * [09/13/24]: Finished carrier bids dashboard.
 * [09/14/24]: Created Dynamic timeZone detection based user's browser geolocation and display that on any timefield, currenty carrier bids
+* [09/14/24]: Homepage display real data in carrier dashboard

@@ -76,6 +76,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw response;
     }
 
+    console.log("loads", response);
+
     return json({ "loads": response, "carrierProfile": carrierProfile }, {
       headers: {
         "Set-Cookie": await commitSession(session, { expires }),

@@ -19,11 +19,9 @@ import { commitSession, getSession } from "../api/services/session";
 import AccessDenied from "~/components/accessdenied";
 import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
-import { redirectUser } from "~/components/redirectUser";
 import { getUserInfo } from "~/api/services/user.service";
-import type {
-  CarrierVehicle,
-} from "../api/models/carrierUser";
+import { GetLoads } from "~/api/services/load.service";
+import { GetBids } from "~/api/services/bid.service";
 
 export const meta: MetaFunction = () => {
   return [
@@ -39,7 +37,6 @@ export const links: LinksFunction = () => [
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    // Check if we're still logged in
     const session = await getSession(request.headers.get("Cookie"));
     let user = session.get(authenticator.sessionKey);
 
@@ -123,8 +120,16 @@ export const loader: LoaderFunction = async ({ request }) => {
     session.set(authenticator.sessionKey, user);
     var carrierProfile = session.get("carrier");
 
+    // Fetch loads and bids
+    const loads = await GetLoads(user?.token);
+    const bids = await GetBids(user?.token);
+
     return json(
-      { user: carrierProfile },
+      { 
+        user: carrierProfile,
+        loads,
+        bids
+      },
       {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
@@ -132,7 +137,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   } catch (error: any) {
-    console.error("carrier dashboard action error: ", JSON.parse(error  ));
+    console.error("carrier dashboard action error: ", JSON.parse(error));
     if (JSON.parse(error).data.status == 401) {
       return redirect("/logout/");
     }
@@ -141,7 +146,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export default function CarrierDashboard() {
-  const loaderData: any = useLoaderData();
+  const { user, loads, bids } = useLoaderData<typeof loader>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
@@ -150,28 +155,16 @@ export default function CarrierDashboard() {
     "/carriers/dashboard/view/"
   );
 
-  // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";
-  // Check if user has 'support', 'admin' or any role containing 'carrier'
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
 
   useEffect(() => {
-    // Set the sidebar state based on window width after component mounts
     const handleResize = () => setSidebarOpen(window.innerWidth > 768);
-    // Call handleResize immediately to set the initial state based on current window size
     handleResize();
-    // Add event listener to adjust sidebar visibility on window resize
     window.addEventListener("resize", handleResize);
-    // Cleanup event listener on component unmount
     return () => window.removeEventListener("resize", handleResize);
-  }, []); // Empty dependency array ensures this runs once on mount
+  }, []);
 
-  // User roles and permission checks
-  if (loaderData.user.user.userType !== "carrier") {
+  if (user.user.userType !== "carrier") {
     return (
       <AccessDenied
         returnUrl="/"
@@ -180,10 +173,9 @@ export default function CarrierDashboard() {
     );
   }
 
-  // If the carrier logged in
   return (
     <>
-      {/* Desktop view on setup  */}
+      {/* Desktop view header */}
       <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 fixed top-16 left-0 right-0">
         <div className="flex items-center space-x-4">
           <button
@@ -233,8 +225,10 @@ export default function CarrierDashboard() {
           {sidebarOpen && <SidebarCarrier activeSection={activeSection} />}
         </div>
         <main className="w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto">
-          {location.pathname === "/carriers/dashboard/" && <CarrierOverview />}
-          <Outlet />
+          {location.pathname === "/carriers/dashboard/" && (
+            <CarrierOverview loads={loads} bids={bids} />
+          )}
+          <Outlet context={{ loads, bids }} />
         </main>
       </div>
     </>

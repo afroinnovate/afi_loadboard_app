@@ -50,7 +50,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Get the bids
     const response = await GetBids(user.token);
-
     if (typeof response === "string") {
       throw response;
     }
@@ -195,7 +194,7 @@ export default function CarrierBidDashboard() {
           {info}
         </div>
       )}
-      
+
       <Form method="get" className="mb-6">
         <div className="flex flex-wrap gap-4">
           <select
@@ -212,7 +211,10 @@ export default function CarrierBidDashboard() {
             name="date"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
           />
-          <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
             Filter
           </button>
         </div>
@@ -227,10 +229,16 @@ export default function CarrierBidDashboard() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2 sm:mb-0">
                     <h2 className="text-lg font-bold">{bid.load.origin}</h2>
                     <ArrowRightIcon className="w-6 h-6 text-red-400 hidden sm:block" />
-                    <h2 className="text-lg font-bold">{bid.load.destination}</h2>
+                    <h2 className="text-lg font-bold">
+                      {bid.load.destination}
+                    </h2>
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <span className={`px-3 py-1 rounded-full text-sm ${getStatusStyles(bid.bidStatus)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${getStatusStyles(
+                        bid.bidStatus
+                      )}`}
+                    >
                       {getStatusText(bid.bidStatus)}
                     </span>
                     <span className="text-lg font-bold">
@@ -240,7 +248,7 @@ export default function CarrierBidDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAction('contact', bid.id);
+                          handleAction("contact", bid.id);
                         }}
                         className="p-1 text-blue-400 hover:text-blue-300"
                         title="Contact Shipper"
@@ -250,7 +258,7 @@ export default function CarrierBidDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAction('update', bid.id);
+                          handleAction("update", bid.id);
                         }}
                         className="p-1 text-yellow-400 hover:text-yellow-300"
                         title="Update Bid"
@@ -260,7 +268,7 @@ export default function CarrierBidDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAction('remove', bid.id);
+                          handleAction("remove", bid.id);
                         }}
                         className="p-1 text-red-400 hover:text-red-300"
                         title="Remove Bid"
@@ -280,53 +288,81 @@ export default function CarrierBidDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
                       <h3 className="text-xl font-bold mb-2">Bid Details</h3>
-                      <p key={`amount-${bid.id}`}>Amount: {currency} {bid.bidAmount}</p>
-                      <p key={`date-${bid.id}`}>Date: {formatDateTime(bid.biddingTime, 'date')}</p>
-                      <p key={`time-${bid.id}`}>
-                        Time: {formatDateTime(bid.biddingTime, 'time')} <TimezoneAbbr dateTime={bid.biddingTime} timezone={timezone} />
+                      <p key={`amount-${bid.id}`}>
+                        Amount: {currency} {bid.bidAmount}
                       </p>
-                      <p key={`status-${bid.id}`}>Status: {getStatusText(bid.bidStatus)}</p>
+                      <p key={`date-${bid.id}`}>
+                        Date: {formatDateTime(bid.biddingTime, "date")}
+                      </p>
+                      <p key={`time-${bid.id}`}>
+                        Time: {formatDateTime(bid.biddingTime, "time")}{" "}
+                        <TimezoneAbbr
+                          dateTime={bid.biddingTime}
+                          timezone={timezone}
+                        />
+                      </p>
+                      <p key={`status-${bid.id}`}>
+                        Status: {getStatusText(bid.bidStatus)}
+                      </p>
                     </div>
                     <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
                       <h3 className="text-xl font-bold mb-2">Load Details</h3>
-                      <p key={`route-${bid.id}`}>Route: {bid.load.origin} to {bid.load.destination}</p>
-                      <p key={`pickup-${bid.id}`}>Pickup: {formatDateTime(bid.load.pickupDate, 'date')}</p>
-                      <p key={`delivery-${bid.id}`}>Delivery: {formatDateTime(bid.load.deliveryDate, 'date')}</p>
-                      <p key={`weight-${bid.id}`}>Weight: {bid.load.weight} kg</p>
-                      <p key={`offer-${bid.id}`}>Shipper's Offer: {currency} {bid.load.offerAmount}</p>
+                      <p key={`route-${bid.id}`}>
+                        Route: {bid.load.origin} to {bid.load.destination}
+                      </p>
+                      <p key={`pickup-${bid.id}`}>
+                        Pickup: {formatDateTime(bid.load.pickupDate, "date")}
+                      </p>
+                      <p key={`delivery-${bid.id}`}>
+                        Delivery:{" "}
+                        {formatDateTime(bid.load.deliveryDate, "date")}
+                      </p>
+                      <p key={`weight-${bid.id}`}>
+                        Weight: {bid.load.weight} kg
+                      </p>
+                      <p key={`offer-${bid.id}`}>
+                        Shipper's Offer: {currency} {bid.load.offerAmount}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
-                    <button
-                      onClick={() => handleAction('contact', bid.id)}
-                      className="p-2 bg-blue-500 rounded-full hover:bg-blue-600 group relative"
-                      title="Contact Shipper"
+                    <Form
+                      method="post"
+                      action={`/carriers/dashboard/bid/${bid.id}/contact`}
                     >
-                      <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
-                      <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                        Contact Shipper
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleAction('update', bid.id)}
-                      className="p-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
-                      title="Update Bid"
-                    >
-                      <PencilIcon className="w-5 h-5 text-white" />
-                      <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                        Update Bid
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleAction('remove', bid.id)}
-                      className="p-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
-                      title="Remove Bid"
-                    >
-                      <TrashIcon className="w-5 h-5 text-white" />
-                      <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                        Remove Bid
-                      </span>
-                    </button>
+                      <button
+                        onClick={() => handleAction("contact", bid.id)}
+                        className="p-2 m-2 bg-blue-500 rounded-full hover:bg-blue-600 group relative"
+                        title="Contact Shipper"
+                      >
+                        <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
+                        <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                          Contact Shipper
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleAction("update", bid.id)}
+                        className="p-2 m-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
+                        title="Update Bid"
+                      >
+                        <PencilIcon className="w-5 h-5 text-white" />
+                        <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                          Update Bid
+                        </span>
+                      </button>
+                      <button
+                        type="submit"
+                        name="_action"
+                        value="remove"
+                        className="p-2 m-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
+                        title="Remove Bid"
+                      >
+                        <TrashIcon className="w-5 h-5 text-white" />
+                        <span className="absolute bottom-full mb-2 hidden   group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                          Remove Bid
+                        </span>
+                      </button>
+                    </Form>
                   </div>
                 </Disclosure.Panel>
               </div>
