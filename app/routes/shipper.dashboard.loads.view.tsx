@@ -30,6 +30,7 @@ import {
   ArrowRightIcon,
 } from "@heroicons/react/20/solid";
 import FilterComponent from "~/components/filterComponent";
+import { LoadStatusBadge } from "~/components/statusBadge";
 
 export const meta: MetaFunction = () => {
   return [
@@ -377,26 +378,6 @@ export default function ViewLoads() {
     </div>
   );
 }
-
-const LoadStatusBadge = memo(({ status }) => {
-  const statusConfig = {
-    open: { icon: LockOpenIcon, color: "text-green-400" },
-    closed: { icon: LockClosedIcon, color: "text-blue-400" },
-    accepted: { icon: DocumentCheckIcon, color: "text-gray-400" },
-    delivered: { icon: CheckCircleIcon, color: "text-green-400" },
-    rejected: { icon: MinusCircleIcon, color: "text-red-400" },
-    enroute: { icon: EllipsisHorizontalCircleIcon, color: "text-yellow-400" },
-  };
-
-  const { icon: Icon, color } = statusConfig[status] || {};
-
-  return (
-    <div className={`flex items-center ${color}`}>
-      {Icon && <Icon className="w-5 h-5 mr-1" />}
-      <span className="capitalize">{status}</span>
-    </div>
-  );
-});
 
 const DetailItem = memo(({ label, value }: {label: string, value: string}) => {
   return (

@@ -3,12 +3,16 @@ import {
   type LoaderFunction,
   json,
   type MetaFunction,
+  type ActionFunction,
 } from "@remix-run/node";
 import {
   useLoaderData,
   Form,
+  useActionData,
+  useOutletContext,
+  useNavigation,
 } from "@remix-run/react";
-import { GetBids } from "~/api/services/bid.service";
+import { GetBids, UpdateBid } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
 import { destroySession, getSession } from "../api/services/session";
 import "flowbite";
@@ -24,6 +28,9 @@ import { authenticator } from "~/api/services/auth.server";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { useState, useEffect } from "react";
 import { TimezoneAbbr } from "~/components/TimezoneAbbr";
+import BidAdjustmentView from "~/components/bidadjustmentview";
+import type { BidUpdateRequest } from "~/api/models/bidRequest";
+import { LoadStatusBadge } from "~/components/statusBadge";
 
 export const meta: MetaFunction = () => {
   return [
@@ -48,16 +55,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       return redirect("/shipper/dashboard/");
     }
 
-    // Get the bids
-    const response = await GetBids(user.token);
-    if (typeof response === "string") {
-      throw response;
-    }
-
     const timezone = session.get("timeZone") || "UTC";
 
     return json({
-      bids: response,
       carrierProfile: carrierProfile,
       timezone: timezone,
     });
@@ -75,9 +75,43 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData();
+  const action = formData.get("action");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get(authenticator.sessionKey);
+
+  if (action === "update") {
+    const bidId = formData.get("bidId") as string;
+    const bidAmount = formData.get("bidAmount") as string;
+    
+    const bidUpdateRequest: BidUpdateRequest = {
+      bidStatus: 0, // Assuming 0 is for "Pending" status
+      updatedBy: user.user.id,
+      bidAmount: parseFloat(bidAmount),
+    };
+
+    try {
+      await UpdateBid(user.token, parseInt(bidId), bidUpdateRequest);
+      return json({ success: true, message: "Bid updated successfully" });
+    } catch (error) {
+      return json({ success: false, message: "Failed to update bid" });
+    }
+  }
+
+  // Handle other actions (remove, contact) here if needed
+
+  return null;
+};
+
 export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
-  const [bids, setBids] = useState(loaderData?.bids || []);
+  const actionData = useActionData();
+  const navigation = useNavigation();
+  const { loads, bids } = useOutletContext<{ loads: any; bids: any }>();
+  const [localBids, setLocalBids] = useState(bids);
+  const [selectedBid, setSelectedBid] = useState<any>(null);
+  const [responseMessage, setResponseMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const timezone = loaderData?.timezone || "UTC";
 
   let error = "";
@@ -92,43 +126,32 @@ export default function CarrierBidDashboard() {
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
-    if (loaderData && !error) {
-      setBids(loaderData.bids);
-    } else {
-      error = "No bids found or something went wrong. Please try again later or contact support.";
-    }
-
-    if (loaderData.bids.length === 0) {
+    if (bids.length === 0) {
       info = "You haven't placed any bids yet.";
+    } else {
+      setLocalBids(bids);
     }
-  }, [loaderData, error]);
+  }, [bids]);
 
-  // Utility function to determine styles based on bid status
-  const getStatusStyles = (status: number) => {
-    switch (status) {
-      case 0:
-        return "bg-yellow-600 text-white";
-      case 1:
-        return "bg-green-600 text-white";
-      case 2:
-        return "bg-red-600 text-white";
-      default:
-        return "bg-gray-600 text-white";
+  useEffect(() => {
+    if (actionData?.success !== undefined) {
+      setResponseMessage({
+        type: actionData.success ? 'success' : 'error',
+        message: actionData.message
+      });
+      if (actionData.success) {
+        // Refresh bids after successful update
+        setLocalBids(prevBids => 
+          prevBids.map((bid: any) => 
+            bid.id === selectedBid.id ? {...bid, bidAmount: selectedBid.bidAmount} : bid
+          )
+        );
+      }
+      // Clear the message after 3 seconds
+      const timer = setTimeout(() => setResponseMessage(null), 3000);
+      return () => clearTimeout(timer);
     }
-  };
-
-  const getStatusText = (status: number) => {
-    switch (status) {
-      case 0:
-        return "Pending";
-      case 1:
-        return "Accepted";
-      case 2:
-        return "Rejected";
-      default:
-        return "Unknown";
-    }
-  };
+  }, [actionData, selectedBid]);
 
   // Add null check for carrierProfile.user and businessProfile
   if (carrierProfile?.user?.userType !== "carrier" || !carrierProfile?.user?.businessProfile) {
@@ -172,13 +195,19 @@ export default function CarrierBidDashboard() {
     return () => lazyImageObserver.disconnect();
   }, []);
 
-  const handleAction = (action: string, bidId: number) => {
-    // Implement the action handling logic here
-    console.log(`Action: ${action}, Bid ID: ${bidId}`);
-  };
-
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
+      {responseMessage && (
+        <div
+          className={`p-4 mb-4 text-center ${
+            responseMessage.type === "success"
+              ? "text-green-500 bg-green-100"
+              : "text-red-500 bg-red-100"
+          } rounded-lg`}
+        >
+          {responseMessage.message}
+        </div>
+      )}
       {error && (
         <div className="p-4 mb-4 text-center text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-300">
           {error}
@@ -221,7 +250,7 @@ export default function CarrierBidDashboard() {
       </Form>
 
       <div className="space-y-4">
-        {bids.map((bid: any) => (
+        {localBids.map((bid: any) => (
           <Disclosure key={bid.id}>
             {({ open }) => (
               <div className="bg-gray-700 shadow rounded-lg">
@@ -234,47 +263,23 @@ export default function CarrierBidDashboard() {
                     </h2>
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${getStatusStyles(
-                        bid.bidStatus
-                      )}`}
-                    >
-                      {getStatusText(bid.bidStatus)}
-                    </span>
+                    <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
                     <span className="text-lg font-bold">
                       {currency} {bid.bidAmount}
                     </span>
                     <div className="flex space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAction("contact", bid.id);
-                        }}
-                        className="p-1 text-blue-400 hover:text-blue-300"
+                      <span
+                        className="p-1 text-blue-400"
                         title="Contact Shipper"
                       >
                         <ChatBubbleLeftIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAction("update", bid.id);
-                        }}
-                        className="p-1 text-yellow-400 hover:text-yellow-300"
-                        title="Update Bid"
-                      >
+                      </span>
+                      <span className="p-1 text-yellow-400" title="Update Bid">
                         <PencilIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAction("remove", bid.id);
-                        }}
-                        className="p-1 text-red-400 hover:text-red-300"
-                        title="Remove Bid"
-                      >
+                      </span>
+                      <span className="p-1 text-red-400" title="Remove Bid">
                         <TrashIcon className="w-5 h-5" />
-                      </button>
+                      </span>
                     </div>
                     <ChevronUpIcon
                       className={`w-6 h-6 ${
@@ -302,7 +307,7 @@ export default function CarrierBidDashboard() {
                         />
                       </p>
                       <p key={`status-${bid.id}`}>
-                        Status: {getStatusText(bid.bidStatus)}
+                        Status: <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
                       </p>
                     </div>
                     <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
@@ -326,13 +331,13 @@ export default function CarrierBidDashboard() {
                     </div>
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
-                    <Form
-                      method="post"
-                      action={`/carriers/dashboard/bid/${bid.id}/contact`}
-                    >
+                    <Form method="post">
+                      <input type="hidden" name="bidId" value={bid.id} />
                       <button
-                        onClick={() => handleAction("contact", bid.id)}
-                        className="p-2 m-2 bg-blue-500 rounded-full hover:bg-blue-600 group relative"
+                        type="submit"
+                        name="action"
+                        value="contact"
+                        className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
                         title="Contact Shipper"
                       >
                         <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
@@ -341,7 +346,9 @@ export default function CarrierBidDashboard() {
                         </span>
                       </button>
                       <button
-                        onClick={() => handleAction("update", bid.id)}
+                        type="submit"
+                        name="action"
+                        value="update"
                         className="p-2 m-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
                         title="Update Bid"
                       >
@@ -352,13 +359,13 @@ export default function CarrierBidDashboard() {
                       </button>
                       <button
                         type="submit"
-                        name="_action"
+                        name="action"
                         value="remove"
                         className="p-2 m-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
                         title="Remove Bid"
                       >
                         <TrashIcon className="w-5 h-5 text-white" />
-                        <span className="absolute bottom-full mb-2 hidden   group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                        <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
                           Remove Bid
                         </span>
                       </button>
@@ -370,8 +377,30 @@ export default function CarrierBidDashboard() {
           </Disclosure>
         ))}
       </div>
+
+      {selectedBid && (
+        <BidAdjustmentView
+          loadId={selectedBid.loadId}
+          initialBid={selectedBid.bidAmount}
+          onClose={() => setSelectedBid(null)}
+        />
+      )}
     </div>
   );
+}
+
+// Helper function to convert numeric status to text
+function getStatusText(status: number): string {
+  switch (status) {
+    case 0:
+      return "Pending";
+    case 1:
+      return "Accepted";
+    case 2:
+      return "Rejected";
+    default:
+      return "Unknown";
+  }
 }
 
 <ErrorBoundary />
