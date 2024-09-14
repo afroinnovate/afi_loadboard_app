@@ -19,6 +19,8 @@ import {
 import AccessDenied from "~/components/accessdenied";
 import { authenticator } from "~/api/services/auth.server";
 import { ErrorBoundary } from "~/components/errorBoundary";
+import { useState, useEffect } from "react";
+import { TimezoneAbbr } from "~/components/TimezoneAbbr";
 
 export const meta: MetaFunction = () => {
   return [
@@ -45,14 +47,17 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Get the bids
     const response = await GetBids(user.token);
-    console.log(response);
+
     if (typeof response === "string") {
       throw response;
     }
 
+    const timezone = session.get("timeZone") || "UTC";
+
     return json({
       bids: response,
       carrierProfile: carrierProfile,
+      timezone: timezone,
     });
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
@@ -70,6 +75,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
+  const [bids, setBids] = useState(loaderData?.bids || []);
+  const timezone = loaderData?.timezone || "UTC";
 
   let error = "";
   let info = "";
@@ -79,19 +86,20 @@ export default function CarrierBidDashboard() {
     error = "Oops! Something went wrong. Please try again.";
   }
 
-  // Extract bids and user data from loader
-  let bids = loaderData?.bids || [];
+  // Extract user data from loader
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
-  if (loaderData && !error) {
-    bids = loaderData.bids;
-  } else {
-    error = "No bids found or something went wrong. Please try again later or contact support.";
-  }
+  useEffect(() => {
+    if (loaderData && !error) {
+      setBids(loaderData.bids);
+    } else {
+      error = "No bids found or something went wrong. Please try again later or contact support.";
+    }
 
-  if (bids.length === 0) {
-    info = "You haven't placed any bids yet.";
-  }
+    if (loaderData.bids.length === 0) {
+      info = "You haven't placed any bids yet.";
+    }
+  }, [loaderData, error]);
 
   // Utility function to determine styles based on bid status
   const getStatusStyles = (status: number) => {
@@ -132,23 +140,35 @@ export default function CarrierBidDashboard() {
 
   const currency = "ETB";
 
-  function formatDate(dateTimeString: string): string {
+  function formatDateTime(dateTimeString: string, format: 'date' | 'time'): string {
     const date = new Date(dateTimeString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: timezone,
+      ...(format === 'date' 
+        ? { year: "numeric", month: "short", day: "numeric" }
+        : { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    };
+    return new Intl.DateTimeFormat('en-US', options).format(date);
   }
 
-  function formatTime(dateTimeString: string): string {
-    const date = new Date(dateTimeString);
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+  useEffect(() => {
+    // Lazy load images for better performance
+    const lazyImages = document.querySelectorAll('img[data-src]');
+    const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target as HTMLImageElement;
+          img.src = img.dataset.src || '';
+          img.removeAttribute('data-src');
+          observer.unobserve(img);
+        }
+      });
     });
-  }
+    lazyImages.forEach(img => lazyImageObserver.observe(img));
+
+    // Clean up observer on component unmount
+    return () => lazyImageObserver.disconnect();
+  }, []);
 
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
@@ -192,16 +212,16 @@ export default function CarrierBidDashboard() {
 
       <div className="space-y-4">
         {bids.map((bid: any) => (
-          <Disclosure key={bid.bidId}>
+          <Disclosure key={bid.id}>
             {({ open }) => (
               <div className="bg-gray-700 shadow rounded-lg">
-                <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
-                  <div className="flex items-center space-x-3">
+                <Disclosure.Button className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2 sm:mb-0">
                     <h2 className="text-lg font-bold">{bid.load.origin}</h2>
-                    <ArrowRightIcon className="w-6 h-6 text-red-400" />
+                    <ArrowRightIcon className="w-6 h-6 text-red-400 hidden sm:block" />
                     <h2 className="text-lg font-bold">{bid.load.destination}</h2>
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                     <span className={`px-3 py-1 rounded-full text-sm ${getStatusStyles(bid.bidStatus)}`}>
                       {getStatusText(bid.bidStatus)}
                     </span>
@@ -220,18 +240,20 @@ export default function CarrierBidDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
                       <h3 className="text-xl font-bold mb-2">Bid Details</h3>
-                      <p key="amount">Amount: {currency} {bid.bidAmount}</p>
-                      <p key="date">Date: {formatDate(bid.biddingTime)}</p>
-                      <p key="time">Time: {formatTime(bid.biddingTime)}</p>
-                      <p key="status">Status: {getStatusText(bid.bidStatus)}</p>
+                      <p key={`amount-${bid.id}`}>Amount: {currency} {bid.bidAmount}</p>
+                      <p key={`date-${bid.id}`}>Date: {formatDateTime(bid.biddingTime, 'date')}</p>
+                      <p key={`time-${bid.id}`}>
+                        Time: {formatDateTime(bid.biddingTime, 'time')} <TimezoneAbbr dateTime={bid.biddingTime} timezone={timezone} />
+                      </p>
+                      <p key={`status-${bid.id}`}>Status: {getStatusText(bid.bidStatus)}</p>
                     </div>
                     <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
                       <h3 className="text-xl font-bold mb-2">Load Details</h3>
-                      <p key="route">Route: {bid.load.origin} to {bid.load.destination}</p>
-                      <p key="pickup">Pickup: {new Date(bid.load.pickupDate).toLocaleDateString()}</p>
-                      <p key="delivery">Delivery: {new Date(bid.load.deliveryDate).toLocaleDateString()}</p>
-                      <p key="weight">Weight: {bid.load.weight} kg</p>
-                      <p key="offer">Shipper's Offer: {currency} {bid.load.offerAmount}</p>
+                      <p key={`route-${bid.id}`}>Route: {bid.load.origin} to {bid.load.destination}</p>
+                      <p key={`pickup-${bid.id}`}>Pickup: {formatDateTime(bid.load.pickupDate, 'date')}</p>
+                      <p key={`delivery-${bid.id}`}>Delivery: {formatDateTime(bid.load.deliveryDate, 'date')}</p>
+                      <p key={`weight-${bid.id}`}>Weight: {bid.load.weight} kg</p>
+                      <p key={`offer-${bid.id}`}>Shipper's Offer: {currency} {bid.load.offerAmount}</p>
                     </div>
                   </div>
                 </Disclosure.Panel>
