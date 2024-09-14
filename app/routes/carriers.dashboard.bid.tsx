@@ -15,6 +15,9 @@ import "flowbite";
 import {
   ChevronUpIcon,
   ArrowRightIcon,
+  ChatBubbleLeftIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/20/solid";
 import AccessDenied from "~/components/accessdenied";
 import { authenticator } from "~/api/services/auth.server";
@@ -170,6 +173,11 @@ export default function CarrierBidDashboard() {
     return () => lazyImageObserver.disconnect();
   }, []);
 
+  const handleAction = (action: string, bidId: number) => {
+    // Implement the action handling logic here
+    console.log(`Action: ${action}, Bid ID: ${bidId}`);
+  };
+
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
       {error && (
@@ -228,6 +236,38 @@ export default function CarrierBidDashboard() {
                     <span className="text-lg font-bold">
                       {currency} {bid.bidAmount}
                     </span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction('contact', bid.id);
+                        }}
+                        className="p-1 text-blue-400 hover:text-blue-300"
+                        title="Contact Shipper"
+                      >
+                        <ChatBubbleLeftIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction('update', bid.id);
+                        }}
+                        className="p-1 text-yellow-400 hover:text-yellow-300"
+                        title="Update Bid"
+                      >
+                        <PencilIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction('remove', bid.id);
+                        }}
+                        className="p-1 text-red-400 hover:text-red-300"
+                        title="Remove Bid"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </div>
                     <ChevronUpIcon
                       className={`w-6 h-6 ${
                         open ? "transform rotate-180" : ""
@@ -255,6 +295,38 @@ export default function CarrierBidDashboard() {
                       <p key={`weight-${bid.id}`}>Weight: {bid.load.weight} kg</p>
                       <p key={`offer-${bid.id}`}>Shipper's Offer: {currency} {bid.load.offerAmount}</p>
                     </div>
+                  </div>
+                  <div className="mt-4 flex justify-end space-x-2">
+                    <button
+                      onClick={() => handleAction('contact', bid.id)}
+                      className="p-2 bg-blue-500 rounded-full hover:bg-blue-600 group relative"
+                      title="Contact Shipper"
+                    >
+                      <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
+                      <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                        Contact Shipper
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => handleAction('update', bid.id)}
+                      className="p-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
+                      title="Update Bid"
+                    >
+                      <PencilIcon className="w-5 h-5 text-white" />
+                      <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                        Update Bid
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => handleAction('remove', bid.id)}
+                      className="p-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
+                      title="Remove Bid"
+                    >
+                      <TrashIcon className="w-5 h-5 text-white" />
+                      <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                        Remove Bid
+                      </span>
+                    </button>
                   </div>
                 </Disclosure.Panel>
               </div>
