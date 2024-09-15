@@ -18,5 +18,8 @@
 
 ### TODO
 
-1. Make the buttons works in carrier bid dashboard
+1. Make the buttons works in carrier bid dashboard(delete and chat)
 2. make the filtering works in carrier bid
+3. Check the profile completion live in shipper dashboard(it shows complete profile even after its done)
+4. Make sure only load with creator matching the profile shows.
+5. make sure the loads are hydrated during opening of the page and not everytime each child page loads.
