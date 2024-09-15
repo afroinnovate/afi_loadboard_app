@@ -10,9 +10,8 @@ import {
   Form,
   useActionData,
   useOutletContext,
-  useNavigation,
 } from "@remix-run/react";
-import { GetBids, UpdateBid } from "~/api/services/bid.service";
+import { UpdateBid } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
 import { destroySession, getSession } from "../api/services/session";
 import "flowbite";
@@ -81,7 +80,9 @@ export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get(authenticator.sessionKey);
 
-  if (action === "update") {
+  console.log("action", action);
+
+  if (action === "save") {
     const bidId = formData.get("bidId") as string;
     const bidAmount = formData.get("bidAmount") as string;
     
@@ -93,7 +94,12 @@ export const action: ActionFunction = async ({ request }) => {
 
     try {
       await UpdateBid(user.token, parseInt(bidId), bidUpdateRequest);
-      return json({ success: true, message: "Bid updated successfully" });
+      return json({
+        success: true,
+        message: "Bid updated successfully",
+        updatedBidId: parseInt(bidId),
+        updatedBidAmount: parseFloat(bidAmount)
+      });
     } catch (error) {
       return json({ success: false, message: "Failed to update bid" });
     }
@@ -107,12 +113,11 @@ export const action: ActionFunction = async ({ request }) => {
 export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
   const actionData = useActionData();
-  const navigation = useNavigation();
-  const { loads, bids } = useOutletContext<{ loads: any; bids: any }>();
+  const { bids } = useOutletContext<{ loads: any; bids: any }>();
   const [localBids, setLocalBids] = useState(bids);
   const [selectedBid, setSelectedBid] = useState<any>(null);
-  const [responseMessage, setResponseMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const timezone = loaderData?.timezone || "UTC";
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   let error = "";
   let info = "";
@@ -126,32 +131,35 @@ export default function CarrierBidDashboard() {
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
+    setLocalBids(bids);
     if (bids.length === 0) {
       info = "You haven't placed any bids yet.";
-    } else {
-      setLocalBids(bids);
     }
   }, [bids]);
 
+  // Update localBids if action was successful
   useEffect(() => {
-    if (actionData?.success !== undefined) {
-      setResponseMessage({
-        type: actionData.success ? 'success' : 'error',
-        message: actionData.message
-      });
-      if (actionData.success) {
-        // Refresh bids after successful update
-        setLocalBids(prevBids => 
-          prevBids.map((bid: any) => 
-            bid.id === selectedBid.id ? {...bid, bidAmount: selectedBid.bidAmount} : bid
-          )
-        );
-      }
-      // Clear the message after 3 seconds
-      const timer = setTimeout(() => setResponseMessage(null), 3000);
+    if (actionData && typeof actionData === 'object' && 'success' in actionData && actionData.success) {
+      setLocalBids((prevBids: Array<{ id: number; bidAmount: number }>) => 
+        prevBids.map((bid) =>
+          bid.id === (actionData as { success: boolean; updatedBidId: number; updatedBidAmount: number }).updatedBidId
+            ? { ...bid, bidAmount: actionData.updatedBidAmount }
+            : bid
+        )
+      );
+    }
+  }, [actionData]);
+
+  useEffect(() => {
+    if (actionData && typeof actionData === 'object' && 'message' in actionData) {
+      setFeedbackMessage(actionData.message);
+      const timer = setTimeout(() => {
+        setFeedbackMessage(null);
+      }, 3000); // Message will disappear after 3 seconds
+
       return () => clearTimeout(timer);
     }
-  }, [actionData, selectedBid]);
+  }, [actionData]);
 
   // Add null check for carrierProfile.user and businessProfile
   if (carrierProfile?.user?.userType !== "carrier" || !carrierProfile?.user?.businessProfile) {
@@ -179,33 +187,37 @@ export default function CarrierBidDashboard() {
   useEffect(() => {
     // Lazy load images for better performance
     const lazyImages = document.querySelectorAll('img[data-src]');
-    const lazyImageObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target as HTMLImageElement;
-          img.src = img.dataset.src || '';
-          img.removeAttribute('data-src');
-          observer.unobserve(img);
-        }
+    if (lazyImages.length > 0) {
+      const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target as HTMLImageElement;
+            img.src = img.dataset.src || '';
+            img.removeAttribute('data-src');
+            observer.unobserve(img);
+          }
+        });
       });
-    });
-    lazyImages.forEach(img => lazyImageObserver.observe(img));
+      lazyImages.forEach(img => lazyImageObserver.observe(img));
 
-    // Clean up observer on component unmount
-    return () => lazyImageObserver.disconnect();
+      // Clean up observer on component unmount
+      return () => lazyImageObserver.disconnect();
+    }
   }, []);
 
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
-      {responseMessage && (
+      {feedbackMessage && (
         <div
           className={`p-4 mb-4 text-center ${
-            responseMessage.type === "success"
+            actionData && 'success' in actionData && actionData.success
               ? "text-green-500 bg-green-100"
-              : "text-red-500 bg-red-100"
-          } rounded-lg`}
+              : "text-orange-500 bg-orange-100"
+          } rounded-lg transition-opacity duration-300 ${
+            feedbackMessage ? 'opacity-100' : 'opacity-0'
+          }`}
         >
-          {responseMessage.message}
+          {feedbackMessage}
         </div>
       )}
       {error && (
@@ -307,7 +319,10 @@ export default function CarrierBidDashboard() {
                         />
                       </p>
                       <p key={`status-${bid.id}`}>
-                        Status: <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
+                        Status:{" "}
+                        <LoadStatusBadge
+                          status={getStatusText(bid.bidStatus)}
+                        />
                       </p>
                     </div>
                     <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
@@ -346,9 +361,7 @@ export default function CarrierBidDashboard() {
                         </span>
                       </button>
                       <button
-                        type="submit"
-                        name="action"
-                        value="update"
+                        onClick={() => setSelectedBid(bid)}
                         className="p-2 m-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
                         title="Update Bid"
                       >
@@ -380,7 +393,7 @@ export default function CarrierBidDashboard() {
 
       {selectedBid && (
         <BidAdjustmentView
-          loadId={selectedBid.loadId}
+          loadId={selectedBid.id.toString()}
           initialBid={selectedBid.bidAmount}
           onClose={() => setSelectedBid(null)}
         />
@@ -404,5 +417,6 @@ function getStatusText(status: number): string {
 }
 
 <ErrorBoundary />
+
 
 

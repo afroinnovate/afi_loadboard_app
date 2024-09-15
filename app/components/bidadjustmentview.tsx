@@ -25,7 +25,7 @@ const BidAdjustmentView = ({ loadId, initialBid, onClose }: { loadId: string, in
         <h3 className="text-lg font-bold">Adjust Your Bid</h3>
         <Form method="post" onSubmit={handleSubmit}>
           <input type="hidden" name="bidId" value={loadId} />
-          <input type="hidden" name="_action" value="update" />
+          <input type="hidden" name="action" value="save" />
           <div>
             <input
               type="number"
