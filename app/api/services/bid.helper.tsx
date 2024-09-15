@@ -9,6 +9,7 @@ export async function manageBidProcess(user: any, loadId: number, bidAmount: Num
       user.token
     );
     let bidRequest: any = formatBidRequest(user, bidResponse, bidAmount, loadId, bidStatus);
+    console.log("bidRequest", bidRequest);
     if (bidResponse !== null && bidResponse.carrierId === user.userId) {
       const response = await UpdateBid(user.token, bidResponse.id, bidRequest);
       return handleBidResponse(response, Number(bidRequest.bidAmount));
@@ -31,7 +32,6 @@ export function formatBidRequest(user: any, existingBid: any, bidAmount: Number,
   if (existingBid) {
     return {
       bidAmount,
-      bidStatus: bidStatus,
       updatedBy: user.id,
     };
   }

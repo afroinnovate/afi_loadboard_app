@@ -10,8 +10,9 @@ import {
   Form,
   useActionData,
   useOutletContext,
+  useSubmit,
 } from "@remix-run/react";
-import { UpdateBid } from "~/api/services/bid.service";
+import { UpdateBid, DeleteBid } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
 import { destroySession, getSession } from "../api/services/session";
 import "flowbite";
@@ -76,21 +77,26 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const action = formData.get("action");
+  const action = formData.get("_action");
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get(authenticator.sessionKey);
 
   console.log("action", action);
 
-  if (action === "save") {
+  if (action === "placebid") {
     const bidId = formData.get("bidId") as string;
     const bidAmount = formData.get("bidAmount") as string;
-    
+
+    if (!bidId || !bidAmount) {
+      return json({ success: false, message: "Invalid bid data" });
+    }
+
     const bidUpdateRequest: BidUpdateRequest = {
-      bidStatus: 0, // Assuming 0 is for "Pending" status
       updatedBy: user.user.id,
       bidAmount: parseFloat(bidAmount),
     };
+
+    console.log("bidUpdateRequest", bidUpdateRequest);
 
     try {
       await UpdateBid(user.token, parseInt(bidId), bidUpdateRequest);
@@ -98,10 +104,24 @@ export const action: ActionFunction = async ({ request }) => {
         success: true,
         message: "Bid updated successfully",
         updatedBidId: parseInt(bidId),
-        updatedBidAmount: parseFloat(bidAmount)
+        updatedBidAmount: parseFloat(bidAmount),
       });
     } catch (error) {
+      console.error("Error updating bid:", error);
       return json({ success: false, message: "Failed to update bid" });
+    }
+  } else if (action === "delete_confirmed") {
+    const bidId = formData.get("bidId") as string;
+
+    try {
+      await DeleteBid(user.token, parseInt(bidId));
+      return json({
+        success: true,
+        message: "Bid withdrawn successfully",
+        deletedBidId: parseInt(bidId),
+      });
+    } catch (error) {
+      return json({ success: false, message: "Failed to withdraw bid" });
     }
   }
 
@@ -118,6 +138,8 @@ export default function CarrierBidDashboard() {
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const timezone = loaderData?.timezone || "UTC";
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [bidToDelete, setBidToDelete] = useState<number | null>(null);
+  const submit = useSubmit();
 
   let error = "";
   let info = "";
@@ -139,10 +161,22 @@ export default function CarrierBidDashboard() {
 
   // Update localBids if action was successful
   useEffect(() => {
-    if (actionData && typeof actionData === 'object' && 'success' in actionData && actionData.success) {
-      setLocalBids((prevBids: Array<{ id: number; bidAmount: number }>) => 
+    if (
+      actionData &&
+      typeof actionData === "object" &&
+      "success" in actionData &&
+      actionData.success
+    ) {
+      setLocalBids((prevBids: Array<{ id: number; bidAmount: number }>) =>
         prevBids.map((bid) =>
-          bid.id === (actionData as { success: boolean; updatedBidId: number; updatedBidAmount: number }).updatedBidId
+          bid.id ===
+          (
+            actionData as {
+              success: boolean;
+              updatedBidId: number;
+              updatedBidAmount: number;
+            }
+          ).updatedBidId
             ? { ...bid, bidAmount: actionData.updatedBidAmount }
             : bid
         )
@@ -151,18 +185,29 @@ export default function CarrierBidDashboard() {
   }, [actionData]);
 
   useEffect(() => {
-    if (actionData && typeof actionData === 'object' && 'message' in actionData) {
-      setFeedbackMessage(actionData.message);
-      const timer = setTimeout(() => {
-        setFeedbackMessage(null);
-      }, 3000); // Message will disappear after 3 seconds
+    if (actionData && typeof actionData === "object") {
+      if ("deletedBidId" in actionData) {
+        setLocalBids((prevBids) =>
+          prevBids.filter((bid) => bid.id !== actionData.deletedBidId)
+        );
+        setBidToDelete(null); // Close the confirmation modal
+      }
+      if ("message" in actionData) {
+        setFeedbackMessage(actionData.message as string);
+        const timer = setTimeout(() => {
+          setFeedbackMessage(null);
+        }, 3000); // Message will disappear after 3 seconds
 
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
+      }
     }
   }, [actionData]);
 
   // Add null check for carrierProfile.user and businessProfile
-  if (carrierProfile?.user?.userType !== "carrier" || !carrierProfile?.user?.businessProfile) {
+  if (
+    carrierProfile?.user?.userType !== "carrier" ||
+    !carrierProfile?.user?.businessProfile
+  ) {
     return (
       <AccessDenied
         returnUrl="/"
@@ -173,48 +218,66 @@ export default function CarrierBidDashboard() {
 
   const currency = "ETB";
 
-  function formatDateTime(dateTimeString: string, format: 'date' | 'time'): string {
+  function formatDateTime(
+    dateTimeString: string,
+    format: "date" | "time"
+  ): string {
     const date = new Date(dateTimeString);
     const options: Intl.DateTimeFormatOptions = {
       timeZone: timezone,
-      ...(format === 'date' 
+      ...(format === "date"
         ? { year: "numeric", month: "short", day: "numeric" }
         : { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
     };
-    return new Intl.DateTimeFormat('en-US', options).format(date);
+    return new Intl.DateTimeFormat("en-US", options).format(date);
   }
 
   useEffect(() => {
     // Lazy load images for better performance
-    const lazyImages = document.querySelectorAll('img[data-src]');
+    const lazyImages = document.querySelectorAll("img[data-src]");
     if (lazyImages.length > 0) {
-      const lazyImageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target as HTMLImageElement;
-            img.src = img.dataset.src || '';
-            img.removeAttribute('data-src');
-            observer.unobserve(img);
-          }
-        });
-      });
-      lazyImages.forEach(img => lazyImageObserver.observe(img));
+      const lazyImageObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const img = entry.target as HTMLImageElement;
+              img.src = img.dataset.src || "";
+              img.removeAttribute("data-src");
+              observer.unobserve(img);
+            }
+          });
+        }
+      );
+      lazyImages.forEach((img) => lazyImageObserver.observe(img));
 
       // Clean up observer on component unmount
       return () => lazyImageObserver.disconnect();
     }
   }, []);
 
+  const handleBidUpdate = (updatedBid: { id: string; amount: number }) => {
+    const formData = new FormData();
+    formData.append("_action", "placebid");
+    formData.append("bidId", updatedBid.id);
+    formData.append("bidAmount", updatedBid.amount.toString());
+    submit(formData, { method: "post" });
+    setSelectedBid(null);
+  };
+
+  const handleDeleteClick = (bidId: number) => {
+    setBidToDelete(bidId);
+  };
+
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
       {feedbackMessage && (
         <div
           className={`p-4 mb-4 text-center ${
-            actionData && 'success' in actionData && actionData.success
+            actionData && "success" in actionData && actionData.success
               ? "text-green-500 bg-green-100"
               : "text-orange-500 bg-orange-100"
           } rounded-lg transition-opacity duration-300 ${
-            feedbackMessage ? 'opacity-100' : 'opacity-0'
+            feedbackMessage ? "opacity-100" : "opacity-0"
           }`}
         >
           {feedbackMessage}
@@ -350,7 +413,7 @@ export default function CarrierBidDashboard() {
                       <input type="hidden" name="bidId" value={bid.id} />
                       <button
                         type="submit"
-                        name="action"
+                        name="_action"
                         value="contact"
                         className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
                         title="Contact Shipper"
@@ -372,14 +435,15 @@ export default function CarrierBidDashboard() {
                       </button>
                       <button
                         type="submit"
-                        name="action"
-                        value="remove"
+                        name="_action"
+                        value="delete"
+                        onClick={() => setBidToDelete(bid.id)}
                         className="p-2 m-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
-                        title="Remove Bid"
+                        title="Withdraw Bid"
                       >
                         <TrashIcon className="w-5 h-5 text-white" />
                         <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          Remove Bid
+                          Withdraw Bid
                         </span>
                       </button>
                     </Form>
@@ -396,6 +460,13 @@ export default function CarrierBidDashboard() {
           loadId={selectedBid.id.toString()}
           initialBid={selectedBid.bidAmount}
           onClose={() => setSelectedBid(null)}
+        />
+      )}
+
+      {bidToDelete !== null && (
+        <DeleteConfirmationModal
+          bidId={bidToDelete}
+          onCancel={() => setBidToDelete(null)}
         />
       )}
     </div>
@@ -415,6 +486,44 @@ function getStatusText(status: number): string {
       return "Unknown";
   }
 }
+
+const DeleteConfirmationModal = ({
+  bidId,
+  onCancel,
+}: {
+  bidId: number;
+  onCancel: () => void;
+}) => {
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">
+        <h3 className="text-lg font-medium text-red-400 mb-4">Withdraw Bid</h3>
+        <p className="text-sm text-gray-300 mb-6">
+          Are you sure you want to withdraw this bid? This action cannot be undone.
+        </p>
+        <div className="flex justify-end space-x-4">
+          <Form method="post">
+            <input type="hidden" name="bidId" value={bidId} />
+            <button
+              type="submit"
+              name="_action"
+              value="delete_confirmed"
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-200"
+            >
+              Withdraw
+            </button>
+          </Form>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 <ErrorBoundary />
 

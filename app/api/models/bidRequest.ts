@@ -9,7 +9,7 @@ export type BidRequest = {
 }
 
 export type BidUpdateRequest = {
-    bidStatus: number;
+    bidStatus?: number;
     updatedBy: string;
     bidAmount: number;
 }

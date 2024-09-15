@@ -28,6 +28,7 @@ import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
+import { useMemo } from "react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -57,7 +58,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const expires = new Date(Date.now() + EXPIRES_IN);
 
     if (user?.user.userType === "shipper") {
-      return redirect("/shipper/dashboard/")
+      return redirect("/shipper/dashboard/");
     }
 
     // check if the user is authorized to access this page, else redircdt them the appropriate page
@@ -76,17 +77,18 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw response;
     }
 
-    console.log("loads", response);
-
-    return json({ "loads": response, "carrierProfile": carrierProfile }, {
-      headers: {
-        "Set-Cookie": await commitSession(session, { expires }),
-      },
-    });
+    return json(
+      { loads: response, carrierProfile: carrierProfile },
+      {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
+      }
+    );
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
       const session = await getSession(request.headers.get("Cookie"));
-      
+
       return redirect("/login/", {
         headers: {
           "Set-Cookie": await destroySession(session),
@@ -116,7 +118,7 @@ export const action: ActionFunction = async ({ request }) => {
     const formData = await request.formData();
     const actionType = formData.get("_action");
     const bidLoadId = formData.get("bidLoadId");
-
+    console.log("bidLoadId", bidLoadId, "actionType", actionType);
     switch (actionType) {
       case "contact":
         return json({ error: "", message: "contactMode" });
@@ -134,7 +136,7 @@ export const action: ActionFunction = async ({ request }) => {
         const bidDetails = await manageBidProcess(
           carrierProfile,
           Number(bidLoadId),
-          Number(bidAmount),
+          Number(bidAmount)
         );
         return json({
           error: "",
@@ -161,56 +163,65 @@ export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
 
-  let error = "";
-  let info = "";
+  // Memoize the error and info messages
+  const { error, info } = useMemo(() => {
+    let errorMsg = "";
+    let infoMsg = "";
+    
+    // Process errors or informational messages
+    if (loaderData?.errno) {
+      if (loaderData.errno === "ENOTFOUND") {
+        errorMsg = "Oops! You have a connectivity issue. Please connect to a reliable internet.";
+      } else {
+        errorMsg = "Oops! Something went wrong. Please try again.";
+      }
+    } else if (actionData && actionData !== undefined) {
+      const { actionError, message, amount } = actionData;
+      if (message !== undefined && message.includes("bidMode")) {
+        infoMsg = "You are in bid mode. Please place your bid.";
+      } else if (message !== undefined && message.includes("bidNotPlaced")) {
+        infoMsg = `Oops! Your bid wasn't placed/updated. Please try again. Amount: ${amount}`;
+      } else if (
+        message !== undefined &&
+        (message.includes("bidPlaced") || message.includes("bidUpdatePlaced"))
+      ) {
+        infoMsg = `Bid placed/updated successfully. New amount: ${amount}`;
+      } else if (actionError !== null || actionError !== undefined) {
+        errorMsg = actionError;
+      }
+    }
 
-  // Process errors or informational messages
-  if (loaderData?.errno) {
-    if (loaderData.errno === "ENOTFOUND") {
-      error =
-        "Oops! You have a connectivity issue. Please connect to a reliable internet.";
+    return { error: errorMsg, info: infoMsg };
+  }, [loaderData, actionData]);
+
+  // Memoize the loads and carrier profile
+  const { loads, carrierProfile, additionalInfo } = useMemo(() => {
+    let loadsData = loaderData?.loads || [];
+    let carrierProfileData: any = loaderData?.carrierProfile || {};
+    let additionalInfoMsg = "";
+
+    if (loaderData && !error) {
+      loadsData = loaderData.loads;
     } else {
-      error = "Oops! Something went wrong. Please try again.";
+      additionalInfoMsg = "No loads found or something went wrong. Please try again later or contact support.";
     }
-  } else if (actionData && actionData !== undefined) {
-    const { actionError, message, amount } = actionData;
-    if (message !== undefined && message.includes("bidMode")) {
-      info = "You are in bid mode. Please place your bid.";
-    } else if (message !== undefined && message.includes("bidNotPlaced")) {
-      info = `Oops! Your bid wasn't placed/updated. Please try again. Amount: ${amount}`;
-    } else if (
-      message !== undefined &&
-      (message.includes("bidPlaced") || message.includes("bidUpdatePlaced"))
-    ) {
-      info = `Bid placed/updated successfully. New amount: ${amount}`;
-    } else if (actionError !== null || actionError !== undefined) {
-      error = actionError;
+
+    if (Object.keys(loadsData).length === 0) {
+      additionalInfoMsg = "No loads posted, please check back later";
     }
-  }
 
-  // Extract loads and user data from loader
-  let loads = loaderData?.loads || [];
-  let carrierProfile: any = loaderData?.carrierProfile || {};
+    return { loads: loadsData, carrierProfile: carrierProfileData, additionalInfo: additionalInfoMsg };
+  }, [loaderData, error]);
 
-  if (loaderData && !error) {
-    loads = loaderData.loads;
-  } else {
-    error =
-      "No loads found or something went wrong. Please try again later or contact support.";
-  }
-
-  if (Object.keys(loads).length === 0) {
-    info = "No loads posted, please check back later";
-  }
-  
   const carrierHasAccess =
     carrierProfile.user.userType === "carrier" &&
     carrierProfile.user.businessProfile.carrierRole !== null
       ? true
       : false;
 
-  const carrierAccess = carrierProfile.user.userType === "carrier" ? true : false;
-  
+  const carrierAccess =
+    carrierProfile.user.userType === "carrier" ? true : false;
+
   let contactMode =
     actionData && actionData.message === "contactMode"
       ? actionData.message
@@ -221,19 +232,16 @@ export default function CarrierViewLoads() {
   let loadIdToBeBid = actionData?.loadIdToBeBid || null;
   let currentBid = actionData?.offerAmount || 0;
 
-  // Utility function to determine styles based on load status
-  const getStatusStyles = (status: string) => {
+  console.log("currentBid", currentBid, "loadIdToBeBid", loadIdToBeBid);
+  // Memoize the status styles function
+  const getStatusStyles = useMemo(() => (status: string) => {
     switch (status) {
-      case "open":
-        return "bg-green-600";
-      case "accepted":
-        return "bg-gray-500";
-      case "enroute":
-        return "bg-red-500";
-      default:
-        return "bg-orange-500";
+      case "open": return "bg-green-600";
+      case "accepted": return "bg-gray-500";
+      case "enroute": return "bg-red-500";
+      default: return "bg-orange-500";
     }
-  };
+  }, []);
 
   // Conditional rendering for access denied or valid dashboard
   if (carrierProfile.user.userType !== "carrier") {
@@ -248,9 +256,7 @@ export default function CarrierViewLoads() {
   const currency = "ETB";
 
   return (
-    <div
-      className={`container mx-auto dark:bg-gray-800 ${error ? "mb-4" : ""}`}
-    >
+    <div className="container mx-auto dark:bg-gray-800 max-w-7xl px-4 sm:px-6 lg:px-8">
       {error && (
         <div className="p-4 mb-2 text-center text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-300">
           {error}
@@ -261,9 +267,9 @@ export default function CarrierViewLoads() {
           Pick your Load and Hit the Road
         </h1>
       </div>
-      {info && (
+      {(info || additionalInfo) && (
         <div className="p-4 mb-2 text-center text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-300">
-          {info}
+          {info || additionalInfo}
         </div>
       )}
       <div className="space-y-4 pt-2">
@@ -277,7 +283,7 @@ export default function CarrierViewLoads() {
               <>
                 {/* Contact Shipper View */}
                 {contactMode === "contactMode" && (
-                  <ContactShipperView shipper={load.createdBy} load={load} />
+                  <ContactShipperView shipper={load?.createdBy} load={load} />
                 )}
 
                 {/* Bid Adjustment View */}
@@ -320,7 +326,7 @@ export default function CarrierViewLoads() {
 
                 {/* Conditional Panels */}
                 <Disclosure.Panel className="p-2 pl-4 text-gray-300 bg-gray-800">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <p>
                       Pickup Date:{" "}
                       {new Date(load.pickupDate).toLocaleDateString()}
@@ -338,7 +344,7 @@ export default function CarrierViewLoads() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex justify-end space-x-2 mt-4">
+                  <div className="flex flex-wrap justify-end space-x-2 mt-4">
                     {carrierAccess && !carrierHasAccess && (
                       <NavLink
                         to="/carriers/dashboard/account/business/"
