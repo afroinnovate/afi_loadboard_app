@@ -226,13 +226,16 @@ export default function CarrierViewLoads() {
     actionData && actionData.message === "contactMode"
       ? actionData.message
       : "";
+  let contactLoad = contactMode === "contactMode" ? actionData.contactLoad : null;
+
   let bidMode =
     actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
 
   let loadIdToBeBid = actionData?.loadIdToBeBid || null;
   let currentBid = actionData?.offerAmount || 0;
 
-  console.log("currentBid", currentBid, "loadIdToBeBid", loadIdToBeBid);
+  console.log("contactLoad", contactLoad?.createdBy);
+
   // Memoize the status styles function
   const getStatusStyles = useMemo(() => (status: string) => {
     switch (status) {
@@ -362,6 +365,11 @@ export default function CarrierViewLoads() {
                           type="hidden"
                           name="loadId"
                           value={load.loadId}
+                        />
+                        <input
+                          type="hidden"
+                          name="load"
+                          value={load}
                         />
                         <button
                           type="submit"

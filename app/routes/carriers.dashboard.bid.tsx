@@ -84,9 +84,10 @@ export const action: ActionFunction = async ({ request }) => {
   console.log("action", action);
 
   if (action === "placebid") {
+    console.log("action", action);
     const bidId = formData.get("bidId") as string;
     const bidAmount = formData.get("bidAmount") as string;
-
+   
     if (!bidId || !bidAmount) {
       return json({ success: false, message: "Invalid bid data" });
     }
@@ -123,6 +124,11 @@ export const action: ActionFunction = async ({ request }) => {
     } catch (error) {
       return json({ success: false, message: "Failed to withdraw bid" });
     }
+  } else if (action === "closeContact") {
+    return json({
+      success: false,
+      message: "Canceled the Update",
+    });
   }
 
   // Handle other actions (remove, contact) here if needed
@@ -138,8 +144,7 @@ export default function CarrierBidDashboard() {
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const timezone = loaderData?.timezone || "UTC";
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [bidToDelete, setBidToDelete] = useState<number | null>(null);
-  const submit = useSubmit();
+  const [bidToDelete, setBidToDelete] = useState<number | null>(null)
 
   let error = "";
   let info = "";
@@ -163,9 +168,7 @@ export default function CarrierBidDashboard() {
   useEffect(() => {
     if (
       actionData &&
-      typeof actionData === "object" &&
-      "success" in actionData &&
-      actionData.success
+      typeof actionData === "object" && "success" in actionData && actionData.success
     ) {
       setLocalBids((prevBids: Array<{ id: number; bidAmount: number }>) =>
         prevBids.map((bid) =>
@@ -181,6 +184,9 @@ export default function CarrierBidDashboard() {
             : bid
         )
       );
+      setSelectedBid(null); // Close the popup after successful update
+    } else if (actionData && typeof actionData === 'object' && 'message' in actionData && actionData.message.includes("Canceled the Update")) {
+      setSelectedBid(null); // Close the popup after successful update
     }
   }, [actionData]);
 
@@ -254,19 +260,6 @@ export default function CarrierBidDashboard() {
       return () => lazyImageObserver.disconnect();
     }
   }, []);
-
-  const handleBidUpdate = (updatedBid: { id: string; amount: number }) => {
-    const formData = new FormData();
-    formData.append("_action", "placebid");
-    formData.append("bidId", updatedBid.id);
-    formData.append("bidAmount", updatedBid.amount.toString());
-    submit(formData, { method: "post" });
-    setSelectedBid(null);
-  };
-
-  const handleDeleteClick = (bidId: number) => {
-    setBidToDelete(bidId);
-  };
 
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
