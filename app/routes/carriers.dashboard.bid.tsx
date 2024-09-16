@@ -83,52 +83,60 @@ export const action: ActionFunction = async ({ request }) => {
 
   console.log("action", action);
 
-  if (action === "placebid") {
-    console.log("action", action);
-    const bidId = formData.get("bidId") as string;
-    const bidAmount = formData.get("bidAmount") as string;
-   
-    if (!bidId || !bidAmount) {
-      return json({ success: false, message: "Invalid bid data" });
+  switch (action) {
+    case "placebid": {
+      console.log("action", action);
+      const bidId = formData.get("bidId") as string;
+      const bidAmount = formData.get("bidAmount") as string;
+     
+      if (!bidId || !bidAmount) {
+        return json({ success: false, message: "Invalid bid data" });
+      }
+
+      const bidUpdateRequest: BidUpdateRequest = {
+        updatedBy: user.user.id,
+        bidAmount: parseFloat(bidAmount),
+      };
+
+      console.log("bidUpdateRequest", bidUpdateRequest);
+
+      try {
+        await UpdateBid(user.token, parseInt(bidId), bidUpdateRequest);
+        return json({
+          success: true,
+          message: "Bid updated successfully",
+          updatedBidId: parseInt(bidId),
+          updatedBidAmount: parseFloat(bidAmount),
+        });
+      } catch (error) {
+        console.error("Error updating bid:", error);
+        return json({ success: false, message: "Failed to update bid" });
+      }
     }
 
-    const bidUpdateRequest: BidUpdateRequest = {
-      updatedBy: user.user.id,
-      bidAmount: parseFloat(bidAmount),
-    };
+    case "delete_confirmed": {
+      const bidId = formData.get("bidId") as string;
 
-    console.log("bidUpdateRequest", bidUpdateRequest);
+      try {
+        await DeleteBid(user.token, parseInt(bidId));
+        return json({
+          success: true,
+          message: "Bid withdrawn successfully",
+          deletedBidId: parseInt(bidId),
+        });
+      } catch (error) {
+        return json({ success: false, message: "Failed to withdraw bid" });
+      }
+    }
 
-    try {
-      await UpdateBid(user.token, parseInt(bidId), bidUpdateRequest);
+    case "closeContact":
       return json({
-        success: true,
-        message: "Bid updated successfully",
-        updatedBidId: parseInt(bidId),
-        updatedBidAmount: parseFloat(bidAmount),
+        success: false,
+        message: "Canceled the Update",
       });
-    } catch (error) {
-      console.error("Error updating bid:", error);
-      return json({ success: false, message: "Failed to update bid" });
-    }
-  } else if (action === "delete_confirmed") {
-    const bidId = formData.get("bidId") as string;
 
-    try {
-      await DeleteBid(user.token, parseInt(bidId));
-      return json({
-        success: true,
-        message: "Bid withdrawn successfully",
-        deletedBidId: parseInt(bidId),
-      });
-    } catch (error) {
-      return json({ success: false, message: "Failed to withdraw bid" });
-    }
-  } else if (action === "closeContact") {
-    return json({
-      success: false,
-      message: "Canceled the Update",
-    });
+    default:
+      return json({ success: false, message: "Invalid action" });
   }
 
   // Handle other actions (remove, contact) here if needed
