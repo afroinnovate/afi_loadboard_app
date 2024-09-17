@@ -1,5 +1,6 @@
 import React from 'react';
 import { Form } from '@remix-run/react';
+import { PhoneIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
 interface ContactShipperViewProps {
   shipper: {
@@ -12,36 +13,63 @@ interface ContactShipperViewProps {
   load?: any;
   onClose?: () => void;
   onChat?: () => void;
+  theme?: 'light' | 'dark';
 }
 
-export default function ContactShipperView({ shipper, load, onClose, onChat }: ContactShipperViewProps) {
+export default function ContactShipperView({ shipper, load, onClose, onChat, theme = 'dark' }: ContactShipperViewProps) {
   const shipperName = shipper?.companyName || `${shipper?.firstName || 'Unknown'} ${shipper?.lastName || 'Shipper'}`;
   const shipperEmail = shipper?.email || 'Not provided';
   const shipperPhone = shipper?.phone || 'Not provided';
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    // You might want to add a toast notification here
+  };
+
+  const themeClasses = theme === 'light' 
+    ? 'bg-white text-gray-800'
+    : 'bg-gray-800 text-white';
+
+  const closeButtonClasses = theme === 'light'
+    ? 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+    : 'bg-gray-700 hover:bg-gray-600 text-white';
+
+  const chatButtonClasses = 'border border-green-500 text-green-500 hover:bg-green-500 hover:text-white';
+
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="mt-3 text-center">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Contact Shipper</h3>
-          <div className="mt-2 px-7 py-3">
-            <p className="text-sm text-gray-500">
-              Shipper: {shipperName}
+    <div className={`fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center`}>
+      <div className={`p-6 border rounded-lg shadow-xl ${themeClasses} max-w-md w-full`}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold">Contact Shipper</h3>
+          <button onClick={onClose} className={`p-1 rounded-full ${closeButtonClasses}`}>
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <p className="font-medium">{shipperName}</p>
+          {load && (
+            <p className="text-sm opacity-75">
+              Load: {load.origin} to {load.destination}
             </p>
-            <p className="text-sm text-gray-500">
-              Email: {shipperEmail}
-            </p>
-            <p className="text-sm text-gray-500">
-              Phone: {shipperPhone}
-            </p>
-            {load && (
-              <p className="text-sm text-gray-500">
-                Load: {load.origin} to {load.destination}
-              </p>
-            )}
+          )}
+          <div className="flex items-center space-x-2">
+            <EnvelopeIcon className="w-5 h-5 opacity-75 flex-shrink-0" />
+            <a href={`mailto:${shipperEmail}`} className="hover:underline truncate">{shipperEmail}</a>
+            <button 
+              onClick={() => copyToClipboard(shipperEmail)} 
+              className={`ml-auto text-sm ${closeButtonClasses} px-2 py-1 rounded flex-shrink-0`}
+            >
+              Copy
+            </button>
           </div>
-          <div className="items-center px-4 py-3">
-            <Form method="post">
+          <div className="flex items-center space-x-2">
+            <PhoneIcon className="w-5 h-5 opacity-75 flex-shrink-0" />
+            <a href={`tel:${shipperPhone}`} className="hover:underline">{shipperPhone}</a>
+          </div>
+        </div>
+        <div className="mt-6">
+          <div className="flex space-x-3">
+            <Form method="post" className="flex-1">
               <input type="hidden" name="shipperId" value={shipper?.id || ''} />
               <input type="hidden" name="loadId" value={load?.id || ''} />
               <button
@@ -49,19 +77,21 @@ export default function ContactShipperView({ shipper, load, onClose, onChat }: C
                 name="_action"
                 value="sendMessage"
                 onClick={onChat}
-                className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className={`flex items-center justify-center w-full ${chatButtonClasses} px-4 py-2 rounded-md transition duration-300 ease-in-out`}
               >
-                Send Message
+                <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
+                Chat
               </button>
             </Form>
-            <Form method="post">
+            <Form method="post" className="flex-1">
               <button
                 type="submit"
                 name="_action"
                 value="closeContact"
                 onClick={onClose}
-                className="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                className={`flex items-center justify-center w-full ${closeButtonClasses} px-4 py-2 rounded-md transition duration-300 ease-in-out`}
               >
+                <XMarkIcon className="w-5 h-5 mr-2" />
                 Close
               </button>
             </Form>

@@ -212,6 +212,7 @@ export default function CarrierBidDashboard() {
       : "";
 
   // Extract user data from loader
+
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
@@ -340,8 +341,6 @@ export default function CarrierBidDashboard() {
     setShowContactShipper(false);
     setShowChatWindow(true);
   };
-
-  console.log("bids", bids);
 
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
