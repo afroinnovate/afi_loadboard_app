@@ -16,6 +16,7 @@
 * [09/17/24]: Make the buttons works in carrier bid dashboard(delete and chat)
 * [09/17/24]: Finish the chat window and responsiveness of the bid dashboard.
 * [09/17/24]: Make sure the loads are hydrated during opening of the page and not everytime each child page loads - bid(carrier dashboard)
+* [09/17/24]: Made the bid dashboard responsive
 
 ### TODO
 

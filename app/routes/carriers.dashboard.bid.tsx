@@ -12,7 +12,7 @@ import {
   useOutletContext,
   useSearchParams,
 } from "@remix-run/react";
-import { UpdateBid, DeleteBid, GetBids } from "~/api/services/bid.service";
+import { UpdateBid, DeleteBid } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
 import { commitSession, destroySession, getSession } from "../api/services/session";
 import "flowbite";
@@ -34,6 +34,7 @@ import { LoadStatusBadge } from "~/components/statusBadge";
 import ContactShipperView from "~/components/contactshipper";
 import ChatWindow from "~/components/ChatWindow";
 import { parseISO, isAfter } from 'date-fns';
+import { LoadStatusIcon } from "~/components/LoadStatusIcon";
 
 export const meta: MetaFunction = () => {
   return [
@@ -372,7 +373,10 @@ export default function CarrierBidDashboard() {
       {feedbackMessage && (
         <div
           className={`p-4 mb-4 text-center ${
-            actionData && "success" in actionData && actionData.success
+            actionData &&
+            typeof actionData === "object" &&
+            "success" in actionData &&
+            actionData.success
               ? "text-green-500 bg-green-100"
               : "text-orange-500 bg-orange-100"
           } rounded-lg transition-opacity duration-300 ${
@@ -439,35 +443,28 @@ export default function CarrierBidDashboard() {
           <Disclosure key={bid.id}>
             {({ open }) => (
               <div className="bg-gray-700 shadow rounded-lg">
-                <Disclosure.Button className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2 sm:mb-0">
-                    <h2 className="text-lg font-bold">{bid.load.origin}</h2>
-                    <ArrowRightIcon className="w-6 h-6 text-red-400 hidden sm:block" />
-                    <h2 className="text-lg font-bold">
+                <Disclosure.Button className="flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
+                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0">
+                    <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
+                      {bid.load.origin}
+                    </h2>
+                    <ArrowRightIcon className="w-4 h-4 sm:w-6 sm:h-6 text-red-400 flex-shrink-0" />
+                    <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
                       {bid.load.destination}
                     </h2>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
-                    <span className="text-lg font-bold">
+                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 justify-end">
+                    <span className="hidden sm:inline">
+                      <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
+                    </span>
+                    <span className="sm:hidden">
+                      <LoadStatusIcon status={getStatusText(bid.bidStatus)} />
+                    </span>
+                    <span className="text-sm sm:text-lg font-normal sm:font-bold">
                       {currency} {bid.bidAmount}
                     </span>
-                    <div className="flex space-x-2">
-                      <span
-                        className="p-1 text-blue-400"
-                        title="Contact Shipper"
-                      >
-                        <ChatBubbleLeftIcon className="w-5 h-5" />
-                      </span>
-                      <span className="p-1 text-yellow-400" title="Update Bid">
-                        <PencilIcon className="w-5 h-5" />
-                      </span>
-                      <span className="p-1 text-red-400" title="Remove Bid">
-                        <TrashIcon className="w-5 h-5" />
-                      </span>
-                    </div>
                     <ChevronUpIcon
-                      className={`w-6 h-6 ${
+                      className={`hidden sm:block sm:w-6 sm:h-6 ${
                         open ? "transform rotate-180" : ""
                       } text-gray-300`}
                     />
@@ -523,7 +520,9 @@ export default function CarrierBidDashboard() {
                       <input type="hidden" name="bidId" value={bid.id} />
                       <button
                         type="button"
-                        onClick={() => handleContactShipper(bid.load?.createdBy, bid.load)}
+                        onClick={() =>
+                          handleContactShipper(bid.load?.createdBy, bid.load)
+                        }
                         className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
                         title="Contact Shipper"
                       >
@@ -576,7 +575,13 @@ export default function CarrierBidDashboard() {
       <ChatWindow
         isOpen={showChatWindow}
         onClose={() => setShowChatWindow(false)}
-        recipientName={selectedShipper ? `${selectedShipper.firstName || 'Unknown'} ${selectedShipper.lastName || 'Shipper'}` : 'Shipper'}
+        recipientName={
+          selectedShipper
+            ? `${selectedShipper.firstName || "Unknown"} ${
+                selectedShipper.lastName || "Shipper"
+              }`
+            : "Shipper"
+        }
         messages={chatMessages}
       />
 
