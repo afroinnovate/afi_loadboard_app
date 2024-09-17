@@ -5,7 +5,7 @@ import { Form, useActionData, useSubmit } from '@remix-run/react';
 interface Message {
   id: number;
   text: string;
-  sender: 'user' | 'other';
+  sender: 'user' | 'other' | 'system';
   timestamp: Date;
 }
 
@@ -34,6 +34,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, recipientName,
     form.reset();
   };
 
+  const systemMessage: Message = {
+    id: 0,
+    text: "The message component is not ready yet. Please call or email the shipper or carrier. Thank you for choosing loadboard, the modern way to move.",
+    sender: 'system',
+    timestamp: new Date(),
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -45,6 +52,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, recipientName,
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <div className="flex justify-center">
+          <div className="max-w-3/4 p-2 rounded-lg bg-gray-200 text-black">
+            <p>{systemMessage.text}</p>
+          </div>
+        </div>
         {messages.map((message) => (
           <div
             key={message.id}
@@ -55,12 +67,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, recipientName,
             <div
               className={`max-w-3/4 p-2 rounded-lg ${
                 message.sender === 'user'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-800'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-black'
               }`}
             >
               <p>{message.text}</p>
-              <span className="text-xs opacity-75">
+              <span className={`text-xs opacity-75 ${
+                message.sender === 'user' ? 'text-blue-100' : 'text-gray-600'
+              }`}>
                 {new Date(message.timestamp).toLocaleTimeString()}
               </span>
             </div>
@@ -74,7 +88,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, recipientName,
             type="text"
             name="message"
             placeholder="Type a message..."
-            className="flex-1 p-2 rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="flex-1 p-2 rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-black"
           />
           <button
             type="submit"
