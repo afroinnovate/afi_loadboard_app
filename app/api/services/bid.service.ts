@@ -1,4 +1,4 @@
-import type { BidRequest } from "../models/bidRequest";
+import type { BidRequest, BidUpdateRequest } from "../models/bidRequest";
 import type { BidResponse } from "../models/bidResponse";
 
 const baseUrl = "https://api.frieght.afroinnovate.com/";
@@ -337,7 +337,7 @@ export async function DeleteBid(token: string, id: Number) {
 export async function UpdateBid(
   token: string,
   id: Number,
-  bidRequest: BidRequest
+  bidRequest: BidUpdateRequest
 ) {
   try {
     const url = `${baseUrl}bids/${id}`;
@@ -398,6 +398,69 @@ export async function UpdateBid(
             message: "An error occurred",
             status: 500,
           },
+        });
+    }
+  }
+}
+
+export async function GetBidsByCarrierId(token: string, carrierId: number) {
+  try {
+    const response = await fetch(`${baseUrl}bids/carrier/${carrierId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Response(`Error fetching bid with ID ${carrierId}`, {
+        status: response.status,
+      });
+    }
+
+    const responseData = await response.json();
+    return responseData;
+  } catch(error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
+        });
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+        },
         });
     }
   }

@@ -1,96 +1,103 @@
-import React, { useState } from "react";
-import { ChatBubbleLeftIcon, ClipboardIcon } from "@heroicons/react/16/solid";
-import { Form, Link } from "@remix-run/react";
+import React from 'react';
+import { Form } from '@remix-run/react';
+import { PhoneIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
-// Subtle Alert Component
-const SubtleAlert = ({ message, isVisible }) => {
-  if (!isVisible) return null;
+interface ContactShipperViewProps {
+  shipper: {
+    companyName?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  } | null | undefined;
+  load?: any;
+  onClose?: () => void;
+  onChat?: () => void;
+  theme?: 'light' | 'dark';
+}
 
-  return (
-    <div className="fixed bottom-4 right-4 bg-green-100 text-green-800 px-4 py-2 rounded-md shadow-md transition-opacity duration-300">
-      {message}
-    </div>
-  );
-};
-
-const ContactShipperView = ({ shipper, load }: any) => {
-  const [alertVisible, setAlertVisible] = useState(false);
+export default function ContactShipperView({ shipper, load, onClose, onChat, theme = 'dark' }: ContactShipperViewProps) {
+  const shipperName = shipper?.companyName || `${shipper?.firstName || 'Unknown'} ${shipper?.lastName || 'Shipper'}`;
+  const shipperEmail = shipper?.email || 'Not provided';
+  const shipperPhone = shipper?.phone || 'Not provided';
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(
-      () => {
-        setAlertVisible(true);
-        setTimeout(() => setAlertVisible(false), 2000);
-      },
-      (err) => console.error(`Failed to copy to clipboard: ${err}`)
-    );
+    navigator.clipboard.writeText(text);
+    // You might want to add a toast notification here
   };
 
+  const themeClasses = theme === 'light' 
+    ? 'bg-white text-gray-800'
+    : 'bg-gray-800 text-white';
+
+  const closeButtonClasses = theme === 'light'
+    ? 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+    : 'bg-gray-700 hover:bg-gray-600 text-white';
+
+  const chatButtonClasses = 'border border-green-500 text-green-500 hover:bg-green-500 hover:text-white';
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full space-y-4 text-green-900">
-        <div className="p-6 space-y-4">
-          <h3 className="text-2xl font-bold text-green-700">Contact Shipper</h3>
-          <div>
-            <p className="font-semibold text-lg">
-              {shipper.firstName} {shipper.lastName}
+    <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div className={`p-4 sm:p-6 border rounded-lg shadow-xl ${themeClasses} w-full max-w-sm sm:max-w-md`}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg sm:text-xl font-semibold">Contact Shipper</h3>
+          <button onClick={onClose} className={`p-1 rounded-full ${closeButtonClasses}`}>
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <p className="font-medium">{shipperName}</p>
+          {load && (
+            <p className="text-sm opacity-75">
+              Load: {load.origin} to {load.destination}
             </p>
-            <p className="text-sm text-green-600 italic">
-              Company: {shipper.businessProfile.companyName}
-            </p>
-            <p className="text-sm text-green-500 italic">
-              Registration Number:{" "}
-              {shipper.businessProfile.businessRegistrationNumber}
-            </p>
+          )}
+          <div className="flex items-center space-x-2">
+            <EnvelopeIcon className="w-5 h-5 opacity-75 flex-shrink-0" />
+            <a href={`mailto:${shipperEmail}`} className="hover:underline truncate text-sm sm:text-base">{shipperEmail}</a>
+            <button 
+              onClick={() => copyToClipboard(shipperEmail)} 
+              className={`ml-auto text-xs sm:text-sm ${closeButtonClasses} px-2 py-1 rounded flex-shrink-0`}
+            >
+              Copy
+            </button>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between bg-green-50 p-3 rounded">
-              <p className="text-green-700">
-                Email: <span className="font-medium">{shipper.email}</span>
-              </p>
-              <button
-                onClick={() => copyToClipboard(shipper.email)}
-                className="text-green-600 hover:text-green-800"
-              >
-                <ClipboardIcon className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between bg-green-50 p-3 rounded">
-              <p className="text-green-700">
-                Phone: <span className="font-medium">{shipper.phone}</span>
-              </p>
-              <button
-                onClick={() => copyToClipboard(shipper.phone)}
-                className="text-green-600 hover:text-green-800"
-              >
-                <ClipboardIcon className="w-5 h-5" />
-              </button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <PhoneIcon className="w-5 h-5 opacity-75 flex-shrink-0" />
+            <a href={`tel:${shipperPhone}`} className="hover:underline text-sm sm:text-base">{shipperPhone}</a>
           </div>
         </div>
-        <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-between">
-          <Link
-            to="/carriers/dashboard/view"
-            className="flex items-center px-4 py-2 text-sm font-medium text-green-500 border border-green-700 rounded hover:bg-green-700  hover:text-white transition-colors duration-200"
-          >
-            <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
-            Chat
-          </Link>
-          <Form method="post">
-            <button
-              type="submit"
-              name="_action"
-              value="closeContact"
-              className="px-4 py-2 text-sm font-medium text-green-600 bg-gray-200 border border-green-600 rounded hover:bg-green-700 hover:text-white transition-colors duration-200"
-            >
-              Close
-            </button>
-          </Form>
+        <div className="mt-6">
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+            <Form method="post" className="flex-1">
+              <input type="hidden" name="shipperId" value={shipper?.id || ''} />
+              <input type="hidden" name="loadId" value={load?.id || ''} />
+              <button
+                type="submit"
+                name="_action"
+                value="sendMessage"
+                onClick={onChat}
+                className={`flex items-center justify-center w-full ${chatButtonClasses} px-4 py-2 rounded-md transition duration-300 ease-in-out text-sm sm:text-base`}
+              >
+                <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
+                Chat
+              </button>
+            </Form>
+            <Form method="post" className="flex-1">
+              <button
+                type="submit"
+                name="_action"
+                value="closeContact"
+                onClick={onClose}
+                className={`flex items-center justify-center w-full ${closeButtonClasses} px-4 py-2 rounded-md transition duration-300 ease-in-out text-sm sm:text-base`}
+              >
+                <XMarkIcon className="w-5 h-5 mr-2" />
+                Close
+              </button>
+            </Form>
+          </div>
         </div>
       </div>
-      <SubtleAlert message="Copied to clipboard!" isVisible={alertVisible} />
     </div>
   );
-};
-
-export default ContactShipperView;
+}

@@ -1,8 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Truck, DollarSign, Package, Clock } from "lucide-react";
+import { Truck, DollarSign, Package } from "lucide-react";
 
-export default function CarrierDashboard() {
+export default function CarrierDashboard({ loads, bids }: { loads: any, bids: any }) {
+  const openLoads = loads.filter((load: any) => load.loadStatus === "Open").length;
+  const activeBids = bids.filter((bid: any) => bid.bidStatus === 0).length;
+  const completedLoads = bids.filter((bid: any) => bid.bidStatus === 1).length;
+  const revenue = bids
+    .filter((bid: any) => bid.bidStatus === 1)
+    .reduce((total: any, bid: any) => total + bid.bidAmount, 0);
+
+  const latestBid = bids.sort((a: any, b: any) => 
+    new Date(b.biddingTime).getTime() - new Date(a.biddingTime).getTime()
+  )[0];
+
   return (
     <div className="bg-gray-900 text-white min-h-screen">
       <main className="container mx-auto px-4 py-8">
@@ -12,7 +23,7 @@ export default function CarrierDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <QuickLinkCard
-            title="Available Loads"
+            title="Available Open Loads"
             description="Browse and bid on available shipments"
             link="/carriers/dashboard/view"
             icon={<Package />}
@@ -20,7 +31,7 @@ export default function CarrierDashboard() {
           <QuickLinkCard
             title="My Bids"
             description="Manage your current bids"
-            link="/carriers/dashboard/"
+            link="/carriers/dashboard/bid/"
             icon={<DollarSign />}
           />
           <QuickLinkCard
@@ -34,22 +45,31 @@ export default function CarrierDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <DashboardCard title="Recent Bids">
             <ul className="space-y-2">
-              <BidItem
-                route="Dallas, TX → Houston, TX"
-                date="8/18/2024"
-                amount="ETB 2600"
-                status="Open"
-              />
-              {/* Add more bid items here */}
+              {latestBid && (
+                <BidItem
+                  route={`${latestBid.load.origin} → ${latestBid.load.destination}`}
+                  date={new Date(latestBid.biddingTime).toLocaleDateString()}
+                  amount={`ETB ${latestBid.bidAmount}`}
+                  status={latestBid.bidStatus === 0 ? "Open" : "Closed"}
+                />
+              )}
             </ul>
           </DashboardCard>
 
           <DashboardCard title="Quick Stats">
             <div className="grid grid-cols-2 gap-4">
-              <Stat label="Completed Loads" value="28" />
-              <Stat label="Active Bids" value="5" />
-              <Stat label="Revenue This Month" value="$45,320" />
-              <Stat label="On-Time Deliveries" value="98%" />
+              <StatLink
+                label="Open Loads"
+                value={openLoads}
+                link="/carriers/dashboard/view"
+              />
+              <StatLink
+                label="Active Bids"
+                value={activeBids}
+                link="/carriers/dashboard/bid/"
+              />
+              <Stat label="Completed Loads" value={completedLoads} />
+              <Stat label="Revenue" value={`$${revenue.toLocaleString()}`} />
             </div>
           </DashboardCard>
         </div>
@@ -83,6 +103,13 @@ const Stat = ({ label, value }) => (
     <p className="text-2xl font-bold text-green-500">{value}</p>
     <p className="text-sm text-gray-400">{label}</p>
   </div>
+);
+
+const StatLink = ({ label, value, link }) => (
+  <Link to={link} className="text-center hover:text-green-400">
+    <p className="text-2xl font-bold text-green-500">{value}</p>
+    <p className="text-sm text-gray-400">{label}</p>
+  </Link>
 );
 
 const BidItem = ({ route, date, amount, status }) => (

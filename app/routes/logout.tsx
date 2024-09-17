@@ -15,7 +15,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
 };
 
-export const action: ActionFunction = async ({ request, params }) => {
+export const action: ActionFunction = async ({ request }) => {
   let session = await getSession(request.headers.get("Cookie"));
 
   // Completely destroy the session

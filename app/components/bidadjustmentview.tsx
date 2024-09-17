@@ -32,6 +32,8 @@ const BidAdjustmentView = ({ loadId, initialBid }: { loadId: string, initialBid:
             />
           </div>
           <div className="flex justify-between mt-4 p-2">
+            <input type="hidden" name="bidId" value={loadId} />
+            <input type="hidden" name="bidAmount" value={bidAmount} />
             <button
               type="submit"
               name="_action"

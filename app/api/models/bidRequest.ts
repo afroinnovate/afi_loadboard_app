@@ -7,3 +7,10 @@ export type BidRequest = {
     updatedBy: string;
     updatedAt: string;
 }
+
+export type BidUpdateRequest = {
+    bidStatus?: number;
+    updatedBy: string;
+    bidAmount: number;
+}
+

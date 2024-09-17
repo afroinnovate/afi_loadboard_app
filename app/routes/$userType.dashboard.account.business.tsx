@@ -46,6 +46,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
     let { userType } = params;
+
     userType =
       userType === user?.user.userType ? userType : user?.user.userType;
 
@@ -59,8 +60,6 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
     const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
     const userProfile = session.get(userTypeFiltered);
-
-    console.log("User Profile", userProfile);
 
     if (!userProfile) {
       return redirect("/logout/");
@@ -136,10 +135,16 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
     // update the session so the user can keep working long as they are active
     const expires = new Date(Date.now() + EXPIRES_IN);
+    let theme = session.get("theme");
+    theme = theme?? "dark"
     session.set(authenticator.sessionKey, user);
+    session.set("theme", theme)
     await commitSession(session, { expires });
 
-    return json({ userProfile, roles });
+    return json(
+      { userProfile, roles, theme },
+      { headers: { "Set-Cookie": await commitSession(session, { expires }) } }
+    );
   } catch (error: any) {
     console.log("Profile Error: ", error);
     if (JSON.parse(error).data.status === 401) {
@@ -177,8 +182,6 @@ export let action: ActionFunction = async ({ params, request }: any) => {
   user.user.lastName = authUser.user.lastName;
   user.user.roles = authUser.user.roles;
   user.user.userType = authUser.user.userType;
-
-  console.log("User Profile", user);
 
   const mapCarrierRole = (role: string | null) => {
     switch (role) {
@@ -333,7 +336,7 @@ export let action: ActionFunction = async ({ params, request }: any) => {
         },
       };
       console.log("Business Request", business_req);
-
+      console.log("Creating a user");
       // update the userinformation
       var response: any = await CreateUser(business_req, token);
       if (response) {
@@ -404,7 +407,29 @@ export default function Business() {
   const [documents, setDocuments] = useState<File[]>([]);
   const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
   const [fleetSize, setFleetSize] = useState("");
+  const [theme, setTheme] = useState(LoaderData?.theme || "light");
   const fetcher = useFetcher();
+
+  const themeClasses = {
+      container:
+        theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black",
+      header: theme === "dark" ? "text-green-400" : "text-green-800",
+      subHeader: theme === "dark" ? "text-green-300" : "text-green-700",
+      input:
+        theme === "dark"
+          ? "bg-gray-800 border-gray-700 text-white"
+          : "bg-white border-gray-300 text-black",
+      button:
+        theme === "dark"
+          ? "bg-green-600 text-white hover:bg-green-700"
+          : "bg-green-500 text-white hover:bg-green-600",
+      cancelButton:
+        theme === "dark"
+          ? "bg-gray-600 text-white hover:bg-gray-700"
+          : "bg-gray-300 text-gray-700 hover:bg-gray-400",
+      card: theme === "dark" ? "bg-gray-800" : "bg-white",
+      border: theme === "dark" ? "border-gray-700" : "border-gray-200",
+  };
 
   let businessUpdated = false;
   if (actionData?.type === "business" && actionData?.success) {
@@ -556,7 +581,9 @@ export default function Business() {
   );
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg w-full h-full flex flex-col">
+    <div
+      className={`p-6 rounded-lg shadow-lg w-full h-full flex flex-col ${themeClasses.container}`}
+    >
       <Modal
         isOpen={isModalOpen}
         title="Success"
@@ -568,13 +595,15 @@ export default function Business() {
           {actionData.error}
         </p>
       )}
-      <h2 className="text-2xl font-semibold mb-4 text-green-800">My Account</h2>
+      <h2 className={`text-2xl font-semibold mb-4 ${themeClasses.header}`}>
+        My Account
+      </h2>
       <div className="flex flex-col w-full h-full">
         <div className="flex justify-start border-b pb-2 mb-4">
           <button
             className={`text-lg font-semibold px-4 ${
               activeTab === "personal"
-                ? "text-blue-500 border-b-2 border-blue-500"
+                ? `${themeClasses.header} border-b-2 border-current`
                 : "text-gray-500"
             }`}
             onClick={() => setActiveTab("personal")}
@@ -584,7 +613,7 @@ export default function Business() {
           <button
             className={`text-lg font-semibold px-4 ${
               activeTab === "business"
-                ? "text-blue-500 border-b-2 border-blue-500"
+                ? `${themeClasses.header} border-b-2 border-current`
                 : "text-gray-500"
             }`}
             onClick={() => setActiveTab("business")}
@@ -597,25 +626,25 @@ export default function Business() {
           {activeTab === "personal" && (
             <div>
               <div className="flex justify-between items-center mb-4 py-2">
-                <h3 className="text-lg font-semibold text-green-700">
+                <h3
+                  className={`text-lg font-semibold ${themeClasses.subHeader}`}
+                >
                   Personal Information
                 </h3>
                 {isEditingField !== "personal" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleEditClick("personal")}
-                      className="flex items-center text-green-700 hover:text-orange-400 transition duration-200 mr-4 bg-gray-100"
-                    >
-                      <span className="mr-2 p-2">Edit</span>
-                      <PencilIcon className="w-6 h-6" />
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => handleEditClick("personal")}
+                    className={`flex items-center ${themeClasses.button} transition duration-200 mr-4 p-2 rounded`}
+                  >
+                    <span className="mr-2">Edit</span>
+                    <PencilIcon className="w-6 h-6" />
+                  </button>
                 )}
               </div>
 
               {isEditingField !== "personal" && LoaderData.user !== null ? (
-                <div className="space-y-6 text-green-700">
+                <div className="space-y-6">
                   {[
                     { name: "firstName", label: "First Name" },
                     { name: "middleName", label: "Middle Name" },
@@ -625,9 +654,11 @@ export default function Business() {
                   ].map((field, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center border-t-1 py-1"
+                      className={`flex justify-between items-center border-t py-1 ${themeClasses.border}`}
                     >
-                      <label className="w-1/3 font-semibold text-green-700">
+                      <label
+                        className={`w-1/3 font-semibold ${themeClasses.subHeader}`}
+                      >
                         {field.label}
                       </label>
                       <span className="w-2/3">{user.user[field.name]}</span>
@@ -645,9 +676,11 @@ export default function Business() {
                   ].map((field, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center border-t-1 py-1"
+                      className={`flex justify-between items-center border-t py-1 ${themeClasses.border}`}
                     >
-                      <label className="w-1/3 text-green-700 font-semibold">
+                      <label
+                        className={`w-1/3 font-semibold ${themeClasses.subHeader}`}
+                      >
                         {field.label}
                       </label>
                       <input
@@ -656,7 +689,7 @@ export default function Business() {
                         defaultValue={formValues[field.name]}
                         required
                         placeholder={field.label}
-                        className="w-2/3 border border-gray-300 rounded py-2 px-3"
+                        className={`w-2/3 rounded py-2 px-3 ${themeClasses.input}`}
                         onChange={handleInputChange}
                       />
                     </div>
@@ -665,7 +698,7 @@ export default function Business() {
                     <button
                       type="button"
                       onClick={handleCancelClick}
-                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-orange-400"
+                      className={`px-4 py-2 rounded ${themeClasses.cancelButton}`}
                     >
                       Cancel
                     </button>
@@ -675,8 +708,8 @@ export default function Business() {
                       value="personal"
                       className={`px-4 py-2 rounded ${
                         isSubmitting || !isFormValid()
-                          ? "bg-gray-500 text-black cursor-not-allowed"
-                          : "bg-green-500 text-white cursor-pointer hover:bg-orange-400"
+                          ? "bg-gray-500 text-white cursor-not-allowed"
+                          : themeClasses.button
                       }`}
                       disabled={isSubmitting || !isFormValid()}
                     >
@@ -699,8 +732,10 @@ export default function Business() {
           )}
 
           {activeTab === "business" && (
-            <div className="bg-white shadow-lg rounded-lg p-4">
-              <h3 className="text-2xl font-bold mb-4 text-green9800 border-b pb-2">
+            <div className={`shadow-lg rounded-lg p-4 ${themeClasses.card}`}>
+              <h3
+                className={`text-2xl font-bold mb-4 ${themeClasses.header} border-b pb-2`}
+              >
                 Business Information
               </h3>
               <div className="space-y-6">
@@ -710,7 +745,9 @@ export default function Business() {
                       {user?.user.businessProfile.carrierRole !== null ||
                       user?.user.businessProfile.shipperRole !== null ? (
                         <>
-                          <p className="p-2 mr-2 font-semibold">
+                          <p
+                            className={`p-2 mr-2 font-semibold ${themeClasses.subHeader}`}
+                          >
                             Profile Status:
                           </p>
                           <CheckCircleIcon className="w-6 h-6 text-green-600 ml-6"></CheckCircleIcon>
@@ -719,7 +756,7 @@ export default function Business() {
                     </div>
 
                     <div className="p-2 rounded-lg">
-                      <p className="font-semibold">
+                      <p className={`font-semibold ${themeClasses.subHeader}`}>
                         Current Role:
                         <span className="font-normal ml-12 text-green-600">
                           {user.user.businessProfile.carrierRole ||
@@ -731,7 +768,9 @@ export default function Business() {
                     {user.user.status &&
                       user.user.businessProfile.companyName && (
                         <div className="p-2 rounded-lg">
-                          <p className="font-semibold">
+                          <p
+                            className={`font-semibold ${themeClasses.subHeader}`}
+                          >
                             Company Name:
                             <span className="font-normal ml-5 text-green-600">
                               {user.user.businessProfile.companyName}
@@ -742,7 +781,9 @@ export default function Business() {
 
                     {user.user.userType === "carrier" &&
                       user.user.businessProfile.carrierRole !== null && (
-                        <div className="bg-green-50 border border-blue-200 p-4    rounded-lg">
+                        <div
+                          className={`bg-green-50 border ${themeClasses.border} p-4 rounded-lg`}
+                        >
                           <p className="text-sm text-blue-800">
                             Your business profile is complete. Start picking up
                             loads.
@@ -758,7 +799,9 @@ export default function Business() {
 
                     {user.user.userType === "shipper" &&
                       user.user.businessProfile.shipperRole !== null && (
-                        <div className="bg-green-50 border border-blue-200 p-4 rounded-lg">
+                        <div
+                          className={`bg-green-50 border ${themeClasses.border} p-4 rounded-lg`}
+                        >
                           <p className="text-sm text-blue-800">
                             Your business profile is complete. Start posting
                             loads.
@@ -774,14 +817,16 @@ export default function Business() {
 
                     {user.user.businessProfile.carrierRole === null &&
                       user.user.businessProfile.shipperRole === null && (
-                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                        <div
+                          className={`bg-yellow-50 border ${themeClasses.border} p-4 rounded-lg`}
+                        >
                           <p className="text-sm text-yellow-800 mb-4">
                             Your business profile is not complete. Please
                             complete your profile to start picking up or posting
                             loads.
                           </p>
                           <button
-                            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition duration-300"
+                            className={`${themeClasses.button} px-4 py-2 rounded transition duration-300`}
                             onClick={() => setShowCompleteProfileForm(true)}
                           >
                             Complete your Profile
@@ -791,6 +836,7 @@ export default function Business() {
                   </>
                 )}
 
+                {/* Update carrier profile */}
                 {showCompleteProfileForm &&
                   user.user.userType === "carrier" && (
                     <Form
@@ -805,7 +851,7 @@ export default function Business() {
                           defaultValue={user.user.businessProfile.companyName}
                           required
                           placeholder="Company Name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.input}`}
                           onChange={function (
                             name: string,
                             value: string,
@@ -813,17 +859,24 @@ export default function Business() {
                           ): void {
                             throw new Error("Function not implemented.");
                           }}
-                          theme='light'
+                          theme={theme}
                         />
                       </div>
                       <div>
                         <select
                           name="role"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.input}`}
                           onChange={(e) => setSelectedRole(e.target.value)}
                           required
                         >
-                          <option value="" className="text-gray-500">
+                          <option
+                            value=""
+                            className={
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-500"
+                            }
+                          >
                             Select Role
                           </option>
                           {Object.entries(roles).map(([name, value]) => (
@@ -847,14 +900,20 @@ export default function Business() {
 
                             {["Trucks", "Boats", "Vans"].map((vehicle) => (
                               <div key={vehicle} className="flex items-center">
-                                <label className="flex items-center space-x-2 cursor-pointer">
+                                <label
+                                  className={`flex items-center space-x-2 cursor-pointer ${themeClasses.label}`}
+                                >
                                   <input
                                     type="radio"
                                     name="vehicleType"
                                     checked={vehicleTypes[vehicle].selected}
                                     value={vehicle}
                                     onChange={handleVehicleChange}
-                                    className="form-radio text-blue-600"
+                                    className={`form-radio ${
+                                      theme === "dark"
+                                        ? "text-blue-400"
+                                        : "text-blue-600"
+                                    }`}
                                   />
                                   <span>{vehicle}</span>
                                 </label>
@@ -870,19 +929,29 @@ export default function Business() {
                               name="vehicleTypes"
                               value={JSON.stringify(vehicleTypes)}
                             />
-                            <p className="font-medium mb-2">Fleet:</p>
+                            <p
+                              className={`font-medium mb-2 ${themeClasses.label}`}
+                            >
+                              Fleet:
+                            </p>
                             <div className="grid grid-cols-2 gap-4">
                               {["Trucks", "Boats", "Vans"].map((vehicle) => (
                                 <div
                                   key={vehicle}
                                   className="flex items-center space-x-2"
                                 >
-                                  <label className="flex items-center space-x-2 cursor-pointer">
+                                  <label
+                                    className={`flex items-center space-x-2 cursor-pointer ${themeClasses.label}`}
+                                  >
                                     <input
                                       type="checkbox"
                                       name={vehicle}
                                       onChange={handleVehicleChange}
-                                      className="form-checkbox text-blue-600"
+                                      className={`form-checkbox ${
+                                        theme === "dark"
+                                          ? "text-blue-400"
+                                          : "text-blue-600"
+                                      }`}
                                     />
                                     <span>{vehicle}</span>
                                   </label>
@@ -891,7 +960,7 @@ export default function Business() {
                                       type="number"
                                       required
                                       name={`${vehicle.toLowerCase()}Quantity`}
-                                      className="w-20 px-2 py-1 border border-gray-300 rounded-md"
+                                      className={`w-20 px-2 py-1 rounded-md ${themeClasses.input}`}
                                       placeholder="Qty"
                                       value={vehicleTypes[vehicle].quantity}
                                       onChange={(e) =>
@@ -906,33 +975,44 @@ export default function Business() {
                         )}
 
                         {selectedVehicleType && (
-                          <VehicleForm selectedVehicle={selectedVehicleType} />
+                          <VehicleForm
+                            selectedVehicle={selectedVehicleType}
+                            theme={theme}
+                          />
                         )}
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-green-700 font-medium">
+                        <label
+                          className={`block font-medium ${themeClasses.header}`}
+                        >
                           Upload Required Documents
                         </label>
-                        <p className="text-gray-500 text-sm">
+                        <p
+                          className={
+                            theme === "dark"
+                              ? "text-gray-300 text-sm"
+                              : "text-gray-500 text-sm"
+                          }
+                        >
                           Upload the following documents to complete your
                           profile
                           <br />
                           {selectedRole === "owner_operator" && (
                             <>
-                              <span className="text-red-700 italic">
+                              <span className="text-red-500 italic">
                                 * Driver's License,{" "}
                               </span>
-                              <span className="text-red-700">
+                              <span className="text-red-500">
                                 * Vehicle Registration,{" "}
                               </span>
                             </>
                           )}
                           {selectedRole === "fleet_owner" && (
                             <>
-                              <span className="text-red-700 italic">
+                              <span className="text-red-500 italic">
                                 * Company's License,{" "}
                               </span>
-                              <span className="text-red-700">* ID, </span>
+                              <span className="text-red-500">* ID, </span>
                             </>
                           )}
                           and any other relevant documents.
@@ -945,26 +1025,47 @@ export default function Business() {
                               multiple
                               name="documents"
                               accept=".pdf,.jpg,.jpeg,.png"
-                              className="block w-full text-sm text-gray-500
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-full file:border-0
-                                        file:text-sm file:font-semibold
-                                        file:bg-blue-50 file:text-blue-700
-                                        hover:file:bg-blue-100"
+                              className={`block w-full text-sm ${
+                                theme === "dark"
+                                  ? "text-gray-300"
+                                  : "text-gray-500"
+                              }
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            ${
+              theme === "dark"
+                ? "file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800"
+                : "file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            }`}
                             />
                             <ul className="mt-2 space-y-1">
                               {documents.map((file, index) => (
                                 <li
                                   key={index}
-                                  className="flex justify-between items-center bg-gray-100 px-3 py-1 rounded"
+                                  className={`flex justify-between items-center px-3 py-1 rounded ${
+                                    theme === "dark"
+                                      ? "bg-gray-700"
+                                      : "bg-gray-100"
+                                  }`}
                                 >
-                                  <span className="text-sm truncate">
+                                  <span
+                                    className={`text-sm truncate ${
+                                      theme === "dark"
+                                        ? "text-gray-300"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
                                     {file.name}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveFile(index)}
-                                    className="text-red-500 hover:text-red-700"
+                                    className={
+                                      theme === "dark"
+                                        ? "text-red-400 hover:text-red-300"
+                                        : "text-red-500 hover:text-red-700"
+                                    }
                                   >
                                     <svg
                                       className="w-4 h-4"
@@ -994,7 +1095,7 @@ export default function Business() {
                             setShowCompleteProfileForm(false);
                             setIsEditingField(null);
                           }}
-                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition duration-300"
+                          className={`${themeClasses.cancelButton} p-2`}
                         >
                           Cancel
                         </button>
@@ -1004,8 +1105,12 @@ export default function Business() {
                           value="business"
                           className={`px-4 py-2 rounded ${
                             isUpdateEnabled
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              ? themeClasses.button
+                              : `${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-gray-400"
+                                    : "bg-gray-300 text-gray-500"
+                                } cursor-not-allowed`
                           } transition duration-300`}
                           disabled={!isUpdateEnabled}
                         >
@@ -1015,6 +1120,7 @@ export default function Business() {
                     </Form>
                   )}
 
+                {/* update shipper profile */}
                 {showCompleteProfileForm &&
                   user.user.userType === "shipper" && (
                     <Form
@@ -1029,7 +1135,7 @@ export default function Business() {
                           defaultValue={user.user.businessProfile.companyName}
                           required
                           placeholder="Company Name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.input}`}
                           onChange={function (
                             name: string,
                             value: string,
@@ -1037,16 +1143,24 @@ export default function Business() {
                           ): void {
                             throw new Error("Function not implemented.");
                           }}
+                          theme={theme}
                         />
                       </div>
                       <div>
                         <select
                           name="role"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.input}`}
                           onChange={(e) => setSelectedRole(e.target.value)}
                           required
                         >
-                          <option value="" className="text-gray-500">
+                          <option
+                            value=""
+                            className={
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-500"
+                            }
+                          >
                             Select Role
                           </option>
                           {Object.entries(roles).map(([name, value]) => (
@@ -1059,7 +1173,6 @@ export default function Business() {
                           ))}
                         </select>
                       </div>
-
                       <div>
                         <FloatingLabelInput
                           type="text"
@@ -1069,7 +1182,7 @@ export default function Business() {
                           }
                           required
                           placeholder="Registration Number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.input}`}
                           onChange={function (
                             name: string,
                             value: string,
@@ -1077,6 +1190,7 @@ export default function Business() {
                           ): void {
                             throw new Error("Function not implemented.");
                           }}
+                          theme={theme}
                         />
                       </div>
 
@@ -1090,7 +1204,7 @@ export default function Business() {
                           }
                           required
                           placeholder="* ID Card/Driver's License Number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.input}`}
                           onChange={function (
                             name: string,
                             value: string,
@@ -1098,15 +1212,20 @@ export default function Business() {
                           ): void {
                             throw new Error("Function not implemented.");
                           }}
+                          theme={theme}
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <p className="text-gray-500 text-sm">
+                        <p
+                          className={`text-sm ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-500"
+                          }`}
+                        >
                           Upload the following documents to complete your
                           profile
                           <br />
-                          <span className="text-red-700 italic">
+                          <span className="text-red-500 italic">
                             * Company's License, * ID, and any other relevant
                             documents.
                           </span>
@@ -1121,26 +1240,47 @@ export default function Business() {
                             multiple
                             name="documents"
                             accept=".pdf,.jpg,.jpeg,.png"
-                            className="block w-full text-sm text-gray-500
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-full file:border-0
-                                        file:text-sm file:font-semibold
-                                        file:bg-blue-50 file:text-blue-700
-                                        hover:file:bg-blue-100"
+                            className={`block w-full text-sm ${
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-gray-500"
+                            }
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            ${
+                              theme === "dark"
+                                ? "file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800"
+                                : "file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            }`}
                           />
                           <ul className="mt-2 space-y-1">
                             {documents.map((file, index) => (
                               <li
                                 key={index}
-                                className="flex justify-between items-center bg-gray-100 px-3 py-1 rounded"
+                                className={`flex justify-between items-center px-3 py-1 rounded ${
+                                  theme === "dark"
+                                    ? "bg-gray-800"
+                                    : "bg-gray-100"
+                                }`}
                               >
-                                <span className="text-sm truncate">
+                                <span
+                                  className={`text-sm truncate ${
+                                    theme === "dark"
+                                      ? "text-gray-300"
+                                      : "text-gray-700"
+                                  }`}
+                                >
                                   {file.name}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveFile(index)}
-                                  className="text-red-500 hover:text-red-700"
+                                  className={`${
+                                    theme === "dark"
+                                      ? "text-red-400 hover:text-red-300"
+                                      : "text-red-500 hover:text-red-700"
+                                  }`}
                                 >
                                   <svg
                                     className="w-4 h-4"
@@ -1170,7 +1310,7 @@ export default function Business() {
                             setShowCompleteProfileForm(false);
                             setIsEditingField(null);
                           }}
-                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition duration-300"
+                          className={`${themeClasses.cancelButton} p-2`}
                         >
                           Cancel
                         </button>
@@ -1180,8 +1320,12 @@ export default function Business() {
                           value="business"
                           className={`px-4 py-2 rounded ${
                             isUpdateEnabled
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              ? themeClasses.button
+                              : `${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-gray-400"
+                                    : "bg-gray-300 text-gray-500"
+                                } cursor-not-allowed`
                           } transition duration-300`}
                           disabled={!isUpdateEnabled}
                         >

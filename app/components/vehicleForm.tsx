@@ -1,25 +1,65 @@
+import React from "react";
+
 export default function VehicleForm({
   selectedVehicle,
+  theme = "light",
 }: {
   selectedVehicle: string;
+  theme?: "light" | "dark";
 }) {
+  const themeClasses = {
+    container:
+      theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black",
+    header: theme === "dark" ? "text-green-400" : "text-green-700",
+    label: theme === "dark" ? "text-gray-300" : "text-gray-700",
+    input:
+      theme === "dark"
+        ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+        : "bg-white border-gray-300 text-black focus:border-blue-500 focus:ring-blue-500",
+    select:
+      theme === "dark"
+        ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+        : "bg-white border-gray-300 text-black focus:border-blue-500 focus:ring-blue-500",
+    checkbox:
+      theme === "dark"
+        ? "text-blue-500 border-gray-600 focus:ring-blue-600"
+        : "text-blue-600 border-gray-300 focus:ring-blue-500",
+    checkboxLabel: theme === "dark" ? "text-gray-300" : "text-gray-900",
+  };
+
+  const truckLengths = ["20", "40", "53", "60"];
+  const capacities = ["10000", "20000", "30000", "40000", "50000"];
+  const colors = [
+    "White",
+    "Black",
+    "Red",
+    "Blue",
+    "Green",
+    "Yellow",
+    "Silver",
+    "Other",
+  ];
+
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg max-w-full mt-6 space-y-4">
-      <h3 className="text-lg font-semibold text-green-700">
+    <div
+      className={`p-6 rounded-lg shadow-lg max-w-full mt-6 space-y-4 ${themeClasses.container}`}
+    >
+      <h3 className={`text-lg font-semibold ${themeClasses.header}`}>
         Enter {selectedVehicle} Details
       </h3>
 
       {/* Conditional rendering for Truck Types */}
       {selectedVehicle === "Trucks" && (
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className={`block text-sm font-medium ${themeClasses.label}`}>
             Truck Type
           </label>
           <select
             name="vehicleName"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${themeClasses.select}`}
             required
           >
+            <option value="">Select Truck Type</option>
             <option value="Flatbed">Flatbed</option>
             <option value="Dry Van">Dry Van</option>
             <option value="Refrigerated">Refrigerated</option>
@@ -32,14 +72,15 @@ export default function VehicleForm({
       {/* Conditional rendering for Boat Types */}
       {selectedVehicle === "Boats" && (
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className={`block text-sm font-medium ${themeClasses.label}`}>
             Boat Type
           </label>
           <select
             name="vehicleName"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${themeClasses.select}`}
             required
           >
+            <option value="">Select Boat Type</option>
             <option value="Full Length">Full Length</option>
             <option value="Semi">Semi</option>
             <option value="Speed Boat">Speed Boat</option>
@@ -50,45 +91,62 @@ export default function VehicleForm({
       {/* Conditional rendering for Truck Length */}
       {selectedVehicle === "Trucks" && (
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className={`block text-sm font-medium ${themeClasses.label}`}>
             Truck Length (in feet)
           </label>
-          <input
-            type="number"
+          <select
             name="truckLength"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            placeholder="Enter truck length"
+            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${themeClasses.select}`}
             required
-          />
+          >
+            <option value="">Select Truck Length</option>
+            {truckLengths.map((length) => (
+              <option key={length} value={length}>
+                {length} feet
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className={`block text-sm font-medium ${themeClasses.label}`}>
           Capacity (in kg)
         </label>
-        <input
-          type="number"
+        <select
           name="vehicleCapacity"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Enter capacity"
+          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${themeClasses.select}`}
           required
-        />
+        >
+          <option value="">Select Capacity</option>
+          {capacities.map((capacity) => (
+            <option key={capacity} value={capacity}>
+              {capacity} kg
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Color</label>
-        <input
-          type="text"
+        <label className={`block text-sm font-medium ${themeClasses.label}`}>
+          Color
+        </label>
+        <select
           name="vehicleColor"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Enter color"
+          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${themeClasses.select}`}
           required
-        />
+        >
+          <option value="">Select Color</option>
+          {colors.map((color) => (
+            <option key={color} value={color}>
+              {color}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className={`block text-sm font-medium ${themeClasses.label}`}>
           {selectedVehicle === "Trucks"
             ? "Truck Number (VIN)"
             : selectedVehicle === "Boats"
@@ -98,7 +156,7 @@ export default function VehicleForm({
         <input
           type="text"
           name="registrationNumber"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${themeClasses.input}`}
           placeholder={
             selectedVehicle === "Trucks"
               ? "Enter Truck Number"
@@ -116,11 +174,11 @@ export default function VehicleForm({
             id="hasInsurance"
             name="hasInsurance"
             type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            className={`h-4 w-4 rounded ${themeClasses.checkbox}`}
           />
           <label
             htmlFor="hasInsurance"
-            className="ml-2 block text-sm text-gray-900"
+            className={`ml-2 block text-sm ${themeClasses.checkboxLabel}`}
           >
             Has Insurance
           </label>
@@ -131,11 +189,11 @@ export default function VehicleForm({
             id="hasInspection"
             name="hasInspection"
             type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            className={`h-4 w-4 rounded ${themeClasses.checkbox}`}
           />
           <label
             htmlFor="hasInspection"
-            className="ml-2 block text-sm text-gray-900"
+            className={`ml-2 block text-sm ${themeClasses.checkboxLabel}`}
           >
             Has Inspection
           </label>

@@ -131,18 +131,11 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   } catch (error: any) {
-    console.log("Dashboard login Error", error);
+    console.log("Shipper Dashboard login Error", error);
     if (JSON.parse(error).data.status == 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-      session.set("user", null);
-      session.set("carrier", null);
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/logout/");
     }
-    throw error;
+    throw new Error(error);
   }
 };
 
