@@ -1,96 +1,73 @@
-import React, { useState } from "react";
-import { ChatBubbleLeftIcon, ClipboardIcon } from "@heroicons/react/16/solid";
-import { Form, Link } from "@remix-run/react";
+import React from 'react';
+import { Form } from '@remix-run/react';
 
-// Subtle Alert Component
-const SubtleAlert = ({ message, isVisible }) => {
-  if (!isVisible) return null;
+interface ContactShipperViewProps {
+  shipper: {
+    companyName?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  } | null | undefined;
+  load?: any;
+  onClose?: () => void;
+  onChat?: () => void;
+}
 
-  return (
-    <div className="fixed bottom-4 right-4 bg-green-100 text-green-800 px-4 py-2 rounded-md shadow-md transition-opacity duration-300">
-      {message}
-    </div>
-  );
-};
-
-const ContactShipperView = ({ shipper, load }: any) => {
-  const [alertVisible, setAlertVisible] = useState(false);
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(
-      () => {
-        setAlertVisible(true);
-        setTimeout(() => setAlertVisible(false), 2000);
-      },
-      (err) => console.error(`Failed to copy to clipboard: ${err}`)
-    );
-  };
+export default function ContactShipperView({ shipper, load, onClose, onChat }: ContactShipperViewProps) {
+  const shipperName = shipper?.companyName || `${shipper?.firstName || 'Unknown'} ${shipper?.lastName || 'Shipper'}`;
+  const shipperEmail = shipper?.email || 'Not provided';
+  const shipperPhone = shipper?.phone || 'Not provided';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full space-y-4 text-green-900">
-        <div className="p-6 space-y-4">
-          <h3 className="text-2xl font-bold text-green-700">Contact Shipper</h3>
-          <div>
-            <p className="font-semibold text-lg">
-              {shipper.firstName} {shipper.lastName}
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="mt-3 text-center">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">Contact Shipper</h3>
+          <div className="mt-2 px-7 py-3">
+            <p className="text-sm text-gray-500">
+              Shipper: {shipperName}
             </p>
-            <p className="text-sm text-green-600 italic">
-              Company: {shipper.businessProfile.companyName}
+            <p className="text-sm text-gray-500">
+              Email: {shipperEmail}
             </p>
-            <p className="text-sm text-green-500 italic">
-              Registration Number:{" "}
-              {shipper.businessProfile.businessRegistrationNumber}
+            <p className="text-sm text-gray-500">
+              Phone: {shipperPhone}
             </p>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between bg-green-50 p-3 rounded">
-              <p className="text-green-700">
-                Email: <span className="font-medium">{shipper.email}</span>
+            {load && (
+              <p className="text-sm text-gray-500">
+                Load: {load.origin} to {load.destination}
               </p>
-              <button
-                onClick={() => copyToClipboard(shipper.email)}
-                className="text-green-600 hover:text-green-800"
-              >
-                <ClipboardIcon className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between bg-green-50 p-3 rounded">
-              <p className="text-green-700">
-                Phone: <span className="font-medium">{shipper.phone}</span>
-              </p>
-              <button
-                onClick={() => copyToClipboard(shipper.phone)}
-                className="text-green-600 hover:text-green-800"
-              >
-                <ClipboardIcon className="w-5 h-5" />
-              </button>
-            </div>
+            )}
           </div>
-        </div>
-        <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-between">
-          <Link
-            to="/carriers/dashboard/view"
-            className="flex items-center px-4 py-2 text-sm font-medium text-green-500 border border-green-700 rounded hover:bg-green-700  hover:text-white transition-colors duration-200"
-          >
-            <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
-            Chat
-          </Link>
-          <Form method="post">
-            <button
-              type="submit"
-              name="_action"
-              value="closeContact"
-              className="px-4 py-2 text-sm font-medium text-green-600 bg-gray-200 border border-green-600 rounded hover:bg-green-700 hover:text-white transition-colors duration-200"
-            >
-              Close
-            </button>
-          </Form>
+          <div className="items-center px-4 py-3">
+            <Form method="post">
+              <input type="hidden" name="shipperId" value={shipper?.id || ''} />
+              <input type="hidden" name="loadId" value={load?.id || ''} />
+              <button
+                type="submit"
+                name="_action"
+                value="sendMessage"
+                onClick={onChat}
+                className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                Send Message
+              </button>
+            </Form>
+            <Form method="post">
+              <button
+                type="submit"
+                name="_action"
+                value="closeContact"
+                onClick={onClose}
+                className="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              >
+                Close
+              </button>
+            </Form>
+          </div>
         </div>
       </div>
-      <SubtleAlert message="Copied to clipboard!" isVisible={alertVisible} />
     </div>
   );
-};
-
-export default ContactShipperView;
+}

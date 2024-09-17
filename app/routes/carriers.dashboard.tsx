@@ -21,7 +21,7 @@ import SidebarCarrier from "~/components/sidebarCarrier";
 import CarrierOverview from "~/components/carrierOverview";
 import { getUserInfo } from "~/api/services/user.service";
 import { GetLoads } from "~/api/services/load.service";
-import { GetBids } from "~/api/services/bid.service";
+import { GetBidsByCarrierId } from "~/api/services/bid.service";
 
 export const meta: MetaFunction = () => {
   return [
@@ -122,7 +122,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Fetch loads and bids
     const loads = await GetLoads(user?.token);
-    const bids = await GetBids(user?.token);
+    const bids = await GetBidsByCarrierId(user?.token, carrierProfile.id);
 
     return json(
       { 

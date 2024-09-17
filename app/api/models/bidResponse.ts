@@ -4,6 +4,7 @@ export interface BidResponse {
     carrierId: number;
     bidAmount: number;
     bidStatus: number;
+    load?: object;
     biddingTime: string;
     updatedBy: string;
     updatedAt: string;

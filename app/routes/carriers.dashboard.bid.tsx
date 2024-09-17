@@ -14,7 +14,7 @@ import {
 } from "@remix-run/react";
 import { UpdateBid, DeleteBid } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
-import { destroySession, getSession } from "../api/services/session";
+import { commitSession, destroySession, getSession } from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
@@ -31,6 +31,8 @@ import { TimezoneAbbr } from "~/components/TimezoneAbbr";
 import BidAdjustmentView from "~/components/bidadjustmentview";
 import type { BidUpdateRequest } from "~/api/models/bidRequest";
 import { LoadStatusBadge } from "~/components/statusBadge";
+import ContactShipperView from "~/components/contactshipper";
+import ChatWindow from "~/components/ChatWindow";
 
 export const meta: MetaFunction = () => {
   return [
@@ -74,6 +76,13 @@ export const loader: LoaderFunction = async ({ request }) => {
     throw error;
   }
 };
+
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'other';
+  timestamp: Date;
+}
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
@@ -131,10 +140,40 @@ export const action: ActionFunction = async ({ request }) => {
 
     case "closeContact":
       return json({
-        success: false,
-        message: "Canceled the Update",
+        success: true,
+        message: "Contact modal closed",
       });
 
+    case "sendMessage": {
+      const message = formData.get("message") as string;
+      let messages = session.get("chatMessages") || [];
+      
+      const newMessage: Message = {
+        id: Date.now(),
+        text: message,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      
+      console.log("newMessage", newMessage);
+      // messages.push(newMessage);
+      session.set("chatMessages", messages);
+      return json(
+        { success: true, message: "Message sent successfully", newMessage },
+        {
+          headers: {
+            "Set-Cookie": await commitSession(session),
+          },
+        }
+      );
+    }
+    
+    case "contact":
+      return json({
+        success: true,
+        message: "contactMode",
+      });
+      
     default:
       return json({ success: false, message: "Invalid action" });
   }
@@ -153,6 +192,11 @@ export default function CarrierBidDashboard() {
   const timezone = loaderData?.timezone || "UTC";
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [bidToDelete, setBidToDelete] = useState<number | null>(null)
+  const [showContactShipper, setShowContactShipper] = useState(false);
+  const [selectedShipper, setSelectedShipper] = useState(null);
+  const [selectedLoad, setSelectedLoad] = useState(null);
+  const [showChatWindow, setShowChatWindow] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
 
   let error = "";
   let info = "";
@@ -161,6 +205,11 @@ export default function CarrierBidDashboard() {
   if (loaderData?.errno) {
     error = "Oops! Something went wrong. Please try again.";
   }
+
+  let contactMode =
+    actionData && actionData.message === "contactMode"
+      ? actionData.message
+      : "";
 
   // Extract user data from loader
   let carrierProfile: any = loaderData?.carrierProfile || {};
@@ -217,6 +266,12 @@ export default function CarrierBidDashboard() {
     }
   }, [actionData]);
 
+  useEffect(() => {
+    if (actionData && actionData.newMessage) {
+      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage]);
+    }
+  }, [actionData]);
+
   // Add null check for carrierProfile.user and businessProfile
   if (
     carrierProfile?.user?.userType !== "carrier" ||
@@ -268,6 +323,25 @@ export default function CarrierBidDashboard() {
       return () => lazyImageObserver.disconnect();
     }
   }, []);
+
+  const handleContactShipper = (shipper, load) => {
+    setSelectedShipper(shipper || { firstName: 'Unknown', lastName: 'Shipper' });
+    setSelectedLoad(load);
+    setShowContactShipper(true);
+  };
+
+  const handleCloseContactShipper = () => {
+    setShowContactShipper(false);
+    setSelectedShipper(null);
+    setSelectedLoad(null);
+  };
+
+  const handleOpenChat = () => {
+    setShowContactShipper(false);
+    setShowChatWindow(true);
+  };
+
+  console.log("bids", bids);
 
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
@@ -413,9 +487,8 @@ export default function CarrierBidDashboard() {
                     <Form method="post">
                       <input type="hidden" name="bidId" value={bid.id} />
                       <button
-                        type="submit"
-                        name="_action"
-                        value="contact"
+                        type="button"
+                        onClick={() => handleContactShipper(bid.load?.createdBy, bid.load)}
                         className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
                         title="Contact Shipper"
                       >
@@ -455,6 +528,22 @@ export default function CarrierBidDashboard() {
           </Disclosure>
         ))}
       </div>
+
+      {showContactShipper && selectedShipper && (
+        <ContactShipperView
+          shipper={selectedShipper}
+          load={selectedLoad}
+          onClose={handleCloseContactShipper}
+          onChat={handleOpenChat}
+        />
+      )}
+
+      <ChatWindow
+        isOpen={showChatWindow}
+        onClose={() => setShowChatWindow(false)}
+        recipientName={selectedShipper ? `${selectedShipper.firstName || 'Unknown'} ${selectedShipper.lastName || 'Shipper'}` : 'Shipper'}
+        messages={chatMessages}
+      />
 
       {selectedBid && (
         <BidAdjustmentView
