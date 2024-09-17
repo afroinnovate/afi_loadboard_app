@@ -199,6 +199,8 @@ export default function CarrierBidDashboard() {
   const [selectedLoad, setSelectedLoad] = useState(null);
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [status, setStatus] = useState(searchParams.get('status') || 'all');
+  const [date, setDate] = useState(searchParams.get('date') || '');
 
   let error = "";
   let info = "";
@@ -356,11 +358,13 @@ export default function CarrierBidDashboard() {
 
   const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const status = formData.get('status') as string;
-    const date = formData.get('date') as string;
-    
     setSearchParams({ status, date });
+  };
+
+  const handleReset = () => {
+    setStatus('all');
+    setDate('');
+    setSearchParams({});
   };
 
   return (
@@ -399,7 +403,8 @@ export default function CarrierBidDashboard() {
           <select
             name="status"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
-            defaultValue={searchParams.get('status') || 'all'}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
           >
             <option value="all">All Statuses</option>
             <option value="0">Pending</option>
@@ -410,13 +415,21 @@ export default function CarrierBidDashboard() {
             type="date"
             name="date"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
-            defaultValue={searchParams.get('date') || ''}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
           />
           <button
             type="submit"
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Filter
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Reset
           </button>
         </div>
       </form>
