@@ -10,9 +10,9 @@ import {
   Form,
   useActionData,
   useOutletContext,
-  useSubmit,
+  useSearchParams,
 } from "@remix-run/react";
-import { UpdateBid, DeleteBid } from "~/api/services/bid.service";
+import { UpdateBid, DeleteBid, GetBids } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
 import { commitSession, destroySession, getSession } from "../api/services/session";
 import "flowbite";
@@ -33,6 +33,7 @@ import type { BidUpdateRequest } from "~/api/models/bidRequest";
 import { LoadStatusBadge } from "~/components/statusBadge";
 import ContactShipperView from "~/components/contactshipper";
 import ChatWindow from "~/components/ChatWindow";
+import { parseISO, isAfter } from 'date-fns';
 
 export const meta: MetaFunction = () => {
   return [
@@ -187,6 +188,7 @@ export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
   const actionData = useActionData();
   const { bids } = useOutletContext<{ loads: any; bids: any }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [localBids, setLocalBids] = useState(bids);
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const timezone = loaderData?.timezone || "UTC";
@@ -206,21 +208,31 @@ export default function CarrierBidDashboard() {
     error = "Oops! Something went wrong. Please try again.";
   }
 
-  let contactMode =
-    actionData && actionData.message === "contactMode"
-      ? actionData.message
-      : "";
-
   // Extract user data from loader
-
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
-    setLocalBids(bids);
-    if (bids.length === 0) {
-      info = "You haven't placed any bids yet.";
+    const status = searchParams.get('status');
+    const date = searchParams.get('date');
+
+    let filteredBids = bids;
+    if (status && status !== 'all') {
+      filteredBids = filteredBids.filter((bid: { bidStatus: { toString: () => string } }) => bid.bidStatus.toString() === status);
     }
-  }, [bids]);
+
+    if (date) {
+      const filterDate = parseISO(date);
+      filteredBids = filteredBids.filter(bid => isAfter(parseISO(bid.biddingTime), filterDate));
+    }
+
+    setLocalBids(filteredBids);
+
+    if (filteredBids.length === 0) {
+      info = "No bids match the current filters.";
+    } else {
+      info = "";
+    }
+  }, [bids, searchParams]);
 
   // Update localBids if action was successful
   useEffect(() => {
@@ -342,6 +354,15 @@ export default function CarrierBidDashboard() {
     setShowChatWindow(true);
   };
 
+  const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const status = formData.get('status') as string;
+    const date = formData.get('date') as string;
+    
+    setSearchParams({ status, date });
+  };
+
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
       {feedbackMessage && (
@@ -373,11 +394,12 @@ export default function CarrierBidDashboard() {
         </div>
       )}
 
-      <Form method="get" className="mb-6">
+      <form onSubmit={handleFilter} className="mb-6">
         <div className="flex flex-wrap gap-4">
           <select
             name="status"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
+            defaultValue={searchParams.get('status') || 'all'}
           >
             <option value="all">All Statuses</option>
             <option value="0">Pending</option>
@@ -388,6 +410,7 @@ export default function CarrierBidDashboard() {
             type="date"
             name="date"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
+            defaultValue={searchParams.get('date') || ''}
           />
           <button
             type="submit"
@@ -396,7 +419,7 @@ export default function CarrierBidDashboard() {
             Filter
           </button>
         </div>
-      </Form>
+      </form>
 
       <div className="space-y-4">
         {localBids.map((bid: any) => (
