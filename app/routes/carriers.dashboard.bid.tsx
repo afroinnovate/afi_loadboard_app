@@ -280,10 +280,9 @@ export default function CarrierBidDashboard() {
       }
     }
   }, [actionData]);
-
   useEffect(() => {
-    if (actionData && actionData.newMessage) {
-      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage]);
+    if (actionData && typeof actionData === "object" && "newMessage" in actionData) {
+      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage as Message]);
     }
   }, [actionData]);
 
