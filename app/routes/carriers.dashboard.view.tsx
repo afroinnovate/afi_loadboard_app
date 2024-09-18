@@ -73,6 +73,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Get the loads
     const response = await GetLoads(user.token);
+
     if (typeof response === "string") {
       throw response;
     }
@@ -118,10 +119,17 @@ export const action: ActionFunction = async ({ request }) => {
     const formData = await request.formData();
     const actionType = formData.get("_action");
     const bidLoadId = formData.get("bidLoadId");
+    const shipper = JSON.parse(formData.get("shipper") as string); // Parse the shipper info
+    const contactLoad = JSON.parse(formData.get("load") as string); // Parse the shipper info
     console.log("bidLoadId", bidLoadId, "actionType", actionType);
     switch (actionType) {
       case "contact":
-        return json({ error: "", message: "contactMode" });
+        return json({
+          error: "",
+          message: "contactMode",
+          contactLoadShipper: shipper,
+          contactLoad: contactLoad,
+        });
 
       case "bid":
         return json({
@@ -167,11 +175,12 @@ export default function CarrierViewLoads() {
   const { error, info } = useMemo(() => {
     let errorMsg = "";
     let infoMsg = "";
-    
+
     // Process errors or informational messages
     if (loaderData?.errno) {
       if (loaderData.errno === "ENOTFOUND") {
-        errorMsg = "Oops! You have a connectivity issue. Please connect to a reliable internet.";
+        errorMsg =
+          "Oops! You have a connectivity issue. Please connect to a reliable internet.";
       } else {
         errorMsg = "Oops! Something went wrong. Please try again.";
       }
@@ -203,14 +212,19 @@ export default function CarrierViewLoads() {
     if (loaderData && !error) {
       loadsData = loaderData.loads;
     } else {
-      additionalInfoMsg = "No loads found or something went wrong. Please try again later or contact support.";
+      additionalInfoMsg =
+        "No loads found or something went wrong. Please try again later or contact support.";
     }
 
     if (Object.keys(loadsData).length === 0) {
       additionalInfoMsg = "No loads posted, please check back later";
     }
 
-    return { loads: loadsData, carrierProfile: carrierProfileData, additionalInfo: additionalInfoMsg };
+    return {
+      loads: loadsData,
+      carrierProfile: carrierProfileData,
+      additionalInfo: additionalInfoMsg,
+    };
   }, [loaderData, error]);
 
   const carrierHasAccess =
@@ -226,7 +240,10 @@ export default function CarrierViewLoads() {
     actionData && actionData.message === "contactMode"
       ? actionData.message
       : "";
-  let contactLoad = contactMode === "contactMode" ? actionData.contactLoad : null;
+  let contactLoadShipper =
+    contactMode === "contactMode" ? actionData.contactLoadShipper : null;
+  let contactLoad =
+    contactMode === "contactMode" ? actionData.contactLoad : null;
 
   let bidMode =
     actionData && actionData.message === "bidMode" ? actionData.message : ""; //bidmode confirmation
@@ -234,17 +251,22 @@ export default function CarrierViewLoads() {
   let loadIdToBeBid = actionData?.loadIdToBeBid || null;
   let currentBid = actionData?.offerAmount || 0;
 
-  console.log("contactLoad", contactLoad?.createdBy);
-
   // Memoize the status styles function
-  const getStatusStyles = useMemo(() => (status: string) => {
-    switch (status) {
-      case "open": return "bg-green-600";
-      case "accepted": return "bg-gray-500";
-      case "enroute": return "bg-red-500";
-      default: return "bg-orange-500";
-    }
-  }, []);
+  const getStatusStyles = useMemo(
+    () => (status: string) => {
+      switch (status) {
+        case "open":
+          return "bg-green-600";
+        case "accepted":
+          return "bg-gray-500";
+        case "enroute":
+          return "bg-red-500";
+        default:
+          return "bg-orange-500";
+      }
+    },
+    []
+  );
 
   // Conditional rendering for access denied or valid dashboard
   if (carrierProfile.user.userType !== "carrier") {
@@ -286,7 +308,7 @@ export default function CarrierViewLoads() {
               <>
                 {/* Contact Shipper View */}
                 {contactMode === "contactMode" && (
-                  <ContactShipperView shipper={load?.createdBy} load={load} />
+                  <ContactShipperView shipper={contactLoadShipper} load={contactLoad} />
                 )}
 
                 {/* Bid Adjustment View */}
@@ -368,8 +390,13 @@ export default function CarrierViewLoads() {
                         />
                         <input
                           type="hidden"
+                          name="shipper"
+                          value={JSON.stringify(load.createdBy)}
+                        />
+                        <input
+                          type="hidden"
                           name="load"
-                          value={load}
+                          value={JSON.stringify(load)}
                         />
                         <button
                           type="submit"
