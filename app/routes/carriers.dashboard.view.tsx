@@ -28,7 +28,8 @@ import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+import ChatWindow from "~/components/ChatWindow";
 
 export const meta: MetaFunction = () => {
   return [
@@ -100,6 +101,13 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
+interface Message {
+  id: number;
+  text: string;
+  sender: "user" | "other";
+  timestamp: Date;
+}
+
 export const action: ActionFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
@@ -155,21 +163,58 @@ export const action: ActionFunction = async ({ request }) => {
       case "closeContact":
         return redirect("/carriers/dashboard/view");
 
+      case "sendMessage": {
+        const message = formData.get("message") as string;
+        let messages = session.get("chatMessages") || [];
+
+        const newMessage: Message = {
+          id: Date.now(),
+          text: message,
+          sender: "user",
+          timestamp: new Date(),
+        };
+
+        // messages.push(newMessage);
+        session.set("chatMessages", messages);
+        return json(
+          { success: true, message: "Message sent successfully", newMessage },
+          {
+            headers: {
+              "Set-Cookie": await commitSession(session),
+            },
+          }
+        );
+      }
+
       default:
         throw new Error("Invalid action");
     }
   } catch (error: any) {
-    if (JSON.parse(error).data.status == 401) {
-      return redirect("/logout/");
+    let errorMessage = "Failed to process bid";
+    if (error instanceof SyntaxError) {
+      console.error("Syntax error:", error);
+    } else {
+      try {
+        const parsedError = JSON.parse(error);
+        if (parsedError.data.status == 401) {
+          return redirect("/logout/");
+        }
+        errorMessage = parsedError.message || errorMessage;
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+      }
     }
     console.error("Bid process error:", error);
-    return json({ error: "Failed to process bid" }, { status: 500 });
+    return json({ error: errorMessage }, { status: 500 });
   }
 };
 
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
+  const [showChatWindow, setShowChatWindow] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [selectedShipper, setSelectedShipper] = useState(null);
 
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
@@ -251,6 +296,17 @@ export default function CarrierViewLoads() {
   let loadIdToBeBid = actionData?.loadIdToBeBid || null;
   let currentBid = actionData?.offerAmount || 0;
 
+  useEffect(() => {
+    if (actionData && actionData.newMessage) {
+      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage]);
+    }
+  }, [actionData]);
+
+  const handleOpenChat = (shipper: any) => {
+    setSelectedShipper(shipper);
+    setShowChatWindow(true);
+  };
+
   // Memoize the status styles function
   const getStatusStyles = useMemo(
     () => (status: string) => {
@@ -308,7 +364,12 @@ export default function CarrierViewLoads() {
               <>
                 {/* Contact Shipper View */}
                 {contactMode === "contactMode" && (
-                  <ContactShipperView shipper={contactLoadShipper} load={contactLoad} />
+                  <ContactShipperView
+                    shipper={contactLoadShipper}
+                    load={contactLoad}
+                    onClose={() => setShowContactShipper(false)}
+                    onChat={() => handleOpenChat(contactLoadShipper)}
+                  />
                 )}
 
                 {/* Bid Adjustment View */}
@@ -455,6 +516,19 @@ export default function CarrierViewLoads() {
           </Disclosure>
         ))}
       </div>
+
+      <ChatWindow
+        isOpen={showChatWindow}
+        onClose={() => setShowChatWindow(false)}
+        recipientName={
+          selectedShipper
+            ? `${selectedShipper.firstName || "Unknown"} ${
+                selectedShipper.lastName || "Shipper"
+              }`
+            : "Shipper"
+        }
+        messages={chatMessages}
+      />
     </div>
   );
 }

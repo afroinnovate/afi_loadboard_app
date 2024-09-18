@@ -157,7 +157,6 @@ export const action: ActionFunction = async ({ request }) => {
         timestamp: new Date(),
       };
       
-      console.log("newMessage", newMessage);
       // messages.push(newMessage);
       session.set("chatMessages", messages);
       return json(

@@ -19,12 +19,12 @@
 * [09/17/24]: Made the bid dashboard responsive
 * [09/18/24]: Remove the footer on smaller screens and only keep it on the bigger ones
 * [09/18/24]:  Make the filtering works in carrier bid
-* [09/18/24] Fix the right shipper info and load info should show on contactShipper page
+* [09/18/24]: Fix the right shipper info and load info should show on contactShipper page
+* [09/18/24]: Show contact message chat box on carrier dashboard
 
 ### TODO
 
 2. Make sure the message box shows on:
-    - carrier dashboard
     - shipper dashboard
 3. Check the profile completion live in shipper dashboard(it shows complete profile even after its done)
 4. Make sure only bids with creator matching the profile shows. in the bid dashboard in carier dashboard
