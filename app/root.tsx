@@ -126,7 +126,7 @@ export default function App() {
               themeClasses.footer
             } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
               isFooterVisible ? "translate-y-0" : "translate-y-full"
-            }`}
+            } hidden md:block`} // Add hidden for small screens and block for medium and up
             onMouseEnter={() => setIsFooterVisible(true)}
             onMouseLeave={() => setIsFooterVisible(false)}
           >
