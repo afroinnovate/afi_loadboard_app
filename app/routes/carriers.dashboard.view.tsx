@@ -27,7 +27,7 @@ import { manageBidProcess } from "~/api/services/bid.helper";
 import { authenticator } from "~/api/services/auth.server";
 import { redirectUser } from "~/components/redirectUser";
 import { ErrorBoundary } from "~/components/errorBoundary";
-import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
+import { LoadInfoDisplay } from "~/components/loadViewHelpers";
 import { useMemo, useState, useEffect } from "react";
 import ChatWindow from "~/components/ChatWindow";
 
@@ -215,6 +215,7 @@ export default function CarrierViewLoads() {
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState(null);
+  const [showContactShipper, setShowContactShipper] = useState(false);
 
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
@@ -298,7 +299,10 @@ export default function CarrierViewLoads() {
 
   useEffect(() => {
     if (actionData && actionData.newMessage) {
-      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage]);
+      setChatMessages((prevMessages) => [
+        ...prevMessages,
+        actionData.newMessage,
+      ]);
     }
   }, [actionData]);
 
@@ -380,134 +384,166 @@ export default function CarrierViewLoads() {
                   />
                 )}
 
-                <Disclosure.Button className="flex justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
-                  <div className="pl-2 flex items-center space-x-3">
-                    <h2 className="text-lg font-bold">{load.origin}</h2>
-                    <ArrowRightIcon className="w-6 h-6 text-red-400" />
-                    <h2 className="text-lg font-bold">{load.destination}</h2>
+                <Disclosure.Button className="flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium text-white hover:bg-gray-600">
+                  <div className="w-full sm:w-auto flex flex-wrap items-center space-x-2 mb-2 sm:mb-0">
+                    <h2 className="text-sm sm:text-base font-medium">
+                      {load.origin}
+                    </h2>
+                    <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                    <h2 className="text-sm sm:text-base font-medium">
+                      {load.destination}
+                    </h2>
                   </div>
-                  <LoadInfoDisplay
-                    load={load}
-                    currency={currency}
-                    background="bg-gray-800"
-                    shadow="shadow-lg"
-                    offerColor="white"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`text-xs font-medium py-1 px-2 rounded-full ${getStatusStyles(
-                        load.loadStatus
-                      )}`}
-                    >
-                      {load.loadStatus.charAt(0).toUpperCase() +
-                        load.loadStatus.slice(1)}
-                    </span>
-                    <ChevronUpIcon
-                      className={`w-8 h-8 ${
-                        open ? "transform rotate-180" : ""
-                      } text-gray-300`}
-                    />
+                  <div className="w-full sm:w-auto flex flex-wrap items-center justify-between sm:justify-end space-x-2">
+                    <div className="flex items-center space-x-4 w-full sm:w-auto flex-wrap">
+                      {" "}
+                      <LoadInfoDisplay
+                        load={load}
+                        currency={currency}
+                        background="bg-gray-800"
+                        shadow="shadow-lg"
+                        offerColor="white"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`text-xs font-medium py-1 px-2 rounded-full ${getStatusStyles(
+                            load.loadStatus
+                          )}`}
+                        >
+                          {load.loadStatus.charAt(0).toUpperCase() +
+                            load.loadStatus.slice(1)}
+                        </span>
+                        <ChevronUpIcon
+                          className={`w-6 h-6 sm:w-8 sm:h-8 flex-wrap ${
+                            open ? "transform rotate-180" : ""
+                          } text-gray-300`}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </Disclosure.Button>
 
-                {/* Conditional Panels */}
-                <Disclosure.Panel className="p-2 pl-4 text-gray-300 bg-gray-800">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <p>
-                      Pickup Date:{" "}
-                      {new Date(load.pickupDate).toLocaleDateString()}
+                <Disclosure.Panel className="p-2 pl-4 text-sm text-gray-300 bg-gray-800">
+                  <div className="grid grid-cols-1 gap-2">
+                    <p className="flex flex-wrap">
+                      <span className="w-full sm:w-auto sm:mr-2 font-medium">
+                        Pickup Date:
+                      </span>
+                      <span>
+                        {new Date(load.pickupDate).toLocaleDateString()}
+                      </span>
                     </p>
-                    <p>
-                      Estimated Delivery Date:{" "}
-                      {new Date(load.deliveryDate).toLocaleDateString()}
+                    <p className="flex flex-wrap">
+                      <span className="w-full sm:w-auto sm:mr-2 font-medium">
+                        Estimated Delivery Date:
+                      </span>
+                      <span>
+                        {new Date(load.deliveryDate).toLocaleDateString()}
+                      </span>
                     </p>
-                    <p>Commodity: {load.commodity}</p>
-                    <p>Weight: {load.weight} kg</p>
-                    <p>
-                      Offer Amount: {currency} {load.offerAmount}
+                    <p className="flex flex-wrap">
+                      <span className="w-full sm:w-auto sm:mr-2 font-medium">
+                        Commodity:
+                      </span>
+                      <span>{load.commodity}</span>
                     </p>
-                    <p>Details: {load.loadDetails}</p>
+                    <p className="flex flex-wrap">
+                      <span className="w-full sm:w-auto sm:mr-2 font-medium">
+                        Weight:
+                      </span>
+                      <span>{load.weight} kg</span>
+                    </p>
+                    <p className="flex flex-wrap">
+                      <span className="w-full sm:w-auto sm:mr-2 font-medium">
+                        Offer Amount:
+                      </span>
+                      <span>
+                        {currency} {load.offerAmount}
+                      </span>
+                    </p>
+                    <p className="flex flex-wrap">
+                      <span className="w-full sm:w-auto sm:mr-2 font-medium">
+                        Details:
+                      </span>
+                      <span>{load.loadDetails}</span>
+                    </p>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap justify-end space-x-2 mt-4">
+                  <div className="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
                     {carrierAccess && !carrierHasAccess && (
                       <NavLink
                         to="/carriers/dashboard/account/business/"
-                        className="inline-block bg-orange-500 text-white px-8 py-4 m-1 cursor-pointer transform transition hover:animate-pulse hover:-translate-x-10"
+                        className="w-full sm:w-auto inline-block bg-orange-500 text-white px-4 py-2 text-sm rounded cursor-pointer transform transition hover:bg-orange-600"
                       >
-                        <button className="text-lg">
-                          Please Complete your profile to pick up a load
-                        </button>
+                        Complete profile to pick up a load
                       </NavLink>
                     )}
 
                     {carrierHasAccess && (
-                      <form method="post">
-                        <input
-                          type="hidden"
-                          name="loadId"
-                          value={load.loadId}
-                        />
-                        <input
-                          type="hidden"
-                          name="shipper"
-                          value={JSON.stringify(load.createdBy)}
-                        />
-                        <input
-                          type="hidden"
-                          name="load"
-                          value={JSON.stringify(load)}
-                        />
-                        <button
-                          type="submit"
-                          name="_action"
-                          value="contact"
-                          className="flex items-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none"
-                          aria-label="Contact Carrier"
-                        >
-                          <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
-                          Message Shipper
-                        </button>
-                      </form>
-                    )}
-                    {carrierHasAccess && (
-                      <form method="post">
-                        <input
-                          type="hidden"
-                          name="bidLoadId"
-                          value={load.loadId}
-                        />
-                        <input
-                          type="hidden"
-                          name="offerAmount"
-                          value={load.offerAmount}
-                        />
-                        <button
-                          disabled={
-                            load.loadStatus === "enroute" ||
-                            load.loadStatus === "accepted" ||
-                            load.loadStatus === "rejected" ||
-                            load.loadStatus === "closed"
-                          }
-                          type="submit"
-                          name="_action"
-                          value="bid"
-                          // make conditional formatting for the button based on the load status
-                          className={`flex items-center px-4 py-2 text-sm font-medium text-orange-400 bg-gray-700 border border-orange-400 rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
-                            load.loadStatus === "enroute" ||
-                            load.loadStatus === "accepted" ||
-                            load.loadStatus === "rejected" ||
-                            load.loadStatus === "closed"
-                              ? "cursor-not-allowed"
-                              : ""
-                          }`}
-                          aria-label="Place Bid"
-                        >
-                          <CurrencyDollarIcon className="w-5 h-5 mr-2" />
-                          Place a Bid
-                        </button>
-                      </form>
+                      <>
+                        <form method="post" className="w-full sm:w-auto">
+                          <input
+                            type="hidden"
+                            name="loadId"
+                            value={load.loadId}
+                          />
+                          <input
+                            type="hidden"
+                            name="shipper"
+                            value={JSON.stringify(load.createdBy)}
+                          />
+                          <input
+                            type="hidden"
+                            name="load"
+                            value={JSON.stringify(load)}
+                          />
+                          <button
+                            type="submit"
+                            name="_action"
+                            value="contact"
+                            className="w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none"
+                            aria-label="Contact Carrier"
+                          >
+                            <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
+                            Message Shipper
+                          </button>
+                        </form>
+                        <form method="post" className="w-full sm:w-auto">
+                          <input
+                            type="hidden"
+                            name="bidLoadId"
+                            value={load.loadId}
+                          />
+                          <input
+                            type="hidden"
+                            name="offerAmount"
+                            value={load.offerAmount}
+                          />
+                          <button
+                            disabled={
+                              load.loadStatus === "enroute" ||
+                              load.loadStatus === "accepted" ||
+                              load.loadStatus === "rejected" ||
+                              load.loadStatus === "closed"
+                            }
+                            type="submit"
+                            name="_action"
+                            value="bid"
+                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium text-orange-400 bg-gray-700 border border-orange-400 rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
+                              load.loadStatus === "enroute" ||
+                              load.loadStatus === "accepted" ||
+                              load.loadStatus === "rejected" ||
+                              load.loadStatus === "closed"
+                                ? "cursor-not-allowed"
+                                : ""
+                            }`}
+                            aria-label="Place Bid"
+                          >
+                            <CurrencyDollarIcon className="w-5 h-5 mr-2" />
+                            Place a Bid
+                          </button>
+                        </form>
+                      </>
                     )}
                   </div>
                 </Disclosure.Panel>

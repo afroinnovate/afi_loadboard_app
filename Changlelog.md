@@ -21,13 +21,13 @@
 * [09/18/24]:  Make the filtering works in carrier bid
 * [09/18/24]: Fix the right shipper info and load info should show on contactShipper page
 * [09/18/24]: Show contact message chat box on carrier dashboard
+* [09/18/24]: Only use hydrated loads into carrier dashboard so we don't get loads everytime we refresh.
+* [09/18/24]: Load the bids based on the carrier Id so carrier cannot see other people biddings
 
 ### TODO
-
 2. Make sure the message box shows on:
     - shipper dashboard
 3. Check the profile completion live in shipper dashboard(it shows complete profile even after its done)
-4. Make sure only bids with creator matching the profile shows. in the bid dashboard in carier dashboard
 5. make sure the loads are hydrated during opening of the page and not everytime each child page loads - 
     - view loads(carrier dashboard)
     - view loads(shipper dashboard)
