@@ -10,7 +10,7 @@ import {
   Form,
   useActionData,
   useOutletContext,
-  useSubmit,
+  useSearchParams,
 } from "@remix-run/react";
 import { UpdateBid, DeleteBid } from "~/api/services/bid.service";
 import { Disclosure } from "@headlessui/react";
@@ -33,6 +33,8 @@ import type { BidUpdateRequest } from "~/api/models/bidRequest";
 import { LoadStatusBadge } from "~/components/statusBadge";
 import ContactShipperView from "~/components/contactshipper";
 import ChatWindow from "~/components/ChatWindow";
+import { parseISO, isAfter } from 'date-fns';
+import { LoadStatusIcon } from "~/components/LoadStatusIcon";
 
 export const meta: MetaFunction = () => {
   return [
@@ -155,7 +157,6 @@ export const action: ActionFunction = async ({ request }) => {
         timestamp: new Date(),
       };
       
-      console.log("newMessage", newMessage);
       // messages.push(newMessage);
       session.set("chatMessages", messages);
       return json(
@@ -187,6 +188,7 @@ export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
   const actionData = useActionData();
   const { bids } = useOutletContext<{ loads: any; bids: any }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [localBids, setLocalBids] = useState(bids);
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const timezone = loaderData?.timezone || "UTC";
@@ -197,6 +199,8 @@ export default function CarrierBidDashboard() {
   const [selectedLoad, setSelectedLoad] = useState(null);
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [status, setStatus] = useState(searchParams.get('status') || 'all');
+  const [date, setDate] = useState(searchParams.get('date') || '');
 
   let error = "";
   let info = "";
@@ -206,21 +210,31 @@ export default function CarrierBidDashboard() {
     error = "Oops! Something went wrong. Please try again.";
   }
 
-  let contactMode =
-    actionData && actionData.message === "contactMode"
-      ? actionData.message
-      : "";
-
   // Extract user data from loader
-
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
-    setLocalBids(bids);
-    if (bids.length === 0) {
-      info = "You haven't placed any bids yet.";
+    const status = searchParams.get('status');
+    const date = searchParams.get('date');
+
+    let filteredBids = bids;
+    if (status && status !== 'all') {
+      filteredBids = filteredBids.filter((bid: { bidStatus: { toString: () => string } }) => bid.bidStatus.toString() === status);
     }
-  }, [bids]);
+
+    if (date) {
+      const filterDate = parseISO(date);
+      filteredBids = filteredBids.filter(bid => isAfter(parseISO(bid.biddingTime), filterDate));
+    }
+
+    setLocalBids(filteredBids);
+
+    if (filteredBids.length === 0) {
+      info = "No bids match the current filters.";
+    } else {
+      info = "";
+    }
+  }, [bids, searchParams]);
 
   // Update localBids if action was successful
   useEffect(() => {
@@ -266,10 +280,9 @@ export default function CarrierBidDashboard() {
       }
     }
   }, [actionData]);
-
   useEffect(() => {
-    if (actionData && actionData.newMessage) {
-      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage]);
+    if (actionData && typeof actionData === "object" && "newMessage" in actionData) {
+      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage as Message]);
     }
   }, [actionData]);
 
@@ -342,12 +355,26 @@ export default function CarrierBidDashboard() {
     setShowChatWindow(true);
   };
 
+  const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSearchParams({ status, date });
+  };
+
+  const handleReset = () => {
+    setStatus('all');
+    setDate('');
+    setSearchParams({});
+  };
+
   return (
     <div className="container mx-auto dark:bg-gray-800 p-4">
       {feedbackMessage && (
         <div
           className={`p-4 mb-4 text-center ${
-            actionData && "success" in actionData && actionData.success
+            actionData &&
+            typeof actionData === "object" &&
+            "success" in actionData &&
+            actionData.success
               ? "text-green-500 bg-green-100"
               : "text-orange-500 bg-orange-100"
           } rounded-lg transition-opacity duration-300 ${
@@ -373,11 +400,13 @@ export default function CarrierBidDashboard() {
         </div>
       )}
 
-      <Form method="get" className="mb-6">
+      <form onSubmit={handleFilter} className="mb-6">
         <div className="flex flex-wrap gap-4">
           <select
             name="status"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
           >
             <option value="all">All Statuses</option>
             <option value="0">Pending</option>
@@ -388,6 +417,8 @@ export default function CarrierBidDashboard() {
             type="date"
             name="date"
             className="p-2 border rounded dark:bg-gray-700 dark:text-white"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
           />
           <button
             type="submit"
@@ -395,43 +426,43 @@ export default function CarrierBidDashboard() {
           >
             Filter
           </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Reset
+          </button>
         </div>
-      </Form>
+      </form>
 
       <div className="space-y-4">
         {localBids.map((bid: any) => (
           <Disclosure key={bid.id}>
             {({ open }) => (
               <div className="bg-gray-700 shadow rounded-lg">
-                <Disclosure.Button className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2 sm:mb-0">
-                    <h2 className="text-lg font-bold">{bid.load.origin}</h2>
-                    <ArrowRightIcon className="w-6 h-6 text-red-400 hidden sm:block" />
-                    <h2 className="text-lg font-bold">
+                <Disclosure.Button className="flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
+                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0">
+                    <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
+                      {bid.load.origin}
+                    </h2>
+                    <ArrowRightIcon className="w-4 h-4 sm:w-6 sm:h-6 text-red-400 flex-shrink-0" />
+                    <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
                       {bid.load.destination}
                     </h2>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
-                    <span className="text-lg font-bold">
+                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 justify-end">
+                    <span className="hidden sm:inline">
+                      <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
+                    </span>
+                    <span className="sm:hidden">
+                      <LoadStatusIcon status={getStatusText(bid.bidStatus)} />
+                    </span>
+                    <span className="text-sm sm:text-lg font-normal sm:font-bold">
                       {currency} {bid.bidAmount}
                     </span>
-                    <div className="flex space-x-2">
-                      <span
-                        className="p-1 text-blue-400"
-                        title="Contact Shipper"
-                      >
-                        <ChatBubbleLeftIcon className="w-5 h-5" />
-                      </span>
-                      <span className="p-1 text-yellow-400" title="Update Bid">
-                        <PencilIcon className="w-5 h-5" />
-                      </span>
-                      <span className="p-1 text-red-400" title="Remove Bid">
-                        <TrashIcon className="w-5 h-5" />
-                      </span>
-                    </div>
                     <ChevronUpIcon
-                      className={`w-6 h-6 ${
+                      className={`hidden sm:block sm:w-6 sm:h-6 ${
                         open ? "transform rotate-180" : ""
                       } text-gray-300`}
                     />
@@ -487,7 +518,9 @@ export default function CarrierBidDashboard() {
                       <input type="hidden" name="bidId" value={bid.id} />
                       <button
                         type="button"
-                        onClick={() => handleContactShipper(bid.load?.createdBy, bid.load)}
+                        onClick={() =>
+                          handleContactShipper(bid.load?.createdBy, bid.load)
+                        }
                         className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
                         title="Contact Shipper"
                       >
@@ -540,7 +573,13 @@ export default function CarrierBidDashboard() {
       <ChatWindow
         isOpen={showChatWindow}
         onClose={() => setShowChatWindow(false)}
-        recipientName={selectedShipper ? `${selectedShipper.firstName || 'Unknown'} ${selectedShipper.lastName || 'Shipper'}` : 'Shipper'}
+        recipientName={
+          selectedShipper
+            ? `${selectedShipper.firstName || "Unknown"} ${
+                selectedShipper.lastName || "Shipper"
+              }`
+            : "Shipper"
+        }
         messages={chatMessages}
       />
 
