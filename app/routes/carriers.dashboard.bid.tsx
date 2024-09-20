@@ -404,6 +404,8 @@ export default function CarrierBidDashboard() {
         <div className="flex flex-wrap gap-4">
           <select
             name="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
             className="p-2 border rounded bg-gray-700 text-white"
           >
             <option value="all">All Statuses</option>
@@ -414,6 +416,8 @@ export default function CarrierBidDashboard() {
           <input
             type="date"
             name="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className="p-2 border rounded bg-gray-700 text-white"
           />
           <button
