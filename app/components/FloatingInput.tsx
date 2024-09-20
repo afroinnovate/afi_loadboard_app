@@ -15,7 +15,7 @@ interface FloatingLabelInputProps {
   onChange: (name: string, value: string) => void;
   className?: string;
   error?: string;
-  theme?: "light" | "dark";
+  theme: "light" | "dark";
 }
 
 export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
@@ -32,7 +32,7 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   onChange,
   className,
   error,
-  theme = "dark", // Default to dark theme
+  theme,
 }) => {
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
@@ -58,13 +58,12 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   };
 
   const inputClasses = clsx(
-    "appearance-none block w-full border rounded px-3 py-2 leading-tight focus:outline-none",
+    "appearance-none block w-full border rounded px-3 py-2 leading-tight focus:outline-none transition-colors duration-300",
     {
-      "bg-[#2a2f3f] text-white border-[#3a3f4f]": theme === "dark",
-      "bg-white text-green-900 border-gray-300": theme === "light",
+      "bg-gray-700 text-white border-gray-600": theme === "dark",
+      "bg-gray-100 text-gray-900 border-gray-300": theme === "light",
       "border-red-500": !isValid || error,
-      "border-[#ff6b6b]": isValid && value && !error && theme === "dark",
-      "border-green-500": isValid && value && !error && theme === "light",
+      "border-orange-500": isValid && value && !error,
     },
     className
   );
@@ -77,10 +76,9 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
       "top-2": !isFocused && !value,
       "-top-6 text-xs": isFocused || value,
       "text-white": (isFocused || value) && theme === "dark",
-      "text-green-900": (isFocused || value) && theme === "light",
+      "text-gray-900": (isFocused || value) && theme === "light",
       "text-red-500": !isValid || error,
-      "text-[#ff6b6b]": isValid && value && !error && theme === "dark",
-      "text-green-500": isValid && value && !error && theme === "light",
+      "text-orange-500": isValid && value && !error,
     }
   );
 

@@ -1,11 +1,17 @@
-import { Outlet, useParams, useNavigate } from "@remix-run/react";
+import { Outlet, useParams, useNavigate, useOutletContext } from "@remix-run/react";
 import { useState } from "react";
 import AccountOverlay from "~/components/accountOverlay";
 import { ErrorBoundary } from "~/components/errorBoundary";
 
+interface OutletContext {
+  theme: "light" | "dark";
+}
+
 export default function Account() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
+  const { theme } = useOutletContext<OutletContext>();
+  const isDarkTheme = theme === "dark";
+  
   const { userType } = useParams();
   const navigate = useNavigate();
 

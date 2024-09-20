@@ -184,6 +184,10 @@ export const action: ActionFunction = async ({ request }) => {
   return null;
 };
 
+interface OutletContext {
+  theme: 'light' | 'dark';
+}
+
 export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
   const actionData = useActionData();
@@ -201,6 +205,7 @@ export default function CarrierBidDashboard() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState(searchParams.get('status') || 'all');
   const [date, setDate] = useState(searchParams.get('date') || '');
+  const { theme } = useOutletContext<OutletContext>();
 
   let error = "";
   let info = "";

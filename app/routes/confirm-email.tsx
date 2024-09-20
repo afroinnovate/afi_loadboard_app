@@ -4,7 +4,7 @@ import {
   type ActionFunction,
   redirect,
 } from "@remix-run/node";
-import { Form, useLoaderData, useActionData, useNavigation } from "@remix-run/react";
+import { Form, useLoaderData, useActionData, useNavigation, useOutletContext } from "@remix-run/react";
 import { FloatingLabelInput } from "../components/FloatingInput";
 import invariant from "tiny-invariant";
 import { useState } from "react";
@@ -73,11 +73,17 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
+interface OutletContext {
+  theme: "light" | "dark";
+}
+
 export default function ConfirmEmailPage() {
-  const { formData, roles } = useLoaderData();
-  const actionData: any = useActionData();
+  const { formData, roles } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const { theme } = useOutletContext<OutletContext>();
+  const isDarkTheme = theme === "dark";
 
   const [form, setForm] = useState({
     firstName: formData.firstName,
@@ -113,7 +119,9 @@ export default function ConfirmEmailPage() {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
       <div
-        className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10"
+        className={`py-8 px-6 shadow-2xl rounded-lg sm:px-10 ${
+          isDarkTheme ? 'bg-gray-800 text-white' : 'bg-white text-black'
+        }`}
         style={{ maxWidth: "600px" }}
       >
         <div>
@@ -132,6 +140,7 @@ export default function ConfirmEmailPage() {
             required
             minLength={3}
             onChange={handleInputChange}
+            darkMode={isDarkTheme}
           />
           <FloatingLabelInput
             name="middleName"
@@ -167,14 +176,17 @@ export default function ConfirmEmailPage() {
             onChange={handleInputChange}
           />
 
-          {/* Updated role selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
+            <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
               <span className="text-red-500 font">*</span> Role:
             </label>
             <select
               name="role"
-              className="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
+              className={`block w-full border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 ${
+                isDarkTheme
+                  ? 'bg-gray-700 border-gray-600 text-white'
+                  : 'bg-white border-gray-300 text-black'
+              }`}
               value={form.role}
               onChange={handleRoleChange}
               required
@@ -189,7 +201,11 @@ export default function ConfirmEmailPage() {
           </div>
           <button
             type="submit"
-            className="mt-6 w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-orange-400 disabled:opacity-50"
+            className={`mt-6 w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+              isDarkTheme
+                ? 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-blue-600 hover:bg-orange-400'
+            } disabled:opacity-50`}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Completing Profile..." : "Complete Profile"}

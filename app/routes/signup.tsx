@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigation, Form, Link, useActionData } from "@remix-run/react";
+import {
+  useNavigation,
+  Form,
+  Link,
+  useActionData,
+  useOutletContext,
+} from "@remix-run/react";
 import {
   type MetaFunction,
   type LinksFunction,
@@ -98,6 +104,14 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const { theme } = useOutletContext<{ theme: "light" | "dark" }>();
+
+  const bgColor = theme === "light" ? "bg-gray-100" : "bg-gray-900";
+  const cardBgColor = theme === "light" ? "bg-white" : "bg-gray-800";
+  const textColor = theme === "light" ? "text-gray-900" : "text-white";
+  const inputBgColor = theme === "light" ? "bg-gray-100" : "bg-gray-700";
+  const inputFocusBgColor =
+    theme === "light" ? "focus:bg-white" : "focus:bg-gray-600";
 
   useEffect(() => {
     const emailValid = email.length > 6;
@@ -120,7 +134,9 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 relative overflow-hidden">
+    <div
+      className={`min-h-screen flex items-center justify-center ${bgColor} relative overflow-hidden transition-colors duration-300`}
+    >
       <div className="absolute inset-0 opacity-10">
         {[...Array(100)].map((_, i) => (
           <svg
@@ -145,14 +161,20 @@ export default function Signup() {
           </svg>
         ))}
       </div>
-      <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-96 z-10">
+      <div
+        className={`${cardBgColor} p-8 rounded-lg shadow-xl w-96 z-10 transition-colors duration-300`}
+      >
         <h2 className="text-3xl font-bold mb-6 text-orange-500 text-center">
           AfroInnovate
         </h2>
-        <h3 className="text-xl font-semibold mb-4 text-white text-center">
+        <h3 className={`text-xl font-semibold mb-4 ${textColor} text-center`}>
           Create a new account
         </h3>
-        <p className="text-center text-gray-300 mb-6">
+        <p
+          className={`text-center ${
+            theme === "light" ? "text-gray-600" : "text-gray-300"
+          } mb-6`}
+        >
           Already registered?{" "}
           <Link
             to="/login/"
@@ -171,19 +193,21 @@ export default function Signup() {
         <Form method="post" className="space-y-6">
           <FloatingLabelInput
             name="email"
+            theme={theme}
             placeholder="Email"
             required
             type="email"
             minLength={6}
             onChange={(name, value) => setEmail(value)}
-            className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4"
+            className={`w-full px-3 py-2 ${inputBgColor} ${textColor} border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4 transition-colors duration-300`}
           />
           <FloatingPasswordInput
             name="password"
+            theme={theme}
             placeholder="Password"
             required
             onChange={(name, value) => handlePasswordChange(name, value)}
-            className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={`w-full px-3 py-2 ${inputBgColor} ${textColor} border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-300`}
           />
           <FloatingPasswordInput
             name="confirmPassword"
@@ -191,7 +215,7 @@ export default function Signup() {
             required
             newPassword={confirmPassword}
             onChange={(name, value) => handlePasswordChange(name, value)}
-            className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={`w-full px-3 py-2 ${inputBgColor} ${textColor} border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-300`}
           />
           <div className="flex items-center">
             <input
@@ -204,7 +228,9 @@ export default function Signup() {
             />
             <label
               htmlFor="terms-and-privacy"
-              className="ml-2 block text-sm text-gray-300"
+              className={`ml-2 block text-sm ${
+                theme === "light" ? "text-gray-600" : "text-gray-300"
+              }`}
             >
               I agree to the{" "}
               <Link
@@ -228,7 +254,7 @@ export default function Signup() {
               isFormValid
                 ? "bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                 : "bg-gray-700 cursor-not-allowed"
-            }`}
+            } transition-colors duration-300`}
             disabled={!isFormValid || isSubmitting}
           >
             {isSubmitting ? "Creating Account..." : "Create Account"}

@@ -9,6 +9,7 @@ import {
   NavLink,
   useActionData,
   useLoaderData,
+  useOutletContext,
 } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
@@ -209,6 +210,10 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
+interface OutletContext {
+  theme: "light" | "dark";
+}
+
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
@@ -216,7 +221,8 @@ export default function CarrierViewLoads() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState(null);
   const [showContactShipper, setShowContactShipper] = useState(false);
-
+  const theme = useOutletContext<OutletContext>();
+  
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
     let errorMsg = "";

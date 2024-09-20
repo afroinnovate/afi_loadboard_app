@@ -4,6 +4,7 @@ import {
   useLoaderData,
   useLocation,
   NavLink,
+  useOutletContext,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
 
@@ -145,11 +146,16 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
+interface OutletContext {
+  theme: "light" | "dark";
+}
+
 export default function CarrierDashboard() {
   const { user, loads, bids } = useLoaderData<typeof loader>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
+  const theme = useOutletContext<OutletContext>();
 
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
@@ -228,7 +234,7 @@ export default function CarrierDashboard() {
           {location.pathname === "/carriers/dashboard/" && (
             <CarrierOverview loads={loads} bids={bids} />
           )}
-          <Outlet context={{ loads, bids }} />
+          <Outlet context={{ loads, bids, theme }} />
         </main>
       </div>
     </>

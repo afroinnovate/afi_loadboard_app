@@ -23,6 +23,7 @@
 * [09/18/24]: Show contact message chat box on carrier dashboard
 * [09/18/24]: Only use hydrated loads into carrier dashboard so we don't get loads everytime we refresh.
 * [09/18/24]: Load the bids based on the carrier Id so carrier cannot see other people biddings
+* [09/20/24]: Implement configurable theme
 
 ### TODO
 2. Make sure the message box shows on:
