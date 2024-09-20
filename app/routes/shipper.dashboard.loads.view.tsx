@@ -1,13 +1,11 @@
 import {
   redirect,
-  type LoaderFunction,
   json,
   type ActionFunction,
   type MetaFunction,
-  type LoaderArgs,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, Form, useNavigation, useSubmit } from "@remix-run/react";
-import { DeleteLoad, GetLoads, UpdateLoad } from "~/api/services/load.service";
+import { NavLink, useActionData, useLoaderData, Form, useNavigation, useSubmit, useOutletContext } from "@remix-run/react";
+import { DeleteLoad, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure, Transition } from "@headlessui/react";
 import {
   commitSession,
@@ -15,18 +13,14 @@ import {
 } from "../api/services/session";
 import UpdateLoadView from "~/components/updateload";
 import { authenticator } from "~/api/services/auth.server";
-import { LoadInfoDisplay } from "~/helpers/loadViewHelpers";
-import { useState, memo } from "react";
+import { LoadInfoDisplay } from "~/components/loadViewHelpers";
+import { useState, memo, useEffect } from "react";
+import { useSearchParams } from "@remix-run/react";
+import { parseISO, isAfter } from 'date-fns';
 import {
   ChevronUpIcon,
-  LockClosedIcon,
-  LockOpenIcon,
   TrashIcon,
   PencilIcon,
-  DocumentCheckIcon,
-  CheckCircleIcon,
-  MinusCircleIcon,
-  EllipsisHorizontalCircleIcon,
   ArrowRightIcon,
 } from "@heroicons/react/20/solid";
 import FilterComponent from "~/components/filterComponent";
@@ -61,31 +55,6 @@ export const loader = async ({ request }: LoaderArgs) => {
       return redirect("/logout/");
     }
 
-    const url = new URL(request.url);
-    const status = url.searchParams.get("status") || "all";
-    const minAmount = url.searchParams.get("minAmount") || "";
-    const origin = url.searchParams.get("origin") || "";
-    const destination = url.searchParams.get("destination") || "";
-
-    console.log("loader: ", status, minAmount, origin, destination);
-
-    const response = await GetLoads(user.token);
-    if (response && typeof response === "string") {
-      throw new Error(response);
-    }
-
-    const filteredLoads = response.filter((load: any) => {
-      return (
-        (status === "all" ||
-          load.loadStatus.toLowerCase() === status.toLowerCase()) &&
-        (minAmount === "" || load.offerAmount >= parseFloat(minAmount)) &&
-        (origin === "" ||
-          load.origin.toLowerCase().includes(origin.toLowerCase())) &&
-        (destination === "" ||
-          load.destination.toLowerCase().includes(destination.toLowerCase()))
-      );
-    });
-
     const shipperRole =
       mapRoles[shipperProfile.user.businessProfile.shipperRole];
     const hasAccess = [
@@ -96,10 +65,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 
     return json({
       profile: shipperProfile,
-      loads: filteredLoads,
-      totalLoads: response.length,
       hasAccess,
-      filterConfig: { status, minAmount, origin, destination },
     });
   } catch (error: any) {
     if (JSON.parse(error).data.status === 401) {
@@ -207,14 +173,51 @@ interface ActionData {
 }
 
 export default function ViewLoads() {
-  const { profile, loads, hasAccess, filterConfig, totalLoads } =
-    useLoaderData();
+  const { profile, hasAccess } = useLoaderData<typeof loader>();
+  const { loads } = useOutletContext<{ loads: any }>();
   const actionData = useActionData() as ActionData;
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState(null);
-  const [isSuccess, setIsSuccess] = useState(false);
   const navigation = useNavigation();
   const submit = useSubmit();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [status, setStatus] = useState(searchParams.get('status') || 'all');
+  const [minAmount, setMinAmount] = useState(searchParams.get('minAmount') || '');
+  const [origin, setOrigin] = useState(searchParams.get('origin') || '');
+  const [destination, setDestination] = useState(searchParams.get('destination') || '');
+  const [localLoads, setLocalLoads] = useState(loads);
+
+  useEffect(() => {
+    let filteredLoads = loads;
+    if (status && status !== 'all') {
+      filteredLoads = filteredLoads.filter((load: any) => load.loadStatus.toLowerCase() === status.toLowerCase());
+    }
+    if (minAmount) {
+      filteredLoads = filteredLoads.filter((load: any) => load.offerAmount >= parseFloat(minAmount));
+    }
+    if (origin) {
+      filteredLoads = filteredLoads.filter((load: any) => load.origin.toLowerCase().includes(origin.toLowerCase()));
+    }
+    if (destination) {
+      filteredLoads = filteredLoads.filter((load: any) => load.destination.toLowerCase().includes(destination.toLowerCase()));
+    }
+
+    setLocalLoads(filteredLoads);
+  }, [loads, status, minAmount, origin, destination]);
+
+  const handleFilterChange = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSearchParams({ status, minAmount, origin, destination });
+  };
+
+  const handleClearFilters = () => {
+    setStatus('all');
+    setMinAmount('');
+    setOrigin('');
+    setDestination('');
+    setSearchParams({});
+  };
 
   const handleCloseUpdateModal = () => {
     setIsUpdateModalOpen(false);
@@ -231,14 +234,6 @@ export default function ViewLoads() {
   if (Object.keys(loads).length === 0) {
     info = "No loads posted, please check back later";
   }
-
-  const handleFilterChange = (event: React.FormEvent<HTMLFormElement>) => {
-    submit(event.currentTarget);
-  };
-
-  const handleClearFilters = () => {
-    submit({});
-  };
 
   const currency = "ETB";
 
@@ -264,17 +259,21 @@ export default function ViewLoads() {
 
       {hasAccess && (
         <>
-          <Form method="get" onChange={handleFilterChange}>
+          <Form method="get" onSubmit={handleFilterChange}>
             <FilterComponent
-              filterConfig={filterConfig}
-              filteredLoadsCount={loads.length}
-              totalLoadsCount={totalLoads}
+              filterConfig={{ status, minAmount, origin, destination }}
+              filteredLoadsCount={localLoads.length}
+              totalLoadsCount={loads.length}
               isSubmitting={navigation.state === "submitting"}
               onClear={handleClearFilters}
+              onStatusChange={(e) => setStatus(e.target.value)}
+              onMinAmountChange={(e) => setMinAmount(e.target.value)}
+              onOriginChange={(e) => setOrigin(e.target.value)}
+              onDestinationChange={(e) => setDestination(e.target.value)}
             />
           </Form>
           <div className="space-y-6">
-            {loads.map((load: any) => (
+            {localLoads.map((load: any) => (
               <Disclosure key={load.loadId}>
                 {({ open }) => (
                   <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
@@ -295,8 +294,8 @@ export default function ViewLoads() {
                           background="bg-gray-700"
                           shadow="shadow-md"
                           offerColor="text-red-400"
-                        />
-                        <div className="flex items-center space-x-4">
+                          />
+                        <div className="flex items-center space-x-6">
                           <LoadStatusBadge status={load.loadStatus} />
                           <ChevronUpIcon
                             className={`${
