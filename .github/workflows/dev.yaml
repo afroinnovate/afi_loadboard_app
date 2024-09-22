@@ -342,16 +342,8 @@ jobs:
             ./clean-image.sh
             
           EOF
+
       - name: Post Deployment Notice
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "::notice title=Deployment::Deployed ${{ env.RELEASE_TAG }} to Droplet with status ${{ steps.deploy.conclusion }}"
-          echo "::notice Title=Deployment for ${{ inputs.deploy_description }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
-      
-      - name: Post Deployment Notice on Push
-        if: github.event_name == 'push'
-        run: |
-          echo "::notice title=Deployed ${{ inputs.deploy_description }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
-          
-          echo "::notice title=Deployment::Deployed ${{ env.RELEASE_TAG }} to Droplet with status ${{ steps.deploy.conclusion }}"
-          echo "::notice Title=Deployment for UI changes in ${{ env.RELEASE_TAG }}:: Deployed by ${{ github.actor }} on date $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
+          echo "::notice title=Deployment::Deployed  ${{ inputs.deploy_description }} on verion ${{ env.RELEASE_TAG }} to Droplet with status ${{ steps.deploy.conclusion }} by ${{ github.actor }} on $(date +Y.%-m.%-d) at $(date +H:%M:%S)"
