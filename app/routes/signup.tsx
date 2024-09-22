@@ -5,6 +5,7 @@ import {
   Link,
   useActionData,
   useOutletContext,
+  useNavigate,
 } from "@remix-run/react";
 import {
   type MetaFunction,
@@ -19,6 +20,7 @@ import invariant from "tiny-invariant";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import { ErrorBoundary } from "~/components/errorBoundary";
+import { TermsPrivacyPopup } from "~/components/TermsPrivacyPopup";
 
 export const meta: MetaFunction = () => [
   {
@@ -36,6 +38,7 @@ export const action: ActionFunction = async ({ request }) => {
   const email = body.get("email");
   const password = body.get("password");
   const confirmPassword = body.get("confirmPassword");
+  const termsAndPrivacyAccepted = body.get("terms-and-privacy") === "on";
 
   let errorMessage = "";
 
@@ -66,6 +69,10 @@ export const action: ActionFunction = async ({ request }) => {
       typeof confirmPassword === "string" && confirmPassword === password,
       "Passwords must match"
     );
+    invariant(
+      termsAndPrivacyAccepted,
+      "You must accept the Terms of Service and Privacy Policy"
+    );
 
     await Register(user);
     return redirect(`/registration/`);
@@ -87,6 +94,9 @@ export const action: ActionFunction = async ({ request }) => {
       case "Invariant failed: Password must contain at least one uppercase letter":
         errorMessage = error.message.replace("Invariant failed: ", "");
         break;
+      case "Invariant failed: You must accept the Terms of Service and Privacy Policy":
+        errorMessage = "You must accept the Terms of Service and Privacy Policy";
+        break;
       default:
         errorMessage = "Oops! Something went wrong. Please try again.";
         break;
@@ -105,6 +115,9 @@ export default function Signup() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const { theme } = useOutletContext<{ theme: "light" | "dark" }>();
+  const [termsPopupOpen, setTermsPopupOpen] = useState(false);
+  const [privacyPopupOpen, setPrivacyPopupOpen] = useState(false);
+  const navigate = useNavigate();
 
   const bgColor = theme === "light" ? "bg-gray-100" : "bg-gray-900";
   const cardBgColor = theme === "light" ? "bg-white" : "bg-gray-800";
@@ -131,6 +144,16 @@ export default function Signup() {
     } else if (name === "confirmPassword") {
       setConfirmPassword(value);
     }
+  };
+
+  const handleTermsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate("/terms");
+  };
+
+  const handlePrivacyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate("/privacy");
   };
 
   return (
@@ -216,6 +239,7 @@ export default function Signup() {
             newPassword={confirmPassword}
             onChange={(name, value) => handlePasswordChange(name, value)}
             className={`w-full px-3 py-2 ${inputBgColor} ${textColor} border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-300`}
+            theme={theme}
           />
           <div className="flex items-center">
             <input
@@ -233,19 +257,21 @@ export default function Signup() {
               }`}
             >
               I agree to the{" "}
-              <Link
-                to="/terms"
+              <button
+                type="button"
+                onClick={handleTermsClick}
                 className="font-bold text-orange-400 hover:text-orange-300"
               >
                 Terms
-              </Link>{" "}
+              </button>{" "}
               and{" "}
-              <Link
-                to="/privacy"
+              <button
+                type="button"
+                onClick={handlePrivacyClick}
                 className="font-bold text-orange-400 hover:text-orange-300"
               >
                 Privacy Policy
-              </Link>
+              </button>
             </label>
           </div>
           <button
@@ -261,6 +287,19 @@ export default function Signup() {
           </button>
         </Form>
       </div>
+
+      <TermsPrivacyPopup
+        isOpen={termsPopupOpen}
+        onClose={() => setTermsPopupOpen(false)}
+        content="terms"
+        theme={theme}
+      />
+      <TermsPrivacyPopup
+        isOpen={privacyPopupOpen}
+        onClose={() => setPrivacyPopupOpen(false)}
+        content="privacy"
+        theme={theme}
+      />
     </div>
   );
 }
