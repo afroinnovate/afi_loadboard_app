@@ -34,15 +34,15 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-// Define the type for mapRoles
-const mapRoles: { [key: number]: string } = {
-  0: "independentShipper",
-  1: "corporateShipper",
-  2: "govtShipper",
-};
 
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
+  const mapRoles = {
+    "independent_shipper": "independent_Shipper",
+    "corporate_shipper": "corporate_Shipper",
+    "govt_shipper": "govt_Shipper",
+  };
+
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
@@ -79,9 +79,9 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     const shipperRole = mapRoles[shipper.user.businessProfile.shipperRole];
     const hasAccess = [
-      "independentShipper",
-      "corporateShipper",
-      "govtShipper",
+      "independent_Shipper",
+      "corporate_Shipper",
+      "govt_Shipper",
     ].includes(shipperRole);
 
     return json({ user, shipper, hasAccess, theme: "dark" }, { status: 200 });

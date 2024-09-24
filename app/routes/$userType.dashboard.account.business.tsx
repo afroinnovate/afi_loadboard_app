@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import {
   Form,
   Link,
+  NavLink,
   useActionData,
   useFetcher,
   useLoaderData,
+  useLocation,
   useNavigation,
+  useOutletContext,
 } from "@remix-run/react";
 import {
   type LoaderFunction,
@@ -45,22 +48,20 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
+    
     let { userType } = params;
 
-    userType =
-      userType === user?.user.userType ? userType : user?.user.userType;
-
-    if (!user) {
-      return redirect("/logout/");
+    // Check if the userType from the URL matches the user's actual type
+    if (userType !== user?.user.userType) {
+      // If they don't match, redirect to the correct dashboard
+      return redirect(`/${user?.user.userType}/dashboard/account/business`);
     }
 
-    if (!userType) {
-      return redirect("/logout/");
-    }
+    // Determine the correct user type for session retrieval
+    const sessionUserType: string = userType === "carriers" ? "carrier" : userType ?? "";
 
-    const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
-    const userProfile = session.get(userTypeFiltered);
-
+    const userProfile = session.get(sessionUserType);
+    
     if (!userProfile) {
       return redirect("/logout/");
     }
@@ -87,7 +88,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       ? {
           "Owner Operator": "owner_operator",
           "Fleet Owner": "fleet_owner",
-          Dispatcher: "dispatcher",
+          "Dispatcher": "dispatcher",
         }
       : {
           "Independent Shipper": "independent_shipper",
@@ -95,8 +96,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           "Corporate Shipper": "corporate_shipper",
         };
     if (
-      userProfile.user.businessProfile.carrierRole !== null ||
-      userProfile.user.businessProfile.shipperRole !== null
+      userProfile.user.businessProfile.carrierRole !== null
     ) {
       switch (userProfile.user.businessProfile.carrierRole) {
         case 0:
@@ -112,20 +112,6 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           userProfile.user.businessProfile.carrierRole = null;
           break;
       }
-      switch (userProfile.user.businessProfile.shipperRole) {
-        case 0:
-          userProfile.user.businessProfile.shipperRole = "independent_shipper";
-          break;
-        case 1:
-          userProfile.user.businessProfile.shipperRole = "corporate_shipper";
-          break;
-        case 2:
-          userProfile.user.businessProfile.shipperRole = "govt_shipper";
-          break;
-        default:
-          userProfile.user.businessProfile.shipperRole = null;
-          break;
-      }
     }
 
     const session_expiration: any = process.env.SESSION_EXPIRATION;
@@ -135,14 +121,12 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
     // update the session so the user can keep working long as they are active
     const expires = new Date(Date.now() + EXPIRES_IN);
-    let theme = session.get("theme");
-    theme = theme?? "dark"
     session.set(authenticator.sessionKey, user);
-    session.set("theme", theme)
+    session.set(sessionUserType, userProfile);
     await commitSession(session, { expires });
 
     return json(
-      { userProfile, roles, theme },
+      { userProfile, roles },
       { headers: { "Set-Cookie": await commitSession(session, { expires }) } }
     );
   } catch (error: any) {
@@ -165,7 +149,7 @@ export let action: ActionFunction = async ({ params, request }: any) => {
 
   let { userType } = params;
   userType =
-    userType === authUser?.user.userType ? userType : authUser?.user.userType;
+    userType === authUser?.user.userType === null ? userType : authUser?.user.userType;
 
   if (!userType) {
     return redirect("/logout/");
@@ -335,8 +319,7 @@ export let action: ActionFunction = async ({ params, request }: any) => {
               : [],
         },
       };
-      console.log("Business Request", business_req);
-      console.log("Creating a user");
+
       // update the userinformation
       var response: any = await CreateUser(business_req, token);
       if (response) {
@@ -393,6 +376,10 @@ export let action: ActionFunction = async ({ params, request }: any) => {
   }
 };
 
+interface OutletContext {
+  theme: "light" | "dark";
+}
+
 export default function Business() {
   const LoaderData: any = useLoaderData();
   const actionData: any = useActionData();
@@ -407,7 +394,7 @@ export default function Business() {
   const [documents, setDocuments] = useState<File[]>([]);
   const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
   const [fleetSize, setFleetSize] = useState("");
-  const [theme, setTheme] = useState(LoaderData?.theme || "light");
+  const { theme } = useOutletContext<OutletContext>();
   const fetcher = useFetcher();
 
   const themeClasses = {
@@ -510,7 +497,6 @@ export default function Business() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    console.log("Selected Role", selectedRole);
     const requiredDocs = documents;
     if (selectedRole === "owner_operator") {
       const isVehicleSelected = Object.values(vehicleTypes).some(
@@ -806,7 +792,7 @@ export default function Business() {
                             Your business profile is complete. Start posting
                             loads.
                             <Link
-                              to="/shipper/dashboard/loads/view/"
+                              to="/shipper/dashboard/loads/view"
                               className="text-blue-600 underline ml-1 hover:text-blue-800"
                             >
                               View Loads

@@ -4,6 +4,9 @@ import {
   useLoaderData,
   useLocation,
   NavLink,
+  // Removed unused import
+  // useRouteError,
+  useOutletContext,
 } from "@remix-run/react";
 import type {
   MetaFunction,
@@ -18,8 +21,12 @@ import Sidebar from "../components/sidebar";
 import Overview from "../components/overview";
 import AccessDenied from "~/components/accessdenied";
 import { getUserInfo } from "~/api/services/user.service";
-import { type ShipperUser } from '../api/models/shipperUser';
-import { ErrorBoundary } from "~/components/errorBoundary";
+import { type ShipperUser } from "../api/models/shipperUser";
+import { getLoadsByShipperId } from "~/api/services/load.service";
+import ErrorDisplay from "~/components/ErrorDisplay";
+import { GetBidByLoadId, GetBidByLoadIdandCarrierId } from "~/api/services/bid.service";
+// Removed unused import
+// import { GetBidsByCarrierId } from "~/api/services/bid.service";
 
 export const meta: MetaFunction = () => {
   return [
@@ -33,12 +40,27 @@ export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
 
+interface OutletContext {
+  theme: "light" | "dark";
+  timezone: string;
+}
+
+interface BidObject {
+  load: any;
+  bids: [];
+}
+
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
+  const mapRoles = {
+    0: "independent_shipper",
+    1: "corporate_shipper",
+    2: "govt_shipper"
+  };
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-    
+
     if (!user) {
       return redirect("/logout/");
     }
@@ -52,9 +74,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     const expires = new Date(Date.now() + EXPIRES_IN);
 
     if (user?.user.userType === "carrier") {
-      return redirect("/carriers/dashboard/")
+      return redirect("/carriers/dashboard/");
     }
-    
+
     // hydrate session user with shipper data
     var userBusinessInfo: any = await getUserInfo(user?.user.id, user?.token);
 
@@ -74,7 +96,7 @@ export const loader: LoaderFunction = async ({ request }) => {
             businessType: userBusinessInfo.businessProfile.businessType,
             businessRegistrationNumber:
               userBusinessInfo.businessProfile.businessRegistrationNumber,
-            shipperRole: userBusinessInfo.businessProfile.shipperRole,
+            shipperRole: mapRoles[userBusinessInfo.businessProfile.shipperRole as keyof typeof mapRoles],
             idCardOrDriverLicenceNumber:
               userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
           },
@@ -85,35 +107,35 @@ export const loader: LoaderFunction = async ({ request }) => {
       };
       session.set("shipper", shipperUser);
     } else {
-        const shipperProfile = {
-          id: user?.user.id,
-          token: user.token,
-          user: {
-            firstName: user?.user.firstName,
-            middleName: user?.user.middleName,
-            lastName: user?.user.lastName,
-            email: user?.user.email,
-            phone: user?.user.phoneNumber,
-            userType: user?.user.userType,
-            businessProfile: {
-              companyName: "",
-              motorCarrierNumber: "",
-              dotNumber: "",
-              equipmentType: "",
-              availableCapacity: 0,
-              idCardOrDriverLicenceNumber: "",
-              insuranceName: "",
-              businessType: "",
-              carrierRole: null,
-              shipperRole: null,
-              businessRegistrationNumber: "",
-              carrierVehicles: [],
-            },
-            roles: user?.user.roles,
-            confirmed: user?.user.confirmed,
-            status: user?.user.status,
-          }
-        };
+      const shipperProfile = {
+        id: user?.user.id,
+        token: user.token,
+        user: {
+          firstName: user?.user.firstName,
+          middleName: user?.user.middleName,
+          lastName: user?.user.lastName,
+          email: user?.user.email,
+          phone: user?.user.phoneNumber,
+          userType: user?.user.userType,
+          businessProfile: {
+            companyName: "",
+            motorCarrierNumber: "",
+            dotNumber: "",
+            equipmentType: "",
+            availableCapacity: 0,
+            idCardOrDriverLicenceNumber: "",
+            insuranceName: "",
+            businessType: "",
+            carrierRole: null,
+            shipperRole: null,
+            businessRegistrationNumber: "",
+            carrierVehicles: [],
+          },
+          roles: user?.user.roles,
+          confirmed: user?.user.confirmed,
+          status: user?.user.status,
+        },
+      };
       session.set("shipper", shipperProfile);
     }
 
@@ -121,37 +143,77 @@ export const loader: LoaderFunction = async ({ request }) => {
     session.set(authenticator.sessionKey, user);
     const shipperUser = session.get("shipper");
 
-    return json(
-      { user: shipperUser },
-      {
-        headers:
-        {
-          "Set-Cookie": await commitSession(session, { expires })
+    const loads = await getLoadsByShipperId(shipperUser.token, shipperUser.id);
+    // Explicitly type the bids array
+    let bidsDict: BidObject[] = [];
+    for (const load of loads) {
+      if (load && load.loadId) {
+        try {
+          // Ensure load.id is passed as a string
+          const bids = await GetBidByLoadId(load.loadId, shipperUser.token);
+          if (bids.length > 0) {
+            bidsDict.push({ load: load, bids: bids });
+          }
+        } catch (error) {
+          console.error(`Error fetching bid for load ${load.loadId}:`, error);
         }
+      } else {
+        console.error(`Invalid load data:`, load);
+      }
+    }
+    return json(
+      { user: shipperUser, loads, bidsDict },
+      {
+        headers: {
+          "Set-Cookie": await commitSession(session, { expires }),
+        },
       }
     );
   } catch (error: any) {
     console.log("Shipper Dashboard login Error", error);
-    if (JSON.parse(error).data.status == 401) {
+    let errorMessage = "An unexpected error occurred";
+    if (error.message) {
+      errorMessage = error.message;
+    } else if (error.data && error.data.message) {
+      errorMessage = error.data.message;
+    }
+    if (error.data && error.data.status == 401) {
       return redirect("/logout/");
     }
-    throw new Error(error);
+    // Instead of throwing, return a json response with the error
+    return json(
+      { error: errorMessage },
+      { status: 500 }
+    );
   }
 };
 
 export default function Dashboard() {
-  const loaderData: any = useLoaderData();
+  const { user, loads, bidsDict, error } = useLoaderData<{
+    user: ShipperUser;
+    loads: any;
+    bidsDict: BidObject[];
+    error?: { message: string; status: number };
+  }>();
+  const { theme, timezone } = useOutletContext<OutletContext>();
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const isLoadOperationsActive =
     location.pathname.startsWith("/dashboard/loads/");
 
   // Determine the active section based on the URL
   const activeSection = location.pathname.split("/")[2] || "home";
+
   // User roles and permission checks
-  if ( loaderData.user.user.userType !== "shipper") {
+  if (user.user.userType !== "shipper") {
     return (
       <AccessDenied
         returnUrl="/"
@@ -214,11 +276,11 @@ export default function Dashboard() {
         </div>
         <main className="w-full flex justify-center content-center p-3 shadow-lg mt-20">
           {location.pathname === "/shipper/dashboard/" && <Overview />}
-          <Outlet />
+          <Outlet context={{ loads, bidsDict, theme, timezone }} />
         </main>
       </div>
     </>
   );
 }
 
-<ErrorBoundary />
+

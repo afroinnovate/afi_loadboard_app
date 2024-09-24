@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import {
   useLoaderData,
-  useActionData,
   Form,
   useSubmit,
   useNavigation,
+  useOutletContext,
 } from "@remix-run/react";
 import { json, type LoaderFunction, type ActionFunction, redirect } from "@remix-run/node";
 import {
@@ -14,7 +14,7 @@ import {
   ChevronUpIcon,
   CameraIcon
 } from "@heroicons/react/20/solid";
-import { GetBids, UpdateBid } from "~/api/services/bid.service";
+import { UpdateBid } from "~/api/services/bid.service";
 import AccessDenied from "~/components/accessdenied";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { commitSession, getSession } from "~/api/services/session";
@@ -25,13 +25,6 @@ import { type BidUpdateRequest } from "~/api/models/bidRequest";
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user: any = session.get(authenticator.sessionKey);
-  var shipperProfile = session.get("shipper");
-
-  let theme = session.get("theme")
-  theme = theme ?? 'dark'
-
-  // Get timezone from session or default to UTC
-  let timezone = session.get("timezone") ?? 'UTC'
 
   const session_expiration: any = process.env.SESSION_EXPIRATION;
   const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
@@ -48,18 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   //refresh user session
   session.set("user", user);
 
-  const bids = await GetBids(user.token);
-  if (bids === null) {
-    return json(
-      { bids: [], user: shipperProfile, theme: "dark", timezone },
-      {
-        headers: {
-          "Set-Cookie": await commitSession(session, { expires }),
-        },
-      }
-    );
-  }
-  return json({ bids, user, theme: theme, timezone },
+  return json({ user },
     { headers: { "Set-Cookie": await commitSession(session, { expires }) } });
 };
 
@@ -100,11 +82,24 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
+interface BidsViewProps {
+  loads: any;
+  bidsDict: { load: any; bids: any[] }[];
+  theme: string;
+  timezone: string;
+}
+
 export default function BidsView() {
-  const { bids, user, theme, timezone }: any = useLoaderData();
-  const actionData: any = useActionData();
+  const loaderData: any = useLoaderData();
   const navigation = useNavigation();
   const submit = useSubmit();
+  const { bidsDict, theme, timezone } = useOutletContext<BidsViewProps>();
+  const user = loaderData?.user;
+
+  // Extract bids from the list of dictionaries and include the load object
+  const bids: any[] = bidsDict.flatMap((dict: any) => 
+    dict.bids.map((bid: any) => ({ ...bid, load: dict.load }))
+  );
 
   const [expandedBid, setExpandedBid] = useState(null);
   const [filterConfig, setFilterConfig] = useState({
@@ -199,6 +194,7 @@ export default function BidsView() {
         ? "text-green-400 hover:text-green-300"
         : "text-green-600 hover:text-green-800",
     loader: theme === "dark" ? "border-green-400" : "border-green-500",
+    text: theme === "dark" ? "text-gray-200" : "text-black",
   };
 
   const formatDate = (dateString: string) => {
@@ -238,23 +234,23 @@ export default function BidsView() {
         <table className="w-full">
           <thead>
             <tr className={themeClasses.tableHeader}>
-              <th onClick={() => handleSort("carrier.firstName")} className="p-2 cursor-pointer">Carrier</th>
-              <th onClick={() => handleSort("bidAmount")} className="p-2 cursor-pointer">Bid Amount</th>
-              <th onClick={() => handleSort("bidStatus")} className="p-2 cursor-pointer">Status</th>
-              <th className="p-2">Actions</th>
+              <th onClick={() => handleSort("carrier.firstName")} className="p-2 cursor-pointer text-left">Carrier</th>
+              <th onClick={() => handleSort("bidAmount")} className="p-2 cursor-pointer text-left">Bid Amount</th>
+              <th onClick={() => handleSort("bidStatus")} className="p-2 cursor-pointer text-left">Status</th>
+              <th className="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredAndSortedBids.map((bid: any) => (
               <React.Fragment key={bid.id}>
                 <tr className={`border-b ${themeClasses.tableRow} cursor-pointer`} onClick={() => handleExpand(bid.id)}>
-                  <td className="p-2 text-center">{`${bid.carrier.firstName} ${bid.carrier.lastName}`}</td>
-                  <td className="p-2 text-center">${bid.bidAmount}</td>
-                  <td className="p-2 text-center">
+                  <td className="p-2 text-left">{`${bid.carrier.firstName} ${bid.carrier.lastName}`}</td>
+                  <td className="p-2 text-left">${bid.bidAmount}</td>
+                  <td className="p-2 text-left">
                     {["Pending", "Accepted", "Rejected"][bid.bidStatus]}
                   </td>
-                  <td className="p-2 text-center">
-                    <div className="flex justify-center items-center space-x-2">
+                  <td className="p-2 text-left">
+                    <div className="flex justify-start items-center space-x-2">
                       {expandedBid !== bid.id ? (
                         <>
                           <Form method="post" className="inline">
@@ -314,19 +310,19 @@ export default function BidsView() {
                     <td colSpan={4} className={`p-4 ${themeClasses.expandedRow}`}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <h3 className={`font-bold ${themeClasses.header}`}>Carrier Details</h3>
-                          <p className="text-gray-200">Name: {`${bid.carrier.firstName} ${bid.carrier.lastName}`}</p>
-                          <p className="text-gray-200">Phone: {bid.carrier.phone}</p>
-                          <p className="text-gray-200">Email: {bid.carrier.email}</p>
-                          <p className="text-gray-200">Company: {bid.carrier.companyName || "N/A"}</p>
+                          <h3 className={`font-bold ${themeClasses.header} pl-4`}>Carrier Details</h3>
+                          <p className={`${themeClasses.text} pl-4`}>Name: {`${bid.carrier.firstName} ${bid.carrier.lastName}`}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Phone: {bid.carrier.phone}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Email: {bid.carrier.email}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Company: {bid.carrier.companyName || "N/A"}</p>
                         </div>
                         <div>
-                          <h3 className={`font-bold ${themeClasses.header}`}>Load Details</h3>
-                          <p className="text-gray-200">Origin: {bid.load.origin}</p>
-                          <p className="text-gray-200">Destination: {bid.load.destination}</p>
-                          <p className="text-gray-200">Pickup Date: {formatDate(bid.load.pickupDate)}</p>
-                          <p className="text-gray-200">Delivery Date: {formatDate(bid.load.deliveryDate)}</p>
-                          <p className="text-gray-200">Commodity: {bid.load.commodity}</p>
+                          <h3 className={`font-bold ${themeClasses.header} pl-4`}>Load Details</h3>
+                          <p className={`${themeClasses.text} pl-4`}>Origin: {bid.load.origin}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Destination: {bid.load.destination}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Pickup Date: {formatDate(bid.load.pickupDate)}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Delivery Date: {formatDate(bid.load.deliveryDate)}</p>
+                          <p className={`${themeClasses.text} pl-4`}>Commodity: {bid.load.commodity}</p>
                         </div>
                       </div>
                       <div className="mt-4 flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-4">

@@ -134,6 +134,68 @@ export async function GetLoads(token: string) {
   }
 }
 
+export async function getLoadsByShipperId(token: string, shipperId: string) {
+  try {
+    const response = await fetch(
+      `${baseUrl}loads/shipper/${shipperId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status !== 200) {
+      throw response;
+    }
+
+    const data = await response.json();
+    const responseData: LoadResponse = [...data];
+
+    return responseData;
+
+  } catch (error: any) {
+    console.log("get loads by shipper id error", error);
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Load with ID 0 not found",
+            status: 404,
+          },
+        });
+      case 500:
+        throw JSON.stringify({
+            data: {
+              message: "Internal server error",
+              status: 500,
+            },
+          })
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
+  }
+}
+
 export async function DeleteLoad(token: string, id: Number) {
   try {
     const response = await fetch(`${baseUrl}loads/${id}`, {

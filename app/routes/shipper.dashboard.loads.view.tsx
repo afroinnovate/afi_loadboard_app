@@ -4,19 +4,24 @@ import {
   type ActionFunction,
   type MetaFunction,
 } from "@remix-run/node";
-import { NavLink, useActionData, useLoaderData, Form, useNavigation, useSubmit, useOutletContext } from "@remix-run/react";
+import {
+  NavLink,
+  useActionData,
+  useLoaderData,
+  Form,
+  useNavigation,
+  useSubmit,
+  useSearchParams,
+  useOutletContext,
+} from "@remix-run/react";
 import { DeleteLoad, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure, Transition } from "@headlessui/react";
-import {
-  commitSession,
-  getSession,
-} from "../api/services/session";
+import { commitSession, getSession } from "../api/services/session";
 import UpdateLoadView from "~/components/updateload";
 import { authenticator } from "~/api/services/auth.server";
 import { LoadInfoDisplay } from "~/components/loadViewHelpers";
 import { useState, memo, useEffect } from "react";
-import { useSearchParams } from "@remix-run/react";
-import { parseISO, isAfter } from 'date-fns';
+import { parseISO, isAfter } from "date-fns";
 import {
   ChevronUpIcon,
   TrashIcon,
@@ -35,13 +40,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-const mapRoles: { [key: number]: string } = {
-  0: "independentShipper",
-  1: "corporateShipper",
-  2: "govtShipper",
-};
-
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: any) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
@@ -51,16 +50,18 @@ export const loader = async ({ request }: LoaderArgs) => {
     }
 
     const shipperProfile = session.get("shipper");
+
     if (!shipperProfile) {
       return redirect("/logout/");
     }
 
-    const shipperRole =
-      mapRoles[shipperProfile.user.businessProfile.shipperRole];
+    const shipperRole = shipperProfile.user.businessProfile.shipperRole;
+
+
     const hasAccess = [
-      "independentShipper",
-      "corporateShipper",
-      "govtShipper",
+     "independent_shipper",
+     "corporate_shipper",
+     "govt_shipper"
     ].includes(shipperRole);
 
     return json({
@@ -118,7 +119,8 @@ export const action: ActionFunction = async ({ request }) => {
       ).toISOString();
       const formattedDate = new Date().toISOString();
       const Id =
-        Number(formData.get("loadId")) !== 0 && Number(formData.get("loadId")) !== undefined
+        Number(formData.get("loadId")) !== 0 &&
+        Number(formData.get("loadId")) !== undefined
           ? Number(formData.get("loadId"))
           : 99999;
       const requestBody: any = {
@@ -149,7 +151,7 @@ export const action: ActionFunction = async ({ request }) => {
     } else if (action === "clear") {
       console.log("Clearing Filters");
       return redirect("/shipper/dashboard/loads/view/");
-    }else {
+    } else {
       throw JSON.stringify({
         data: {
           message: "Invalid Action",
@@ -172,35 +174,53 @@ interface ActionData {
   loadId?: number;
 }
 
+interface OutletContext {
+  loads: any;
+  bids: any;
+  theme: "light" | "dark";
+  timeZone: string;
+}
+
 export default function ViewLoads() {
-  const { profile, hasAccess } = useLoaderData<typeof loader>();
-  const { loads } = useOutletContext<{ loads: any }>();
+  const { hasAccess } = useLoaderData<typeof loader>();
+  const { loads, theme, timeZone } = useOutletContext<OutletContext>();
   const actionData = useActionData() as ActionData;
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState(null);
   const navigation = useNavigation();
-  const submit = useSubmit();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [status, setStatus] = useState(searchParams.get('status') || 'all');
-  const [minAmount, setMinAmount] = useState(searchParams.get('minAmount') || '');
-  const [origin, setOrigin] = useState(searchParams.get('origin') || '');
-  const [destination, setDestination] = useState(searchParams.get('destination') || '');
+  const [status, setStatus] = useState(searchParams.get("status") || "all");
+  const [minAmount, setMinAmount] = useState(
+    searchParams.get("minAmount") || ""
+  );
+  const [origin, setOrigin] = useState(searchParams.get("origin") || "");
+  const [destination, setDestination] = useState(
+    searchParams.get("destination") || ""
+  );
   const [localLoads, setLocalLoads] = useState(loads);
 
   useEffect(() => {
     let filteredLoads = loads;
-    if (status && status !== 'all') {
-      filteredLoads = filteredLoads.filter((load: any) => load.loadStatus.toLowerCase() === status.toLowerCase());
+    if (status && status !== "all") {
+      filteredLoads = filteredLoads.filter(
+        (load: any) => load.loadStatus.toLowerCase() === status.toLowerCase()
+      );
     }
     if (minAmount) {
-      filteredLoads = filteredLoads.filter((load: any) => load.offerAmount >= parseFloat(minAmount));
+      filteredLoads = filteredLoads.filter(
+        (load: any) => load.offerAmount >= parseFloat(minAmount)
+      );
     }
     if (origin) {
-      filteredLoads = filteredLoads.filter((load: any) => load.origin.toLowerCase().includes(origin.toLowerCase()));
+      filteredLoads = filteredLoads.filter((load: any) =>
+        load.origin.toLowerCase().includes(origin.toLowerCase())
+      );
     }
     if (destination) {
-      filteredLoads = filteredLoads.filter((load: any) => load.destination.toLowerCase().includes(destination.toLowerCase()));
+      filteredLoads = filteredLoads.filter((load: any) =>
+        load.destination.toLowerCase().includes(destination.toLowerCase())
+      );
     }
 
     setLocalLoads(filteredLoads);
@@ -212,10 +232,10 @@ export default function ViewLoads() {
   };
 
   const handleClearFilters = () => {
-    setStatus('all');
-    setMinAmount('');
-    setOrigin('');
-    setDestination('');
+    setStatus("all");
+    setMinAmount("");
+    setOrigin("");
+    setDestination("");
     setSearchParams({});
   };
 
@@ -230,7 +250,7 @@ export default function ViewLoads() {
   };
 
   let info = "";
-  
+  console.log("loads: ", loads);
   if (Object.keys(loads).length === 0) {
     info = "No loads posted, please check back later";
   }
@@ -246,15 +266,15 @@ export default function ViewLoads() {
       {!hasAccess && (
         <NavLink
           to="/shipper/dashboard/account/profile"
-          className="block w-full max-w-md mx-auto border border-green-200 text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-green-700 hover:text-white transition duration-300 animate-pulse"
+          className={`block w-full max-w-md mx-auto border px-6 py-3 rounded-lg text-center font-medium
+            ${
+              theme === "light"
+                ? "border-green-800 text-green-900 hover:bg-green-600 hover:text-white hover:animate-pulse hover:transition hover:duration-300 "
+                : "border-green-200 text-white hover:bg-green-700 hover:text-white hover:animate-pulse hover:transition hover:duration-300"
+            }`}
         >
           Complete your profile to manage loads
         </NavLink>
-      )}
-      {info && (
-        <div className="p-4 mb-2 text-center text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-300">
-          {info}
-        </div>
       )}
 
       {hasAccess && (
@@ -294,7 +314,7 @@ export default function ViewLoads() {
                           background="bg-gray-700"
                           shadow="shadow-md"
                           offerColor="text-red-400"
-                          />
+                        />
                         <div className="flex items-center space-x-6">
                           <LoadStatusBadge status={load.loadStatus} />
                           <ChevronUpIcon

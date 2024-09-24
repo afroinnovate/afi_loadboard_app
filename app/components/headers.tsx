@@ -10,21 +10,20 @@ import {
 } from "@heroicons/react/20/solid";
 import getUnicodeFlagIcon from "country-flag-icons/unicode";
 
-export default function Header({ user }) {
+export default function Header({ user, theme, timezone }: { user: any, theme: string, timezone: string }) {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const settingsRef = useRef();
+  const settingsRef = useRef<HTMLDivElement>(null);
 
-  const isLoadOperationsActive =
-    location.pathname === "/carriers/dashboard/view/" ||
-    location.pathname === "/shipper/dashboard/loads/view/";
   const isAuthenticated =
     location.pathname.startsWith("/shipper/dashboard/") ||
     location.pathname.startsWith("/carriers/dashboard/");
-
-  const baseUrl =
-    location.pathname === "/dashboard/" ? "/shipper/dashboard" : "/carriers/dashboard";
+  
+  const userType = location.pathname.split("/")[1];
+  console.log("User type from URL: ", userType);
+  
+  const baseUrl = `/${userType}/dashboard`;
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSettings = () => setIsSettingsOpen(!isSettingsOpen);

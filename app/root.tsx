@@ -54,7 +54,16 @@ export const loader: LoaderFunction = async ({ request }) => {
     session.set(authenticator.sessionKey, user);
     await commitSession(session, { expires });
 
-    return json({ user });
+    let timeZone = session.get("timeZone") || "UTC";
+    const url = new URL(request.url);
+    const timeZoneParam = url.searchParams.get("timeZone");
+
+    if (timeZoneParam && timeZoneParam !== timeZone) {
+      timeZone = timeZoneParam;
+      session.set("timeZone", timeZone);
+    }
+
+    return json({ user, timeZone });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
       return "/";
@@ -69,6 +78,7 @@ export default function App() {
   const [theme, setTheme] = useState("light");
   const [isFooterVisible, setIsFooterVisible] = useState(true);
 
+  let timezone = loaderData?.timeZone;
   let user = loaderData?.user;
   if (loaderData === "/" || location.pathname === "/") {
     user = null;
@@ -119,9 +129,9 @@ export default function App() {
       </head>
       <body className={`h-full ${themeClasses.body}`}>
         <div className="max-h-screen flex flex-col">
-          <Header user={user} theme={theme} toggleTheme={toggleTheme} />
+          <Header user={user} theme={theme} toggleTheme={toggleTheme} timezone={timezone} />
           <main className="flex-grow">
-            <Outlet context={{ theme }} />
+            <Outlet context={{ theme, timezone }} />
           </main>
           <footer
             className={`${

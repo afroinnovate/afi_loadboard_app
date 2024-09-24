@@ -1,4 +1,4 @@
-import { Outlet, useParams, useNavigate, useOutletContext } from "@remix-run/react";
+import { useParams, useNavigate, useOutletContext } from "@remix-run/react";
 import { useState } from "react";
 import AccountOverlay from "~/components/accountOverlay";
 import { ErrorBoundary } from "~/components/errorBoundary";
@@ -13,6 +13,7 @@ export default function Account() {
   const isDarkTheme = theme === "dark";
   
   const { userType } = useParams();
+  console.log("User type from URL: ", userType);
   const navigate = useNavigate();
 
   const baseUrl = `/${userType}/dashboard`;
@@ -31,6 +32,7 @@ export default function Account() {
         onClose={closeOverlay}
         isOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
+        theme={theme}
       />
     </div>
   );

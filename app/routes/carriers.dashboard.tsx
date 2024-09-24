@@ -56,7 +56,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Redirect user to the appropriate dashboard
     if (user?.user.userType === "shipper") {
-      return redirect("/shippers/dashboard/");
+      return redirect("/shipper/dashboard/");
     }
 
     var userBusinessInfo: any = await getUserInfo(user?.user.id, user?.token);

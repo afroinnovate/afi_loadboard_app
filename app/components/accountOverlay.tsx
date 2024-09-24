@@ -10,10 +10,12 @@ import {
 } from "@heroicons/react/20/solid";
 
 export default function AccountOverlay({
+  theme,
   onClose,
   isOpen,
   toggleSidebar,
 }: {
+  theme: string;
   onClose: () => void;
   isOpen: boolean;
   toggleSidebar: () => void;
@@ -48,7 +50,7 @@ export default function AccountOverlay({
   ];
 
   return (
-    <div className="flex h-screen bg-white text-green-800">
+    <div className={`flex h-screen bg-white text-green-800 ${theme === "dark" ? "text-white" : ""}`}>
       {/* Sidebar */}
       <div
         className={`fixed top-16 inset-y-0 left-0 z-30 w-64 bg-gray-900 text-green-400 transition-all duration-300 ease-in-out transform ${
@@ -97,7 +99,7 @@ export default function AccountOverlay({
         </header>
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 bg-white">
           <div className="px-4 py-6 sm:px-0">
-            <Outlet />
+            <Outlet context={{ theme }}/>
           </div>
         </main>
       </div>
