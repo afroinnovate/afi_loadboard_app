@@ -90,8 +90,26 @@ export default function App() {
   }
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
+    setTheme((prevTheme) => {
+      const newTheme = prevTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", newTheme);
+      return newTheme;
+    });
   };
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -121,7 +139,7 @@ export default function App() {
   };
 
   return (
-    <html lang="en" className={`h-full ${themeClasses.html}`}>
+    <html lang="en" className={`h-full ${theme}`}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
