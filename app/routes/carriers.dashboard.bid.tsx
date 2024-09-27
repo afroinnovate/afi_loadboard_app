@@ -428,9 +428,11 @@ export default function CarrierBidDashboard() {
             className={`p-2 border rounded ${themeClasses.card} ${themeClasses.text.primary}`}
           >
             <option value="all">All Statuses</option>
-            <option value="0">Pending</option>
+            <option value="0">Open</option>
             <option value="1">Accepted</option>
             <option value="2">Rejected</option>
+            <option value="3">Enroute</option>
+            <option value="4">Completed</option>
           </select>
           <input
             type="date"

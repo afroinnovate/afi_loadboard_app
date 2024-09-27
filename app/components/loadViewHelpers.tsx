@@ -3,28 +3,31 @@ import { format } from "date-fns";
 export const LoadInfoDisplay = ({
   load,
   currency,
-  background,
-  shadow,
-  offerColor,
+  theme,
 }: {
   load: any;
   currency: string;
-  background: string;
-  shadow: string;
-  offerColor: string;
+  theme: 'light' | 'dark';
 }) => {
   const formattedDate = load.createdAt
     ? format(new Date(load.createdAt), "dd/MM/yyyy 'at' h:mm a")
     : "Date not available";
 
+  const themeClasses = {
+    background: theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200',
+    text: theme === 'dark' ? 'text-white' : 'text-gray-800',
+    icon: theme === 'dark' ? 'text-gray-400' : 'text-gray-600',
+    offerColor: theme === 'dark' ? 'text-white' : 'text-blue-600',
+  };
+
   return (
     <div
-      className={`flex flex-col items-center justify-center ${background} rounded-lg ${shadow} p-2 sm:p-4 space-y-1 sm:space-y-2 text-sm sm:text-base`}
+      className={`flex flex-col items-center justify-center ${themeClasses.background} rounded-lg shadow-lg p-2 sm:p-4 space-y-1 sm:space-y-2 text-sm sm:text-base`}
     >
-      <div className="flex items-center space-x-2 text-gray-500">
+      <div className={`flex items-center space-x-2 ${themeClasses.text}`}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4 hidden sm:inline"
+          className={`h-4 w-4 hidden sm:inline ${themeClasses.icon}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -40,10 +43,10 @@ export const LoadInfoDisplay = ({
       </div>
 
       {load.createdBy && (
-        <div className="hidden sm:flex items-center space-x-2 text-gray-600">
+        <div className={`hidden sm:flex items-center space-x-2 ${themeClasses.text}`}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
+            className={`h-4 w-4 ${themeClasses.icon}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -64,7 +67,7 @@ export const LoadInfoDisplay = ({
       <div className="flex items-center space-x-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 text-blue-400 hidden sm:inline"
+          className={`h-5 w-5 text-blue-400 hidden sm:inline ${themeClasses.icon}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -76,7 +79,7 @@ export const LoadInfoDisplay = ({
             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <span className={`font-bold ${offerColor}`}>
+        <span className={`font-bold ${themeClasses.offerColor}`}>
           Offer: {currency} {load.offerAmount}
         </span>
       </div>
