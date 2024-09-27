@@ -220,27 +220,24 @@ export default function CarrierBidDashboard() {
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
-    const status = searchParams.get('status');
-    const date = searchParams.get('date');
-
     let filteredBids = bids;
     if (status && status !== 'all') {
-      filteredBids = filteredBids.filter((bid: { bidStatus: { toString: () => string } }) => bid.bidStatus.toString() === status);
+      filteredBids = filteredBids.filter((bid: { bidStatus: number }) => bid.bidStatus.toString() === status);
     }
 
     if (date) {
       const filterDate = parseISO(date);
-      filteredBids = filteredBids.filter(bid => isAfter(parseISO(bid.biddingTime), filterDate));
+      filteredBids = filteredBids.filter((bid: { biddingTime: string }) => isAfter(parseISO(bid.biddingTime), filterDate));
     }
 
     setLocalBids(filteredBids);
 
     if (filteredBids.length === 0) {
-      info = "No bids match the current filters.";
+      setFeedbackMessage("No bids match the current filters.");
     } else {
-      info = "";
+      setFeedbackMessage(null);
     }
-  }, [bids, searchParams]);
+  }, [bids, status, date]);
 
   // Update localBids if action was successful
   useEffect(() => {
@@ -363,7 +360,12 @@ export default function CarrierBidDashboard() {
 
   const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSearchParams({ status, date });
+    const formData = new FormData(event.currentTarget);
+    const newStatus = formData.get('status') as string;
+    const newDate = formData.get('date') as string;
+    setStatus(newStatus);
+    setDate(newDate);
+    setSearchParams({ status: newStatus, date: newDate });
   };
 
   const handleReset = () => {
@@ -425,10 +427,12 @@ export default function CarrierBidDashboard() {
         <div className="flex flex-wrap gap-4">
           <select
             name="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
             className={`p-2 border rounded ${themeClasses.card} ${themeClasses.text.primary}`}
           >
             <option value="all">All Statuses</option>
-            <option value="0">Open</option>
+            <option value="0">Pending</option>
             <option value="1">Accepted</option>
             <option value="2">Rejected</option>
             <option value="3">Enroute</option>
@@ -437,14 +441,10 @@ export default function CarrierBidDashboard() {
           <input
             type="date"
             name="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className={`p-2 border rounded ${themeClasses.card} ${themeClasses.text.primary}`}
           />
-          <button
-            type="submit"
-            className={`px-4 py-2 ${themeClasses.button.primary} text-white rounded`}
-          >
-            Filter
-          </button>
           <button
             type="button"
             onClick={handleReset}

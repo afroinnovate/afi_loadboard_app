@@ -34,6 +34,9 @@
 * [09/26/24]: Fix homepage theming.
 * [09/26/24]: Fix bid functionality in shipper dashboard(accept, reject and message)
 * [09/26/24]: enhance the functionalities in carrier shipper (to disable actions on a rejected bid)
+* [09/26/24]: Finish theme toggle button
+* [09/26/24]: Implement the complete theme in carrier dashboard
+* [09/26/24]: Fix filtering on the carrier dashboard
 
 
 ### TODO
