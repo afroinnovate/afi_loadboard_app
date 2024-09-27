@@ -17,7 +17,7 @@ interface ErrorProps {
 
 const ErrorDisplay: React.FC<ErrorProps> = ({ error }:{error: any}) => {
   const errorCode = errorCodes[error.status] || errorCodes.default;
-
+  console.log("errorCode", errorCode);
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center z-50">
       <div className="bg-white p-4 rounded-lg max-w-md w-full mx-4 shadow-lg">

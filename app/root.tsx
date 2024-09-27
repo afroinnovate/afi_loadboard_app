@@ -72,11 +72,14 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
+// TODO: Implement system theme using a button
+const systemTheme = "light";
+
 export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
-  const [theme, setTheme] = useState("dark");
-  const [isFooterVisible, setIsFooterVisible] = useState(true);
+  const [theme, setTheme] = useState(systemTheme);
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
 
   let timezone = loaderData?.timeZone;
   let user = loaderData?.user;
@@ -136,7 +139,7 @@ export default function App() {
               themeClasses.footer
             } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
               isFooterVisible ? "translate-y-0" : "translate-y-full"
-            } hidden md:block`} // Add hidden for small screens and block for medium and up
+            } hidden md:block`}
             onMouseEnter={() => setIsFooterVisible(true)}
             onMouseLeave={() => setIsFooterVisible(false)}
           >

@@ -121,6 +121,8 @@ export default function BidsView() {
     );
   }
 
+  console.log("bids", bids[0].carrier);
+
   const handleSort = (key: any) => {
     setSortConfig((prevConfig) => ({
       key,

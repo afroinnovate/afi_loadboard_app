@@ -37,7 +37,6 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
   const [isValid, setIsValid] = useState(true);
-  console.log("theme: ", theme);
 
   useEffect(() => {
     setIsValid(!error);

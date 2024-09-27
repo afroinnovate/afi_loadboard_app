@@ -97,6 +97,12 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
+const mapShipperRole = {
+  "independent_Shipper": 0,
+  "corporate_Shipper": 1,
+  "govt_Shipper": 2
+}
+
 export const action: ActionFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
@@ -170,7 +176,7 @@ export const action: ActionFunction = async ({ request }) => {
         firstName: user.user.firstName,
         middleName: user.user.middleName || "",
         lastName: user.user.lastName,
-        phone: user.user.phone,
+        phone: user.user.phoneNumber,
         userType: "shipper",
         businessType: shipperProfile.user.businessProfile.businessType,
         businessRegistrationNumber:
@@ -178,11 +184,12 @@ export const action: ActionFunction = async ({ request }) => {
         companyName: shipperProfile.user.businessProfile.companyName,
         idCardOrDriverLicenceNumber:
           shipperProfile.user.businessProfile.idCardOrDriverLicenceNumber,
-        shipperRole: shipperProfile.user.businessProfile.shipperRole,
+        shipperRole: mapShipperRole[shipperProfile.user.businessProfile.shipperRole as keyof typeof mapShipperRole],
       },
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
+    console.log("response: ", response);
     if (Object.keys(response).length > 0 && response.origin !== undefined) {
       return redirect("/shipper/dashboard/loads/view");
     } else {
@@ -192,27 +199,26 @@ export const action: ActionFunction = async ({ request }) => {
       );
     }
   } catch (error: any) {
-    if (JSON.parse(error).data.status === 401) {
+    console.log("add load error: ", error);
+    
+    // Handle the error object directly without parsing
+    if (error.data && JSON.parse(error.data).status === 401) {
       return redirect("/logout/");
     }
-    return error;
+    
+    // Return a more detailed error message
+    return json(
+      { 
+        error: error.data ? error.data.message : "Load Addition failed. An unexpected error occurred, Try again or contact support",
+        status: error.data ? error.data.status : 500
+      },
+      { status: error.data ? error.data.status : 500 }
+    );
   }
 };
 
 // Define the shape of our form data
-interface formData {
-  title: string;
-  loadDetails: string;
-  origin: string;
-  destination: string;
-  estimatedDistance: string;
-  pickupDate: string;
-  deliveryDate: string;
-  commodities: string;
-  weight: string;
-  offerAmount: string;
-  [key: string]: string; // Index signature to allow string indexing
-}
+
 
 const loadTypes = [
   "Clothing",
@@ -248,8 +254,8 @@ const themeClass = (theme: "light" | "dark", darkClass: string, lightClass: stri
 
 export default function AddLoad() {
   const actionData = useActionData<{
-    errors?: { [key: string]: string };
     error?: string;
+    status?: number;
   }>();
   var { hasAccess } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
@@ -258,6 +264,8 @@ export default function AddLoad() {
   const [isFormValid, setIsFormValid] = useState(false);
   const [selectedLoadType, setSelectedLoadType] = useState("");
   const { theme, timeZone } = useOutletContext<OutletObject>();
+
+  console.log("Action Data: ", actionData);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -302,7 +310,7 @@ export default function AddLoad() {
       "offerAmount",
       "loadDetails",
     ];
-    const isValid = requiredFields.every((field) => formData[field] !== "");
+    const isValid = requiredFields.every((field) => formData[field as keyof typeof formData] !== "");
     setIsFormValid(isValid);
   }, [formData]);
 
@@ -319,7 +327,7 @@ export default function AddLoad() {
           className={themeClass(theme, "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4")}
           role="alert"
         >
-          <strong className="font-bold">Error: </strong>
+          <strong className="font-bold">Error {actionData.status}: </strong>
           <span className="block sm:inline">{actionData.error}</span>
         </div>
       )}

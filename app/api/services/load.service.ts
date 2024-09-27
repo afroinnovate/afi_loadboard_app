@@ -6,6 +6,7 @@ const baseUrl = "https://api.frieght.afroinnovate.com/";
 
 export async function AddLoads(loadRequest: LoadRequest, token: string) {
   try {
+    console.log("load request", loadRequest);
     const response = await fetch(baseUrl + "loads/", {
       method: "POST",
       headers: {
@@ -28,12 +29,12 @@ export async function AddLoads(loadRequest: LoadRequest, token: string) {
   } catch (error: any) {
     switch (error.status) {
       case 404:
-        throw JSON.stringify({
+        throw new Error(JSON.stringify({
           data: {
             message: "Bid with ID 0 not found",
             status: 404,
           },
-        });
+        }));
 
       case 500:
         throw new Error(
@@ -45,26 +46,26 @@ export async function AddLoads(loadRequest: LoadRequest, token: string) {
           })
         );
       case 400:
-        throw JSON.stringify({
+        throw new Error(JSON.stringify({
           data: {
             message: "Bad request",
             status: 400,
           },
-        });
+        }));
       case 401:
-        throw JSON.stringify({
+        throw new Error(JSON.stringify({
           data: {
             message: "Unauthorized",
             status: 401,
           },
-        });
+        }));
       default:
-        throw JSON.stringify({
+        throw new Error(JSON.stringify({
           data: {
             message: "An error occurred",
             status: 500,
           },
-        });
+        }));
     }
   }
 }
