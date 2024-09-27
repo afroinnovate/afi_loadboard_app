@@ -6,11 +6,14 @@ import {
   useActionData,
   useOutletContext,
   useNavigate,
+  useLoaderData,
+  useSearchParams,
 } from "@remix-run/react";
 import {
   type MetaFunction,
   type LinksFunction,
   type ActionFunction,
+  type LoaderFunction,
   redirect,
   json,
 } from "@remix-run/node";
@@ -21,6 +24,9 @@ import { FloatingLabelInput } from "~/components/FloatingInput";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { TermsPrivacyPopup } from "~/components/TermsPrivacyPopup";
+import { getSession, commitSession } from "../api/services/session";
+import { authenticator } from "../api/services/auth.server";
+import { Loader } from "~/components/loader";
 
 export const meta: MetaFunction = () => [
   {
@@ -32,6 +38,41 @@ export const meta: MetaFunction = () => [
 export const links: LinksFunction = () => [
   ...(customStyles ? [{ rel: "stylesheet", href: customStyles }] : []),
 ];
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+  const user: any = await session.get(authenticator.sessionKey);
+
+  const session_expiration: any = process.env.SESSION_EXPIRATION;
+  const EXPIRES_IN = parseInt(session_expiration) * 1000;
+  if (isNaN(EXPIRES_IN)) {
+    throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+  }
+
+  const expires = new Date(Date.now() + EXPIRES_IN);
+
+  let timeZone = session.get("timeZone") || "UTC";
+  const url = new URL(request.headers.get("Referer") || "");
+  const timeZoneParam = url.searchParams.get("timeZone");
+
+  if (timeZoneParam && timeZoneParam !== timeZone) {
+    timeZone = timeZoneParam;
+    session.set("timeZone", timeZone);
+  }
+
+  if (user) {
+    return redirect(
+      user?.user.userType === "shipper"
+        ? "/shipper/dashboard/"
+        : "/carriers/dashboard/"
+    );
+  }
+
+  return json(
+    { timeZone },
+    { headers: { "Set-Cookie": await commitSession(session, { expires }) } }
+  );
+};
 
 export const action: ActionFunction = async ({ request }) => {
   const body = await request.formData();
@@ -118,6 +159,9 @@ export default function Signup() {
   const [termsPopupOpen, setTermsPopupOpen] = useState(false);
   const [privacyPopupOpen, setPrivacyPopupOpen] = useState(false);
   const navigate = useNavigate();
+  const loaderData = useLoaderData<{ timeZone?: string }>();
+  const [searchParams] = useSearchParams();
+  const [timeZoneName, setTimeZoneName] = useState<string | null>(null);
 
   const bgColor = theme === "light" ? "bg-gray-100" : "bg-gray-900";
   const cardBgColor = theme === "light" ? "bg-white" : "bg-gray-800";
@@ -137,6 +181,34 @@ export default function Signup() {
       emailValid && passwordValid && passwordsMatch && termsAccepted
     );
   }, [email, password, confirmPassword, termsAccepted]);
+
+  useEffect(() => {
+    if (!loaderData.timeZone || loaderData.timeZone === "UTC") {
+      // Attempt to get the time zone via JavaScript
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (
+        timeZone &&
+        timeZone !== "UTC" &&
+        timeZone !== searchParams.get("timeZone")
+      ) {
+        // Use client-side navigation instead of window.location.replace
+        navigate(`/signup?timeZone=${encodeURIComponent(timeZone)}`, {
+          replace: true,
+        });
+      } else {
+        setTimeZoneName("Coordinated Universal Time");
+      }
+    } else {
+      // Get the localized time zone name
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: loaderData.timeZone,
+        timeZoneName: "long",
+      });
+      const parts = formatter.formatToParts(new Date());
+      const tzName = parts.find((part) => part.type === "timeZoneName")?.value;
+      setTimeZoneName(tzName || loaderData.timeZone);
+    }
+  }, [loaderData.timeZone, navigate, searchParams]);
 
   const handlePasswordChange = (name: string, value: string) => {
     if (name === "password") {
@@ -280,12 +352,38 @@ export default function Signup() {
               isFormValid
                 ? "bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                 : "bg-gray-700 cursor-not-allowed"
-            } transition-colors duration-300`}
+            } transition-colors duration-300 flex items-center justify-center`}
             disabled={!isFormValid || isSubmitting}
           >
-            {isSubmitting ? "Creating Account..." : "Create Account"}
+            {isSubmitting ? (
+              <>
+                <Loader size={20} className="mr-2" />
+                Creating Account...
+              </>
+            ) : (
+              "Create Account"
+            )}
           </button>
         </Form>
+        {timeZoneName && (
+          <p className={`${textColor} text-sm mb-4 text-center`}>
+            Your time zone is: {timeZoneName}
+          </p>
+        )}
+        <noscript>
+          <p className="text-red-500 text-sm text-center">
+            JavaScript is required to detect your time zone and provide the best
+            experience. Your time zone is set to UTC by default.
+          </p>
+          <div className="text-center mt-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600"
+            >
+              Enable JavaScript
+            </button>
+          </div>
+        </noscript>
       </div>
 
       <TermsPrivacyPopup

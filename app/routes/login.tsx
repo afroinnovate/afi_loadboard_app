@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Form,
   Link,
@@ -7,6 +7,7 @@ import {
   useNavigate,
   useSearchParams,
   useOutletContext,
+  useNavigation,
 } from "@remix-run/react";
 import type {
   MetaFunction,
@@ -21,6 +22,7 @@ import { commitSession, getSession } from "../api/services/session";
 import { FloatingPasswordInput } from "~/components/FloatingPasswordInput";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { Github, FacebookIcon, MailIcon } from "lucide-react";
+import { Loader } from "~/components/loader";
 
 export const meta: MetaFunction = () => [
   {
@@ -74,6 +76,24 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     const user: any = await authenticator.authenticate("user-pass", request);
+
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000;
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+    }
+
+    const expires = new Date(Date.now() + EXPIRES_IN);
+    if (!user) {
+      session.flash(authenticator.sessionErrorKey, "Invalid username or password");
+      return json({ error: "Invalid username or password" }, {
+        status: 400,
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
     session.set(authenticator.sessionKey, user);
     session.set("theme", session.get("theme") || "dark");
     const redirectUrl =
@@ -82,16 +102,15 @@ export const action: ActionFunction = async ({ request }) => {
         : "/carriers/dashboard/";
     return redirect(redirectUrl, {
       headers: {
-        "Set-Cookie": await commitSession(session),
+        "Set-Cookie": await commitSession(session, { expires }),
       },
     });
   } catch (error) {
-    session.flash(
-      authenticator.sessionErrorKey,
-      "Invalid username or password"
-    );
-    return redirect("/login", {
-      headers: {
+    return json(
+      { error: "Invalid username or password" },
+      {
+        status: 400,
+        headers: {
         "Set-Cookie": await commitSession(session),
       },
     });
@@ -99,8 +118,8 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export default function Login() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const actionData = useActionData();
+  const navigation = useNavigation();
+  const actionData = useActionData<{ error?: string }>();
   const loaderData = useLoaderData<{ message?: string; timeZone?: string }>();
   const [timeZoneName, setTimeZoneName] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -135,9 +154,7 @@ export default function Login() {
     }
   }, [loaderData.timeZone, navigate, searchParams]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    setIsSubmitting(true);
-  };
+  const isSubmitting = navigation.state === "submitting";
 
   const bgColor = theme === 'light' ? 'bg-gray-100' : 'bg-gray-900';
   const cardBgColor = theme === 'light' ? 'bg-white' : 'bg-gray-800';
@@ -188,6 +205,11 @@ export default function Login() {
             Your time zone is: {timeZoneName}
           </p>
         )}
+        {actionData?.error && (
+          <p className="text-red-500 text-sm text-center mb-4">
+            {actionData.error}
+          </p>
+        )}
         <noscript>
           <p className="text-red-500 text-sm text-center">
             JavaScript is required to detect your time zone and provide the best
@@ -202,7 +224,7 @@ export default function Login() {
             </button>
           </div>
         </noscript>
-        <Form method="post" className="space-y-4" onSubmit={handleSubmit}>
+        <Form method="post" className="space-y-4">
           <div className="relative">
             <input
               id="email"
@@ -212,7 +234,6 @@ export default function Login() {
               required
               className={`appearance-none block w-full ${inputBgColor} ${textColor} border rounded py-3 px-4 mb-3 leading-tight focus:outline-none ${inputFocusBgColor} focus:ring-2 focus:ring-orange-500 border-gray-600 transition-colors duration-300`}
               placeholder="Enter your email or username"
-              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="py-2">
@@ -220,13 +241,11 @@ export default function Login() {
               name="password"
               placeholder="Enter your password"
               required
-              onChange={(name, value, isValid) => setPassword(value)}
               className={`appearance-none block w-full ${inputBgColor} ${textColor} border rounded py-3 px-4 mb-3 leading-tight focus:outline-none ${inputFocusBgColor} focus:ring-2 focus:ring-orange-500 border-gray-600 transition-colors duration-300`}
+              theme={theme}
+              onChange={() => setLoginError(null)}
             />
           </div>
-          {actionData?.error && (
-            <p className="text-red-500 text-sm">{actionData.error}</p>
-          )}
           <div className="text-right">
             <Link
               to="/resetpassword/"
@@ -237,10 +256,17 @@ export default function Login() {
           </div>
           <button
             type="submit"
-            className={`w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition duration-200 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition duration-200 flex items-center justify-center`}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Signing In...' : 'Sign In'}
+            {isSubmitting ? (
+              <>
+                <Loader size={20} className="mr-2" />
+                Signing In...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </Form>
         <div className={`mt-6 text-center ${textColor}`}>

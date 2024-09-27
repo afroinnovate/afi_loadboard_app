@@ -38,9 +38,10 @@ export const links: LinksFunction = () => [
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
+    console.log("Carrier dashboard loader");
     const session = await getSession(request.headers.get("Cookie"));
     let user = session.get(authenticator.sessionKey);
-
+    
     if (!user) {
       return redirect("/logout/");
     }
