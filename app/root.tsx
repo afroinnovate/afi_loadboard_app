@@ -72,13 +72,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
-// TODO: Implement system theme using a button
-const systemTheme = "light";
-
 export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
-  const [theme, setTheme] = useState(systemTheme);
+  const [theme, setTheme] = useState('light'); // Default to light theme
   const [isFooterVisible, setIsFooterVisible] = useState(false);
 
   let timezone = loaderData?.timeZone;
@@ -129,17 +126,17 @@ export default function App() {
   }, []);
 
   const themeClasses = {
-    html: theme === "dark" ? "bg-gray-900" : "bg-gray-100",
-    body: theme === "dark" ? "text-white" : "text-gray-900",
+    html: theme === "dark" ? "bg-gray-900" : "bg-white", // Changed from bg-green-50 to bg-white
+    body: theme === "dark" ? "text-white" : "text-gray-900", // Changed text color to gray-900 for better contrast
     footer:
       theme === "dark"
         ? "bg-gray-800 text-gray-300"
-        : "bg-gray-200 text-gray-700",
-    link: theme === "dark" ? "hover:text-orange-400" : "hover:text-orange-600",
+        : "bg-gray-100 text-gray-800", // Changed footer background to gray-100
+    link: theme === "dark" ? "hover:text-orange-400" : "hover:text-green-600",
   };
 
   return (
-    <html lang="en" className={`h-full ${theme}`}>
+    <html lang="en" className={`h-full ${themeClasses.html}`}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -150,7 +147,7 @@ export default function App() {
         <div className="max-h-screen flex flex-col">
           <Header user={user} theme={theme} toggleTheme={toggleTheme} timezone={timezone} />
           <main className="flex-grow">
-            <Outlet context={{ theme, timezone }} />
+            <Outlet context={{ theme, timezone, toggleTheme }} />
           </main>
           <footer
             className={`${

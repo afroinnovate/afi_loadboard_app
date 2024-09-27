@@ -148,6 +148,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 interface OutletContext {
   theme: "light" | "dark";
+  timezone: string;
+  toggleTheme: () => void;
 }
 
 export default function CarrierDashboard() {
@@ -155,7 +157,7 @@ export default function CarrierDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
-  const theme = useOutletContext<OutletContext>();
+  const { theme, timezone, toggleTheme } = useOutletContext<OutletContext>();
 
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
@@ -234,7 +236,7 @@ export default function CarrierDashboard() {
           {location.pathname === "/carriers/dashboard/" && (
             <CarrierOverview loads={loads} bids={bids} />
           )}
-          <Outlet context={{ loads, bids, theme }} />
+          <Outlet context={{ loads, bids, theme, timezone, toggleTheme }} />
         </main>
       </div>
     </>
