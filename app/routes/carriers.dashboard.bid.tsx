@@ -532,12 +532,17 @@ export default function CarrierBidDashboard() {
                       </button>
                       <button
                         onClick={() => setSelectedBid(bid)}
-                        className="p-2 m-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
+                        className={`p-2 m-2 rounded-full group relative ${
+                          bid.bidStatus === 0
+                            ? "bg-orange-400 hover:bg-orange-500"
+                            : "bg-gray-400 cursor-not-allowed"
+                        }`}
                         title="Update Bid"
+                        disabled={bid.bidStatus !== 0}
                       >
                         <PencilIcon className="w-5 h-5 text-white" />
                         <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          Update Bid
+                          {bid.bidStatus === 0 ? "Update Bid" : "Cannot update non-pending bid"}
                         </span>
                       </button>
                       <button
@@ -545,12 +550,17 @@ export default function CarrierBidDashboard() {
                         name="_action"
                         value="delete"
                         onClick={() => setBidToDelete(bid.id)}
-                        className="p-2 m-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
+                        className={`p-2 m-2 rounded-full group relative ${
+                          bid.bidStatus === 0
+                            ? "bg-red-500 hover:bg-red-600"
+                            : "bg-gray-400 cursor-not-allowed"
+                        }`}
                         title="Withdraw Bid"
+                        disabled={bid.bidStatus !== 0}
                       >
                         <TrashIcon className="w-5 h-5 text-white" />
                         <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          Withdraw Bid
+                          {bid.bidStatus === 0 ? "Withdraw Bid" : "Cannot withdraw non-pending bid"}
                         </span>
                       </button>
                     </Form>

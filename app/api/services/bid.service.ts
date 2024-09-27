@@ -409,6 +409,7 @@ export async function UpdateBid(
   id: Number,
   bidRequest: BidUpdateRequest
 ) {
+  console.log("bidRequest", bidRequest);
   try {
     const url = `${baseUrl}bids/${id}`;
     const response = await fetch(url, {

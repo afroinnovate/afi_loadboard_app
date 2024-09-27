@@ -48,7 +48,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const shipper: any = session.get("shipper");
-  
+
   if (!shipper) {
     return redirect("logout");
   }
@@ -57,24 +57,58 @@ export const action: ActionFunction = async ({ request }) => {
   const action = formData.get("_action");
   const bidId = formData.get("bidId");
 
+  if (!bidId) {
+    return json({ error: "Bid ID is required" }, { status: 400 });
+  }
+
+  const id = Number(bidId);
+
+  if (isNaN(id)) {
+    return json({ error: "Invalid Bid ID" }, { status: 400 });
+  }
+
   switch (action) {
     case "accept":
-      const request: BidUpdateRequest = {
+      const acceptRequest: BidUpdateRequest = {
         bidStatus: 1,
         updatedBy: shipper.id,
-        bidAmount: 0,
       };
       try {
-        const id = Number(bidId);
-        await UpdateBid(shipper.token, id, request);
-        return json({ success: true, message: "Bid status is changed to Accepted" });
+        console.log("acceptRequest", acceptRequest);
+        await UpdateBid(shipper.token, id, acceptRequest);
+        return json({
+          success: true,
+          message: "Bid status is changed to Accepted",
+        });
       } catch (error: any) {
         console.log("Error accepting bid: ", error);
-        return json({ error: JSON.parse(error).data.message }, { status: JSON.parse(error).data.status});
+        return json(
+          {
+            error: error.message || "An error occurred while accepting the bid",
+          },
+          { status: 500 }
+        );
       }
     case "reject":
-      // await RejectBid(bidId, user.token);
-      return json({ success: true, message: "Bid rejected" });
+      const rejectRequest: BidUpdateRequest = {
+        bidStatus: 2,
+        updatedBy: shipper.id,
+      };
+      try {
+        await UpdateBid(shipper.token, id, rejectRequest);
+        return json({
+          success: true,
+          message: "Bid status is changed to Rejected",
+        });
+      } catch (error: any) {
+        console.log("Error rejecting bid: ", error);
+        return json(
+          {
+            error: error.message || "An error occurred while rejecting the bid",
+          },
+          { status: 500 }
+        );
+      }
     case "closeContact":
       return json({ closeContact: true });
     default:
@@ -97,7 +131,7 @@ export default function BidsView() {
   const user = loaderData?.user;
 
   // Extract bids from the list of dictionaries and include the load object
-  const bids: any[] = bidsDict.flatMap((dict: any) => 
+  const bids: any[] = bidsDict.flatMap((dict: any) =>
     dict.bids.map((bid: any) => ({ ...bid, load: dict.load }))
   );
 
@@ -121,7 +155,7 @@ export default function BidsView() {
     );
   }
 
-  console.log("bids", bids[0].carrier);
+  console.log("bids", bids);
 
   const handleSort = (key: any) => {
     setSortConfig((prevConfig) => ({
@@ -135,21 +169,15 @@ export default function BidsView() {
 
   const handleFilter = (e: any) => {
     const { name, value } = e.target;
-    setFilterConfig((prev) => ({ 
-      ...prev, 
-      [name]: name === 'minAmount' ? (value === '' ? 0 : parseFloat(value)) : value 
+    setFilterConfig((prev) => ({
+      ...prev,
+      [name]:
+        name === "minAmount" ? (value === "" ? 0 : parseFloat(value)) : value,
     }));
   };
 
   const handleExpand = (id: any) => {
     setExpandedBid(expandedBid === id ? null : id);
-  };
-
-  const handleAction = (action: any, bidId: any) => {
-    const formData = new FormData();
-    formData.append("_action", action);
-    formData.append("bidId", bidId);
-    submit(formData, { method: "post" });
   };
 
   const filteredAndSortedBids = bids
@@ -200,12 +228,14 @@ export default function BidsView() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', { timeZone: timezone });
+    return new Date(dateString).toLocaleString("en-US", { timeZone: timezone });
   };
 
   return (
     <div className={`container mx-auto px-4 py-8 ${themeClasses.container}`}>
-      <h1 className={`text-2xl md:text-3xl font-bold mb-6 text-center ${themeClasses.header}`}>
+      <h1
+        className={`text-2xl md:text-3xl font-bold mb-6 text-center ${themeClasses.header}`}
+      >
         Review Bids
       </h1>
 
@@ -232,20 +262,40 @@ export default function BidsView() {
         />
       </div>
 
-      <div className={`overflow-x-auto rounded-lg shadow ${themeClasses.table}`}>
+      <div
+        className={`overflow-x-auto rounded-lg shadow ${themeClasses.table}`}
+      >
         <table className="w-full">
           <thead>
             <tr className={themeClasses.tableHeader}>
-              <th onClick={() => handleSort("carrier.firstName")} className="p-2 cursor-pointer text-left">Carrier</th>
-              <th onClick={() => handleSort("bidAmount")} className="p-2 cursor-pointer text-left">Bid Amount</th>
-              <th onClick={() => handleSort("bidStatus")} className="p-2 cursor-pointer text-left">Status</th>
+              <th
+                onClick={() => handleSort("carrier.firstName")}
+                className="p-2 cursor-pointer text-left"
+              >
+                Carrier
+              </th>
+              <th
+                onClick={() => handleSort("bidAmount")}
+                className="p-2 cursor-pointer text-left"
+              >
+                Bid Amount
+              </th>
+              <th
+                onClick={() => handleSort("bidStatus")}
+                className="p-2 cursor-pointer text-left"
+              >
+                Status
+              </th>
               <th className="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredAndSortedBids.map((bid: any) => (
               <React.Fragment key={bid.id}>
-                <tr className={`border-b ${themeClasses.tableRow} cursor-pointer`} onClick={() => handleExpand(bid.id)}>
+                <tr
+                  className={`border-b ${themeClasses.tableRow} cursor-pointer`}
+                  onClick={() => handleExpand(bid.id)}
+                >
                   <td className="p-2 text-left">{`${bid.carrier.firstName} ${bid.carrier.lastName}`}</td>
                   <td className="p-2 text-left">${bid.bidAmount}</td>
                   <td className="p-2 text-left">
@@ -255,29 +305,25 @@ export default function BidsView() {
                     <div className="flex justify-start items-center space-x-2">
                       {expandedBid !== bid.id ? (
                         <>
-                          <Form method="post" className="inline">
+                          <Form method="post">
+                            <input type="hidden" name="bidId" value={bid.id} />
                             <button
                               type="submit"
                               name="_action"
                               value="accept"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAction("accept", bid.id);
-                              }}
+                              onClick={(e) => e.stopPropagation()}
                               className={`mr-2 ${themeClasses.button}`}
                             >
                               <CheckCircleIcon className="w-5 h-5 text-green-600 hover:text-green-800" />
                             </button>
                           </Form>
-                          <Form method="post" className="inline">
+                          <Form method="post">
+                            <input type="hidden" name="bidId" value={bid.id} />
                             <button
                               type="submit"
                               name="_action"
                               value="reject"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAction("reject", bid.id);
-                              }}
+                              onClick={(e) => e.stopPropagation()}
                               className={`mr-2 ${
                                 theme === "dark"
                                   ? "text-red-400 hover:text-red-300"
@@ -309,48 +355,74 @@ export default function BidsView() {
                 </tr>
                 {expandedBid === bid.id && (
                   <tr key={`expanded-${bid.id}`}>
-                    <td colSpan={4} className={`p-4 ${themeClasses.expandedRow}`}>
+                    <td
+                      colSpan={4}
+                      className={`p-4 ${themeClasses.expandedRow}`}
+                    >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <h3 className={`font-bold ${themeClasses.header} pl-4`}>Carrier Details</h3>
-                          <p className={`${themeClasses.text} pl-4`}>Name: {`${bid.carrier.firstName} ${bid.carrier.lastName}`}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Phone: {bid.carrier.phone}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Email: {bid.carrier.email}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Company: {bid.carrier.companyName || "N/A"}</p>
+                          <h3
+                            className={`font-bold ${themeClasses.header} pl-4`}
+                          >
+                            Carrier Details
+                          </h3>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Name:{" "}
+                            {`${bid.carrier.firstName} ${bid.carrier.lastName}`}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Phone: {bid.carrier.phone}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Email: {bid.carrier.email}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Company: {bid.carrier.companyName || "N/A"}
+                          </p>
                         </div>
                         <div>
-                          <h3 className={`font-bold ${themeClasses.header} pl-4`}>Load Details</h3>
-                          <p className={`${themeClasses.text} pl-4`}>Origin: {bid.load.origin}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Destination: {bid.load.destination}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Pickup Date: {formatDate(bid.load.pickupDate)}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Delivery Date: {formatDate(bid.load.deliveryDate)}</p>
-                          <p className={`${themeClasses.text} pl-4`}>Commodity: {bid.load.commodity}</p>
+                          <h3
+                            className={`font-bold ${themeClasses.header} pl-4`}
+                          >
+                            Load Details
+                          </h3>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Origin: {bid.load.origin}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Destination: {bid.load.destination}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Pickup Date: {formatDate(bid.load.pickupDate)}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Delivery Date: {formatDate(bid.load.deliveryDate)}
+                          </p>
+                          <p className={`${themeClasses.text} pl-4`}>
+                            Commodity: {bid.load.commodity}
+                          </p>
                         </div>
                       </div>
                       <div className="mt-4 flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-4">
                         <Form method="post" className="w-full md:w-auto">
+                          <input type="hidden" name="bidId" value={bid.id} />
                           <button
                             type="submit"
                             name="_action"
                             value="accept"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAction("accept", bid.id);
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                             className="w-full md:w-auto bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                           >
                             Accept
                           </button>
                         </Form>
                         <Form method="post" className="w-full md:w-auto">
+                          <input type="hidden" name="bidId" value={bid.id} />
                           <button
                             type="submit"
                             name="_action"
                             value="reject"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAction("reject", bid.id);
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                             className="w-full md:w-auto bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                           >
                             Reject
@@ -377,7 +449,9 @@ export default function BidsView() {
 
       {navigation.state === "submitting" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className={`animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 ${themeClasses.loader}`}></div>
+          <div
+            className={`animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 ${themeClasses.loader}`}
+          ></div>
         </div>
       )}
 
