@@ -15,7 +15,7 @@ interface FloatingLabelInputProps {
   onChange: (name: string, value: string) => void;
   className?: string;
   error?: string;
-  theme: "light" | "dark";
+  theme: string;
 }
 
 export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
@@ -37,6 +37,7 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
   const [isValid, setIsValid] = useState(true);
+  console.log("theme: ", theme);
 
   useEffect(() => {
     setIsValid(!error);
@@ -58,27 +59,25 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   };
 
   const inputClasses = clsx(
-    "appearance-none block w-full border rounded px-3 py-2 leading-tight focus:outline-none transition-colors duration-300",
+    "appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 sm:text-sm",
     {
-      "bg-gray-700 text-white border-gray-600": theme === "dark",
-      "bg-gray-100 text-gray-900 border-gray-300": theme === "light",
+      "bg-gray-700 text-white border-gray-600 focus:border-orange-500 focus:ring-orange-500": theme === "dark",
+      "bg-white text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500": theme === "light",
       "border-red-500": !isValid || error,
-      "border-orange-500": isValid && value && !error,
     },
     className
   );
 
   const labelClasses = clsx(
-    "absolute left-3 transition-all duration-300 ease-in-out pointer-events-none",
+    "absolute left-3 transition-all duration-200 ease-in-out",
     {
-      "text-gray-400": !isFocused && !value && theme === "dark",
-      "text-gray-500": !isFocused && !value && theme === "light",
-      "top-2": !isFocused && !value,
-      "-top-6 text-xs": isFocused || value,
-      "text-white": (isFocused || value) && theme === "dark",
-      "text-gray-900": (isFocused || value) && theme === "light",
+      "text-gray-400": theme === "dark",
+      "text-gray-500": theme === "light",
+      "top-2 text-sm": !isFocused && !value,
+      "-top-6 text-xs font-medium": isFocused || value,
+      "text-orange-500": (isFocused || value) && theme === "dark",
+      "text-blue-600": (isFocused || value) && theme === "light",
       "text-red-500": !isValid || error,
-      "text-orange-500": isValid && value && !error,
     }
   );
 
@@ -99,11 +98,12 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
         step={step}
         pattern={pattern}
         required={required}
+        placeholder=" "
       />
       <label htmlFor={name} className={labelClasses}>
         {placeholder}
       </label>
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 };

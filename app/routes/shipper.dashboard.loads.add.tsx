@@ -4,6 +4,7 @@ import {
   useActionData,
   useLoaderData,
   useNavigation,
+  useOutletContext,
   useRouteError,
 } from "@remix-run/react";
 import {
@@ -23,7 +24,7 @@ import type { ShipperUser } from "~/api/models/shipperUser";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { DateInput } from "~/components/dateInput";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import { the } from '../api/services/session';
+import { the } from "../api/services/session";
 
 export const meta: MetaFunction = () => {
   return [
@@ -34,13 +35,12 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-
 // check if the user is authenticated
 export const loader: LoaderFunction = async ({ request }) => {
   const mapRoles = {
-    "independent_shipper": "independent_Shipper",
-    "corporate_shipper": "corporate_Shipper",
-    "govt_shipper": "govt_Shipper",
+    independent_shipper: "independent_Shipper",
+    corporate_shipper: "corporate_Shipper",
+    govt_shipper: "govt_Shipper",
   };
 
   try {
@@ -77,14 +77,17 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const shipperRole = mapRoles[shipper.user.businessProfile.shipperRole];
+    const shipperRole =
+      mapRoles[
+        shipper.user.businessProfile.shipperRole as keyof typeof mapRoles
+      ];
     const hasAccess = [
       "independent_Shipper",
       "corporate_Shipper",
       "govt_Shipper",
     ].includes(shipperRole);
 
-    return json({ user, shipper, hasAccess, theme: "dark" }, { status: 200 });
+    return json({ hasAccess }, { status: 200 });
   } catch (error: any) {
     console.error(" Add load  error: ", error);
     if (JSON.parse(error).data.status === 401) {
@@ -233,17 +236,28 @@ const loadTypes = [
   "Other",
 ];
 
+interface OutletObject {
+  theme: "light" | "dark";
+  timeZone: string;
+}
+
+// Function to get theme-based class names
+const themeClass = (theme: "light" | "dark", darkClass: string, lightClass: string) => {
+  return theme === "dark" ? darkClass : lightClass;
+};
+
 export default function AddLoad() {
   const actionData = useActionData<{
     errors?: { [key: string]: string };
     error?: string;
   }>();
-  var { user, shipper, hasAccess, theme } = useLoaderData<typeof loader>();
+  var { hasAccess } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [offerType, setOfferType] = useState("flat");
   const today = new Date().toISOString().split("T")[0];
   const [isFormValid, setIsFormValid] = useState(false);
   const [selectedLoadType, setSelectedLoadType] = useState("");
+  const { theme, timeZone } = useOutletContext<OutletObject>();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -294,17 +308,15 @@ export default function AddLoad() {
 
   const currency = "ETB";
 
-  theme = theme || "light";
-
   return (
-    <div className="container mx-auto p-4 max-w-4xl bg-[#1a1e2e] text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center text-[#ff6b6b]">
+    <div className={themeClass(theme, "container mx-auto p-4 max-w-4xl bg-[#1a1e2e] text-white", "container mx-auto p-4 max-w-4xl bg-white text-black")}>
+      <h1 className={themeClass(theme, "text-3xl font-bold mb-6 text-center text-[#ff6b6b]", "text-3xl font-bold mb-6 text-center text-[#ff6b6b]")}>
         Add New Load Offer
       </h1>
 
       {actionData?.error && (
         <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          className={themeClass(theme, "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4", "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4")}
           role="alert"
         >
           <strong className="font-bold">Error: </strong>
@@ -320,7 +332,8 @@ export default function AddLoad() {
             required={false}
             onChange={handleInputChange}
             error={actionData?.errors?.title}
-            className="bg-[#2a2f3f] text-white border-[#3a3f4f] focus:border-[#ff6b6b]"
+            className={themeClass(theme, "bg-[#2a2f3f] text-white border-[#3a3f4f] focus:border-[#ff6b6b]", "bg-white text-black border-gray-300 focus:border-blue-500")}
+            theme={theme}
           />
 
           <FloatingLabelInput
@@ -329,7 +342,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.loadDetails}
-            theme="dark"
+            theme={theme}
           />
 
           <FloatingLabelInput
@@ -338,7 +351,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.origin}
-            theme="dark"
+            theme={theme}
           />
 
           <FloatingLabelInput
@@ -347,7 +360,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.destination}
-            theme="dark"
+            theme={theme}
           />
 
           <DateInput
@@ -357,7 +370,7 @@ export default function AddLoad() {
             min={today}
             onChange={handleInputChange}
             error={actionData?.errors?.pickupDate}
-            theme={theme} // Explicitly set to dark theme
+            theme={theme}
           />
 
           <DateInput
@@ -367,7 +380,7 @@ export default function AddLoad() {
             min={today}
             onChange={handleInputChange}
             error={actionData?.errors?.deliveryDate}
-            theme={theme} // Explicitly set to dark theme
+            theme={theme}
           />
 
           <FloatingLabelInput
@@ -379,7 +392,7 @@ export default function AddLoad() {
             required
             onChange={handleInputChange}
             error={actionData?.errors?.estimatedDistance}
-            theme="dark"
+            theme={theme}
           />
 
           <FloatingLabelInput
@@ -390,13 +403,13 @@ export default function AddLoad() {
             min={1}
             onChange={handleInputChange}
             error={actionData?.errors?.weight}
-            theme="dark"
+            theme={theme}
           />
 
           <div className="col-span-2 relative">
             <label
               htmlFor="commodity"
-              className="block text-sm font-medium text-white mb-1"
+              className={themeClass(theme, "block text-sm font-medium text-white mb-1", "block text-sm font-medium text-black mb-1")}
             >
               Load Type (Commodity)
             </label>
@@ -406,7 +419,7 @@ export default function AddLoad() {
                 name="commodity"
                 value={selectedLoadType}
                 onChange={handleLoadTypeChange}
-                className="block w-full pl-3 pr-10 py-2 text-base border-[#3a3f4f] focus:outline-none focus:ring-[#ff6b6b] focus:border-[#ff6b6b] sm:text-sm rounded-md appearance-none bg-[#2a2f3f] text-white"
+                className={themeClass(theme, "block w-full pl-3 pr-10 py-2 text-base border-[#3a3f4f] focus:outline-none focus:ring-[#ff6b6b] focus:border-[#ff6b6b] sm:text-sm rounded-md appearance-none bg-[#2a2f3f] text-white", "block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md appearance-none bg-white text-black")}
                 required
               >
                 <option value="">Select a load type</option>
@@ -416,12 +429,12 @@ export default function AddLoad() {
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#ff6b6b]">
+              <div className={themeClass(theme, "pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#ff6b6b]", "pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500")}>
                 <ChevronDownIcon className="h-4 w-4" />
               </div>
             </div>
             {actionData?.errors?.commodity && (
-              <p className="mt-1 text-sm text-red-400">
+              <p className={themeClass(theme, "mt-1 text-sm text-red-400", "mt-1 text-sm text-red-400")}>
                 {actionData.errors.commodity}
               </p>
             )}
@@ -437,9 +450,9 @@ export default function AddLoad() {
                 value="flat"
                 checked={offerType === "flat"}
                 onChange={() => setOfferType("flat")}
-                className="form-radio h-4 w-4 text-[#ff6b6b] border-[#3a3f4f] focus:ring-[#ff6b6b]"
+                className={themeClass(theme, "form-radio h-4 w-4 text-[#ff6b6b] border-[#3a3f4f] focus:ring-[#ff6b6b]", "form-radio h-4 w-4 text-blue-500 border-gray-300 focus:ring-blue-500")}
               />
-              <span className="ml-2">Flat Offer</span>
+              <span className={themeClass(theme, "ml-2", "ml-2")}>Flat Offer</span>
             </label>
             <label className="inline-flex items-center">
               <input
@@ -448,9 +461,9 @@ export default function AddLoad() {
                 value="negotiable"
                 checked={offerType === "negotiable"}
                 onChange={() => setOfferType("negotiable")}
-                className="form-radio h-4 w-4 text-[#ff6b6b] border-[#3a3f4f] focus:ring-[#ff6b6b]"
+                className={themeClass(theme, "form-radio h-4 w-4 text-[#ff6b6b] border-[#3a3f4f] focus:ring-[#ff6b6b]", "form-radio h-4 w-4 text-blue-500 border-gray-300 focus:ring-blue-500")}
               />
-              <span className="ml-2">Negotiable</span>
+              <span className={themeClass(theme, "ml-2", "ml-2")}>Negotiable</span>
             </label>
           </div>
 
@@ -463,7 +476,8 @@ export default function AddLoad() {
               min="1"
               onChange={handleInputChange}
               error={actionData?.errors?.offerAmount}
-              className="bg-[#2a2f3f] text-white border-[#3a3f4f] focus:border-[#ff6b6b]"
+              className={themeClass(theme, "bg-[#2a2f3f] text-white border-[#3a3f4f] focus:border-[#ff6b6b]", "bg-white text-black border-gray-300 focus:border-blue-500")}
+              theme={theme}
             />
           )}
         </div>
@@ -473,8 +487,8 @@ export default function AddLoad() {
             type="submit"
             className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
               isFormValid
-                ? "bg-[#ff6b6b] hover:bg-[#ff8c8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff6b6b]"
-                : "bg-[#3a3f4f] cursor-not-allowed"
+                ? themeClass(theme, "bg-[#ff6b6b] hover:bg-[#ff8c8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff6b6b]", "bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500")
+                : themeClass(theme, "bg-[#3a3f4f] cursor-not-allowed", "bg-gray-300 cursor-not-allowed")
             }`}
             disabled={!isFormValid || navigation.state === "submitting"}
           >

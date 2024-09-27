@@ -75,7 +75,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState("dark");
   const [isFooterVisible, setIsFooterVisible] = useState(true);
 
   let timezone = loaderData?.timeZone;
@@ -116,8 +116,6 @@ export default function App() {
         : "bg-gray-200 text-gray-700",
     link: theme === "dark" ? "hover:text-orange-400" : "hover:text-orange-600",
   };
-
-  console.log("root theme: ", theme);
 
   return (
     <html lang="en" className={`h-full ${themeClasses.html}`}>
