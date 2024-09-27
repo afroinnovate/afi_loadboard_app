@@ -1,6 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Truck, DollarSign, Package } from "lucide-react";
+import { NavLink } from "@remix-run/react";
+
+const mapStatus = {
+  0: "Open",
+  1: "Accepted",
+  2: "Rejected",
+  3: "Completed",
+};
 
 export default function CarrierDashboard({ loads, bids, theme }: { loads: any, bids: any, theme: 'light' | 'dark' }) {
   console.log("Theme", theme);
@@ -24,6 +32,8 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
     subtext: theme === 'dark' ? 'text-gray-400' : 'text-gray-600',
     bidItemBackground: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200',
     cardShadow: theme === 'dark' ? 'shadow-lg' : 'shadow-md shadow-gray-400', // Updated shadow for light theme
+    linkHover: theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-200',
+    linkTextHover: theme === 'dark' ? 'hover:text-green-400' : 'hover:text-green-700',
   };
 
   return (
@@ -65,7 +75,7 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
                   route={`${latestBid.load.origin} → ${latestBid.load.destination}`}
                   date={new Date(latestBid.biddingTime).toLocaleDateString()}
                   amount={`ETB ${latestBid.bidAmount}`}
-                  status={latestBid.bidStatus === 0 ? "Open" : "Closed"}
+                  status={mapStatus[latestBid.bidStatus as keyof typeof mapStatus]}
                   themeClasses={themeClasses}
                 />
               )}
@@ -96,10 +106,10 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
   );
 }
 
-const QuickLinkCard = ({ title, description, link, icon, themeClasses }) => (
+const QuickLinkCard = ({ title, description, link, icon, themeClasses }: { title: string, description: string, link: string, icon: React.ReactNode, themeClasses: any }) => (
   <Link
     to={link}
-    className={`${themeClasses.cardBackground} p-6 rounded-lg ${themeClasses.cardShadow} ${themeClasses.cardHover} transition duration-300`}
+    className={`${themeClasses.cardBackground} p-6 rounded-lg ${themeClasses.cardShadow} ${themeClasses.linkHover} transition duration-300`}
   >
     <div className="flex items-center mb-4">
       <span className={themeClasses.accent + " mr-4"}>{icon}</span>
@@ -109,29 +119,34 @@ const QuickLinkCard = ({ title, description, link, icon, themeClasses }) => (
   </Link>
 );
 
-const DashboardCard = ({ title, children, themeClasses }) => (
+const DashboardCard = ({ title, children, themeClasses }: { title: string, children: React.ReactNode, themeClasses: any }) => (
   <div className={`${themeClasses.cardBackground} p-6 rounded-lg shadow-lg`}>
     <h3 className="text-xl font-semibold mb-4">{title}</h3>
     {children}
   </div>
 );
 
-const Stat = ({ label, value, themeClasses }) => (
+const Stat = ({ label, value, themeClasses }: { label: string, value: string, themeClasses: any }) => (
   <div className="text-center">
     <p className={`text-2xl font-bold ${themeClasses.accent}`}>{value}</p>
     <p className={`text-sm ${themeClasses.subtext}`}>{label}</p>
   </div>
 );
 
-const StatLink = ({ label, value, link, themeClasses }) => (
-  <Link to={link} className={`text-center hover:${themeClasses.accent}`}>
+const StatLink = ({ label, value, link, themeClasses }: { label: string, value: string, link: string, themeClasses: any }) => (
+  <Link to={link} className={`text-center ${themeClasses.linkTextHover}`}>
     <p className={`text-2xl font-bold ${themeClasses.accent}`}>{value}</p>
     <p className={`text-sm ${themeClasses.subtext}`}>{label}</p>
   </Link>
 );
 
-const BidItem = ({ route, date, amount, status, themeClasses }) => (
-  <li className={`flex justify-between items-center ${themeClasses.bidItemBackground} p-3 rounded`}>
+const BidItem = ({ route, date, amount, status, themeClasses }: { route: string, date: string, amount: string, status: string, themeClasses: any }) => (
+  <NavLink 
+    className={({ isActive }) => 
+      `flex justify-between items-center ${themeClasses.bidItemBackground} p-3 rounded ${themeClasses.linkHover} transition duration-300 ho ${isActive ? themeClasses.accent : ''}`
+    } 
+    to={`/carriers/dashboard/bid`}
+  >
     <div>
       <p className="font-semibold">{route}</p>
       <p className={`text-sm ${themeClasses.subtext}`}>{date}</p>
@@ -146,5 +161,5 @@ const BidItem = ({ route, date, amount, status, themeClasses }) => (
         {status}
       </p>
     </div>
-  </li>
+  </NavLink>
 );
