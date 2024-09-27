@@ -33,6 +33,7 @@
                 - view bids (shipper)
 * [09/26/24]: Fix homepage theming.
 * [09/26/24]: Fix bid functionality in shipper dashboard(accept, reject and message)
+* [09/26/24]: enhance the functionalities in carrier shipper (to disable actions on a rejected bid)
 
 
 ### TODO
@@ -49,4 +50,5 @@
 8. Fix bid information showing as disparse by adding more data to be returned with the bid.carrier from the api.
     - carrier.availableCapacity, carrier.companyName, carrier.Vehicles
     - Display those data in the bid expand mode.
-9. 
+9. Enhance bid status update from the shipper to give a reason why he reject - or else give the reason as "Please reduce your price"
+10. Enhance carrier bidding, to show the reason why their bids get rejected
