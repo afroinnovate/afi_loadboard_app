@@ -7,12 +7,8 @@ A brief summary describing the intent of the changeset.
 
 ### 🎟 Related Tickets
 
-Add the Miro ticket URL.
+Add the ADO ticket URL.
 
-### How to test
-
-- Steps to perform the test and expected results.
-- Command-line invocation to run automated tests.
 
 ### Additional info
 

@@ -106,6 +106,15 @@ export async function getUserInfo(userId: string, token: string) {
                         status: 500,
                     },
                 })
+            
+            case 502:
+                throw JSON.stringify({
+                    data: {
+                        message: "Server is down... Please try again later",
+                        status: 502,
+                    },
+                })
+
                 
             case 400:
                 throw JSON.stringify({
@@ -145,7 +154,7 @@ export async function CreateUser(userInfo: object, token: string) {
             body: JSON.stringify(userInfo),
         });
         
-        console.log("error happened while creating a user:", response);
+        // console.log("User Creation response creating a user:", response);
         // Check if the response is not ok (e.g., 400 or 500 status codes)
         if (response.status !== 201) {
             throw response;
@@ -153,10 +162,10 @@ export async function CreateUser(userInfo: object, token: string) {
 
         // Assuming the response returns a JSON object
         const data = await response.json();
-        const responseData: User = { ...data }
+        const responseData: any = { ...data }
         return responseData;
     } catch (error: any) {
-        console.log("response error", error);
+        console.log("response error while creating a user:", error);
         let errorMessage = "An error occurred";
         let errorStatus = 500;
 
@@ -171,6 +180,9 @@ export async function CreateUser(userInfo: object, token: string) {
                     break;
                 case 401:
                     errorMessage = "Unauthorized";
+                    break;
+                case 502:
+                    errorMessage = "Server is down... Please try again later";
                     break;
                 case 500:
                     errorMessage = error.message || "Internal server error";

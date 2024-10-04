@@ -57,11 +57,10 @@ export const loader = async ({ request }: any) => {
 
     const shipperRole = shipperProfile.user.businessProfile.shipperRole;
 
-
     const hasAccess = [
-     "independent_shipper",
-     "corporate_shipper",
-     "govt_shipper"
+      "independent_shipper",
+      "corporate_shipper",
+      "govt_shipper",
     ].includes(shipperRole);
 
     return json({
@@ -183,7 +182,7 @@ interface OutletContext {
 
 export default function ViewLoads() {
   const { hasAccess } = useLoaderData<typeof loader>();
-  const { loads, theme, timeZone } = useOutletContext<OutletContext>();
+  const { loads, theme } = useOutletContext<OutletContext>();
   const actionData = useActionData() as ActionData;
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState(null);
@@ -257,9 +256,43 @@ export default function ViewLoads() {
 
   const currency = "ETB";
 
+  // Updated themeClasses with responsive adjustments
+  const themeClasses = {
+    container:
+      theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
+    card:
+      theme === "dark"
+        ? "bg-gray-700"
+        : "bg-white shadow-md border border-gray-200 rounded-lg",
+    button: {
+      primary:
+        theme === "dark"
+          ? "bg-blue-600 hover:bg-blue-700"
+          : "bg-blue-500 hover:bg-blue-600",
+      secondary:
+        theme === "dark"
+          ? "bg-gray-600 hover:bg-gray-700"
+          : "bg-gray-300 hover:bg-gray-400",
+      danger:
+        theme === "dark"
+          ? "bg-red-600 hover:bg-red-700"
+          : "bg-red-500 hover:bg-red-600",
+    },
+    text: {
+      primary: theme === "dark" ? "text-white" : "text-gray-900",
+      secondary: theme === "dark" ? "text-gray-300" : "text-gray-600",
+    },
+    heading: theme === "dark" ? "text-red-400" : "text-red-600",
+    disclosureButton:
+      "flex flex-col sm:flex-row justify-between items-center p-2 sm:p-4", // Responsive flex
+    disclosureButtonText: "text-base sm:text-lg font-bold", // Responsive font sizes
+  };
+
   return (
-    <div className="container mx-auto px-4 py-2">
-      <h1 className="text-3xl font-bold mb-8 text-center text-red-400">
+    <div className={`container mx-auto px-4 py-2 ${themeClasses.container}`}>
+      <h1
+        className={`text-3xl font-bold mb-8 text-center ${themeClasses.heading}`}
+      >
         Manage Your Loads
       </h1>
 
@@ -269,9 +302,9 @@ export default function ViewLoads() {
           className={`block w-full max-w-md mx-auto border px-6 py-3 rounded-lg text-center font-medium
             ${
               theme === "light"
-                ? "border-green-800 text-green-900 hover:bg-green-600 hover:text-white hover:animate-pulse hover:transition hover:duration-300 "
-                : "border-green-200 text-white hover:bg-green-700 hover:text-white hover:animate-pulse hover:transition hover:duration-300"
-            }`}
+                ? "border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
+                : "border-green-200 text-white hover:bg-green-700 hover:text-white"
+            } hover:animate-pulse hover:transition hover:duration-300`}
         >
           Complete your profile to manage loads
         </NavLink>
@@ -296,31 +329,40 @@ export default function ViewLoads() {
             {localLoads.map((load: any) => (
               <Disclosure key={load.loadId}>
                 {({ open }) => (
-                  <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
-                    <Disclosure.Button className="w-full px-6 py-4 text-left focus:outline-none focus-visible:ring focus-visible:ring-red-400 focus-visible:ring-opacity-50">
-                      <div className="flex justify-between items-center">
-                        <div className="pl-2 flex items-center space-x-3">
-                          <h2 className="text-lg font-bold text-white">
+                  <div
+                    className={`${themeClasses.card} rounded-lg overflow-hidden shadow-lg`}
+                  >
+                    <Disclosure.Button
+                      className={`w-full ${themeClasses.disclosureButton} ${themeClasses.text.primary}`}
+                    >
+                      <div className="flex flex-col sm:flex-row justify-between items-center w-full">
+                        <div className="flex flex-wrap items-center space-x-3">
+                          <h2
+                            className={`font-bold ${themeClasses.disclosureButtonText}`}
+                          >
                             {load.origin}
                           </h2>
-                          <ArrowRightIcon className="w-6 h-6 text-red-400" />
-                          <h2 className="text-lg font-bold text-white">
+                          <ArrowRightIcon
+                            className={`w-6 h-6 ${themeClasses.heading}`}
+                          />
+                          <h2
+                            className={`font-bold ${themeClasses.disclosureButtonText}`}
+                          >
                             {load.destination}
                           </h2>
                         </div>
                         <LoadInfoDisplay
                           load={load}
                           currency={currency}
-                          background="bg-gray-700"
-                          shadow="shadow-md"
-                          offerColor="text-red-400"
+                          theme={theme}
+                          className="mt-2 sm:mt-0" // Margin adjustment for small screens
                         />
-                        <div className="flex items-center space-x-6">
+                        <div className="flex items-center space-x-6 mt-2 sm:mt-0">
                           <LoadStatusBadge status={load.loadStatus} />
                           <ChevronUpIcon
                             className={`${
                               open ? "transform rotate-180" : ""
-                            } w-5 h-5 text-red-400`}
+                            } w-5 h-5 ${themeClasses.heading}`}
                           />
                         </div>
                       </div>
@@ -333,7 +375,9 @@ export default function ViewLoads() {
                       leaveFrom="transform scale-100 opacity-100"
                       leaveTo="transform scale-95 opacity-0"
                     >
-                      <Disclosure.Panel className="px-6 pt-2 pb-4 bg-gray-700 text-white">
+                      <Disclosure.Panel
+                        className={`px-6 pt-2 pb-4 ${themeClasses.text.secondary}`}
+                      >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <DetailItem
                             label="Pickup Date"
@@ -370,8 +414,13 @@ export default function ViewLoads() {
                             loadId={load.loadId}
                             load={load}
                             onEdit={() => handleEditClick(load)}
+                            theme={theme}
                           />
-                          <ActionButton type="delete" loadId={load.loadId} />
+                          <ActionButton
+                            type="delete"
+                            loadId={load.loadId}
+                            theme={theme}
+                          />
                         </div>
                       </Disclosure.Panel>
                     </Transition>
@@ -392,31 +441,47 @@ export default function ViewLoads() {
       )}
 
       {actionData?.status === "confirmation" && (
-        <DeleteConfirmationModal loadId={actionData?.loadId} />
+        <DeleteConfirmationModal loadId={actionData?.loadId} theme={theme} />
       )}
     </div>
   );
 }
 
-const DetailItem = memo(({ label, value }: {label: string, value: string}) => {
-  return (
-    <div>
-      <span className="font-medium text-gray-300">{label}: </span>
-      <span className="text-white">{value}</span>
-    </div>
-  );
-});
+// Update DetailItem component to handle responsive font sizes and wrapping
+const DetailItem = memo(
+  ({ label, value }: { label: string; value: string }) => {
+    const { theme } = useOutletContext<OutletContext>();
+    const labelClass = theme === "dark" ? "text-gray-300" : "text-gray-600";
+    const valueClass = theme === "dark" ? "text-white" : "text-gray-900";
 
-const ActionButton = memo(({ type, loadId, load, onEdit }: any) => {
+    return (
+      <div className="flex flex-col sm:flex-row">
+        <span className={`font-medium ${labelClass} sm:w-1/3`}>{label}: </span>
+        <span className={`sm:w-2/3 ${valueClass} text-sm sm:text-base`}>
+          {value}
+        </span>
+      </div>
+    );
+  }
+);
+
+// Update ActionButton component to handle responsive sizes and wrapping
+const ActionButton = memo(({ type, loadId, load, onEdit, theme }: any) => {
   const config = {
     edit: {
       icon: PencilIcon,
-      color: "text-blue-400 hover:text-blue-300",
+      color:
+        theme === "dark"
+          ? "text-blue-400 hover:text-blue-300"
+          : "text-blue-600 hover:text-blue-500",
       action: "edit",
     },
     delete: {
       icon: TrashIcon,
-      color: "text-red-400 hover:text-red-300",
+      color:
+        theme === "dark"
+          ? "text-red-400 hover:text-red-300"
+          : "text-red-600 hover:text-red-500",
       action: "delete",
     },
   };
@@ -437,45 +502,68 @@ const ActionButton = memo(({ type, loadId, load, onEdit }: any) => {
         onClick={type === "edit" ? onEdit : undefined}
         className={`p-2 rounded-full ${color} transition-colors duration-200`}
       >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
     </Form>
   );
 });
 
-const DeleteConfirmationModal = memo(({ loadId }: {loadId: any}) => {
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">
-        <h3 className="text-lg font-medium text-red-400 mb-4">Delete Load</h3>
-        <p className="text-sm text-gray-300 mb-6">
-          Are you sure you want to delete this load? This action cannot be
-          undone.
-        </p>
-        <div className="flex justify-end space-x-4">
-          <Form method="post">
-            <input type="hidden" name="loadId" value={loadId} />
-            <button
-              type="submit"
-              name="_action"
-              value="delete_confirmed"
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-200"
-            >
-              Delete
-            </button>
-          </Form>
-          <Form method="post">
-            <button
-              type="submit"
-              name="_action"
-              value="cancel"
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-          </Form>
+// Update DeleteConfirmationModal to handle theme
+const DeleteConfirmationModal = memo(
+  ({ loadId, theme }: { loadId: any; theme: string }) => {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+        <div
+          className={`${
+            theme === "dark"
+              ? "bg-gray-800 text-white"
+              : "bg-white text-gray-900"
+          } rounded-lg p-8 max-w-md w-full`}
+        >
+          <h3
+            className={`text-lg font-medium ${
+              theme === "dark" ? "text-red-400" : "text-red-600"
+            } mb-4`}
+          >
+            Delete Load
+          </h3>
+          <p className="text-sm mb-6">
+            Are you sure you want to delete this load? This action cannot be
+            undone.
+          </p>
+          <div className="flex justify-end space-x-4">
+            <Form method="post">
+              <input type="hidden" name="loadId" value={loadId} />
+              <button
+                type="submit"
+                name="_action"
+                value="delete_confirmed"
+                className={`${
+                  theme === "dark"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-red-500 hover:bg-red-600"
+                } px-4 py-2 text-white rounded transition-colors duration-200`}
+              >
+                Delete
+              </button>
+            </Form>
+            <Form method="post">
+              <button
+                type="submit"
+                name="_action"
+                value="cancel"
+                className={`${
+                  theme === "dark"
+                    ? "bg-gray-600 hover:bg-gray-700"
+                    : "bg-gray-600 hover:bg-gray-700"
+                } px-4 py-2 text-white rounded transition-colors duration-200`}
+              >
+                Cancel
+              </button>
+            </Form>
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);

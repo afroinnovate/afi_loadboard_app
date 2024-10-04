@@ -174,7 +174,7 @@ export default function App() {
                 </Link>
               </nav>
               <p className="mt-4">
-                © 2023 AfroInnovate LoadBoard. All rights reserved.
+                © 2024 AfroInnovate LoadBoard. All rights reserved.
               </p>
             </div>
           </footer>
