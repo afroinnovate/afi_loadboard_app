@@ -57,3 +57,4 @@
 9. Enhance bid status update from the shipper to give a reason why he reject - or else give the reason as "Please reduce your price"
 10. Enhance carrier bidding, to show the reason why their bids get rejected
 11. Fix bid dashboard 401 unhandled error by logging out the user if the session expired.
+12. Fix Filtering on load board view and sorting

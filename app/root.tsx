@@ -75,7 +75,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
-  const [theme, setTheme] = useState('light'); // Default to light theme
+  const [theme, setTheme] = useState('dark'); // Default to light theme
   const [isFooterVisible, setIsFooterVisible] = useState(false);
 
   let timezone = loaderData?.timeZone;

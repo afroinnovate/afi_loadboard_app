@@ -20,15 +20,14 @@ import { commitSession, getSession } from "../api/services/session";
 import UpdateLoadView from "~/components/updateload";
 import { authenticator } from "~/api/services/auth.server";
 import { LoadInfoDisplay } from "~/components/loadViewHelpers";
-import { useState, memo, useEffect } from "react";
-import { parseISO, isAfter } from "date-fns";
+import { useState, memo, useEffect, useMemo, useCallback } from "react";
 import {
   ChevronUpIcon,
   TrashIcon,
   PencilIcon,
   ArrowRightIcon,
+  CameraIcon,
 } from "@heroicons/react/20/solid";
-import FilterComponent from "~/components/filterComponent";
 import { LoadStatusBadge } from "~/components/statusBadge";
 
 export const meta: MetaFunction = () => {
@@ -190,14 +189,10 @@ export default function ViewLoads() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState(searchParams.get("status") || "all");
-  const [minAmount, setMinAmount] = useState(
-    searchParams.get("minAmount") || ""
-  );
-  const [origin, setOrigin] = useState(searchParams.get("origin") || "");
-  const [destination, setDestination] = useState(
-    searchParams.get("destination") || ""
-  );
   const [localLoads, setLocalLoads] = useState(loads);
+
+  // Modify sortConfig to handle a single sort field
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
 
   useEffect(() => {
     let filteredLoads = loads;
@@ -206,35 +201,16 @@ export default function ViewLoads() {
         (load: any) => load.loadStatus.toLowerCase() === status.toLowerCase()
       );
     }
-    if (minAmount) {
-      filteredLoads = filteredLoads.filter(
-        (load: any) => load.offerAmount >= parseFloat(minAmount)
-      );
-    }
-    if (origin) {
-      filteredLoads = filteredLoads.filter((load: any) =>
-        load.origin.toLowerCase().includes(origin.toLowerCase())
-      );
-    }
-    if (destination) {
-      filteredLoads = filteredLoads.filter((load: any) =>
-        load.destination.toLowerCase().includes(destination.toLowerCase())
-      );
-    }
-
     setLocalLoads(filteredLoads);
-  }, [loads, status, minAmount, origin, destination]);
+  }, [loads, status]);
 
-  const handleFilterChange = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSearchParams({ status, minAmount, origin, destination });
+  const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatus(event.target.value);
+    setSearchParams({ status: event.target.value });
   };
 
   const handleClearFilters = () => {
     setStatus("all");
-    setMinAmount("");
-    setOrigin("");
-    setDestination("");
     setSearchParams({});
   };
 
@@ -256,7 +232,7 @@ export default function ViewLoads() {
 
   const currency = "ETB";
 
-  // Updated themeClasses with responsive adjustments
+  // Updated themeClasses with new styles
   const themeClasses = {
     container:
       theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
@@ -286,47 +262,120 @@ export default function ViewLoads() {
     disclosureButton:
       "flex flex-col sm:flex-row justify-between items-center p-2 sm:p-4", // Responsive flex
     disclosureButtonText: "text-base sm:text-lg font-bold", // Responsive font sizes
+    input:
+      theme === "dark"
+        ? "bg-transparent text-white border-green-500 hover:border-blue-500 focus:border-blue-500"
+        : "bg-transparent text-gray-900 border-green-500 hover:border-blue-500 focus:border-blue-500",
+    cameraIcon: "text-green-500",
+    hintText: "text-green-500",
+  };
+
+  const handleSort = useCallback((key: string) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'ascending' ? 'descending' : 'ascending',
+    }));
+  }, []);
+
+  // Modify sortedAndFilteredLoads to handle single sort field and filtering
+  const sortedAndFilteredLoads = useMemo(() => {
+    let filteredLoads = localLoads;
+    
+    if (sortConfig.key) {
+      filteredLoads.sort((a: any, b: any) => {
+        if (a[sortConfig.key!] < b[sortConfig.key!]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key!] > b[sortConfig.key!]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return filteredLoads;
+  }, [localLoads, sortConfig]);
+
+  // Helper function to get sort direction icon
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) return '↕️';
+    return sortConfig.direction === 'ascending' ? '↑' : '↓';
   };
 
   return (
     <div className={`container mx-auto px-4 py-2 ${themeClasses.container}`}>
-      <h1
-        className={`text-3xl font-bold mb-8 text-center ${themeClasses.heading}`}
-      >
+      <h1 className={`text-3xl font-bold mb-8 text-center ${themeClasses.heading}`}>
         Manage Your Loads
       </h1>
 
       {!hasAccess && (
-        <NavLink
-          to="/shipper/dashboard/account/profile"
-          className={`block w-full max-w-md mx-auto border px-6 py-3 rounded-lg text-center font-medium
+        <NavLink to="/shipper/dashboard/account/profile" className={`block w-full max-w-md mx-auto border px-6 py-3 rounded-lg text-center font-medium
             ${
               theme === "light"
                 ? "border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
                 : "border-green-200 text-white hover:bg-green-700 hover:text-white"
-            } hover:animate-pulse hover:transition hover:duration-300`}
-        >
+            } hover:animate-pulse hover:transition hover:duration-300`}>
           Complete your profile to manage loads
         </NavLink>
       )}
 
       {hasAccess && (
         <>
-          <Form method="get" onSubmit={handleFilterChange}>
-            <FilterComponent
-              filterConfig={{ status, minAmount, origin, destination }}
-              filteredLoadsCount={localLoads.length}
-              totalLoadsCount={loads.length}
-              isSubmitting={navigation.state === "submitting"}
-              onClear={handleClearFilters}
-              onStatusChange={(e) => setStatus(e.target.value)}
-              onMinAmountChange={(e) => setMinAmount(e.target.value)}
-              onOriginChange={(e) => setOrigin(e.target.value)}
-              onDestinationChange={(e) => setDestination(e.target.value)}
-            />
-          </Form>
+          <div className="mb-4 flex flex-wrap items-center space-y-2 md:space-y-0 md:space-x-4">
+            <div className="flex items-center w-full md:w-auto">
+              <CameraIcon className={`w-5 h-5 mr-2 ${themeClasses.cameraIcon}`} />
+              <select
+                value={status}
+                onChange={handleFilterChange}
+                className={`${themeClasses.input} px-4 py-2 rounded w-full md:w-auto border-2`}
+              >
+                <option value="all">All Status</option>
+                <option value="open">Open</option>
+                <option value="accepted">Accepted</option>
+                <option value="enroute">Enroute</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <button 
+              onClick={() => handleSort("origin")} 
+              className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
+            >
+              <span className="mr-2">Origin</span> 
+              <span>{getSortIcon("origin")}</span>
+            </button>
+            <button 
+              onClick={() => handleSort("destination")} 
+              className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
+            >
+              <span className="mr-2">Destination</span> 
+              <span>{getSortIcon("destination")}</span>
+            </button>
+            <button 
+              onClick={() => handleSort("offerAmount")} 
+              className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
+            >
+              <span className="mr-2">Amount</span> 
+              <span>{getSortIcon("offerAmount")}</span>
+            </button>
+            <button 
+              onClick={() => handleSort("pickupDate")} 
+              className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
+            >
+              <span className="mr-2">Date</span> 
+              <span>{getSortIcon("pickupDate")}</span>
+            </button>
+            <button
+              onClick={handleClearFilters}
+              className={`${themeClasses.button.secondary} px-4 py-2 rounded`}
+            >
+              Clear Filters
+            </button>
+          </div>
+          <div className={`mb-4 ${themeClasses.hintText}`}>
+            Showing {sortedAndFilteredLoads.length} of {loads.length} loads
+          </div>
           <div className="space-y-6">
-            {localLoads.map((load: any) => (
+            {sortedAndFilteredLoads.map((load: any) => (
               <Disclosure key={load.loadId}>
                 {({ open }) => (
                   <div
