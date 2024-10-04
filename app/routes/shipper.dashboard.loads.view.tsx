@@ -224,12 +224,6 @@ export default function ViewLoads() {
     setIsUpdateModalOpen(true);
   };
 
-  let info = "";
-  console.log("loads: ", loads);
-  if (Object.keys(loads).length === 0) {
-    info = "No loads posted, please check back later";
-  }
-
   const currency = "ETB";
 
   // Updated themeClasses with new styles

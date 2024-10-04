@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   useLoaderData,
   Form,
   useSubmit,
   useNavigation,
   useOutletContext,
+  useActionData,
 } from "@remix-run/react";
 import { json, type LoaderFunction, type ActionFunction, redirect } from "@remix-run/node";
 import {
@@ -21,6 +22,14 @@ import { commitSession, getSession } from "~/api/services/session";
 import ContactShipperView from "~/components/contactshipper";
 import { authenticator } from "~/api/services/auth.server";
 import { type BidUpdateRequest } from "~/api/models/bidRequest";
+import ChatWindow from "~/components/ChatWindow";
+
+interface Message {
+  id: number;
+  text: string;
+  sender: "user" | "other";
+  timestamp: Date;
+}
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
@@ -111,6 +120,28 @@ export const action: ActionFunction = async ({ request }) => {
       }
     case "closeContact":
       return json({ closeContact: true });
+    case "sendMessage": {
+      const message = formData.get("message") as string;
+      let messages = session.get("chatMessages") || [];
+      
+      const newMessage: Message = {
+        id: Date.now(),
+        text: message,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      
+      messages.push(newMessage);
+      session.set("chatMessages", messages);
+      return json(
+        { success: true, message: "Message sent successfully", newMessage },
+        {
+          headers: {
+            "Set-Cookie": await commitSession(session),
+          },
+        }
+      );
+    }
     default:
       return json({ error: "Invalid action" }, { status: 400 });
   }
@@ -125,6 +156,7 @@ interface BidsViewProps {
 
 export default function BidsView() {
   const loaderData: any = useLoaderData();
+  const actionData = useActionData();
   const navigation = useNavigation();
   const submit = useSubmit();
   const { bidsDict, theme, timezone } = useOutletContext<BidsViewProps>();
@@ -144,7 +176,15 @@ export default function BidsView() {
     key: null,
     direction: "ascending",
   });
+  const [showChatWindow, setShowChatWindow] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedCarrier, setSelectedCarrier] = useState(null);
+
+  useEffect(() => {
+    if (actionData && actionData.newMessage) {
+      setChatMessages((prevMessages) => [...prevMessages, actionData.newMessage]);
+    }
+  }, [actionData]);
 
   if (user.user.userType !== "shipper") {
     return (
@@ -154,8 +194,6 @@ export default function BidsView() {
       />
     );
   }
-
-  console.log("bids", bids);
 
   const handleSort = (key: any) => {
     setSortConfig((prevConfig) => ({
@@ -178,6 +216,11 @@ export default function BidsView() {
 
   const handleExpand = (id: any) => {
     setExpandedBid(expandedBid === id ? null : id);
+  };
+
+  const handleOpenChat = (carrier: any) => {
+    setSelectedCarrier(carrier);
+    setShowChatWindow(true);
   };
 
   const filteredAndSortedBids = bids
@@ -460,8 +503,25 @@ export default function BidsView() {
           shipper={selectedCarrier}
           load={null}
           onClose={() => setSelectedCarrier(null)}
+          onChat={() => {
+            handleOpenChat(selectedCarrier);
+            setSelectedCarrier(null); // Close the contact popup
+          }}
         />
       )}
+
+      <ChatWindow
+        isOpen={showChatWindow}
+        onClose={() => setShowChatWindow(false)}
+        recipientName={
+          selectedCarrier
+            ? `${selectedCarrier.firstName || "Unknown"} ${
+                selectedCarrier.lastName || "Carrier"
+              }`
+            : "Carrier"
+        }
+        messages={chatMessages}
+      />
     </div>
   );
 }

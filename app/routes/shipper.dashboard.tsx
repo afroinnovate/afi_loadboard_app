@@ -52,6 +52,7 @@ interface BidObject {
 
 //protect this route with authentication
 export const loader: LoaderFunction = async ({ request }) => {
+  
   const mapRoles = {
     0: "independent_shipper",
     1: "corporate_shipper",
@@ -59,8 +60,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   };
   try {
     const session = await getSession(request.headers.get("Cookie"));
-    const user = session.get(authenticator.sessionKey);
-
+    const user: any = session.get(authenticator.sessionKey);
     if (!user) {
       return redirect("/logout/");
     }
@@ -170,14 +170,15 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     );
   } catch (error: any) {
-    console.log("Shipper Dashboard login Error", error);
+    console.log("Shipper Dashboard login Error", error.data);
     let errorMessage = "An unexpected error occurred";
-    if (error.message) {
+    if (error.message !== undefined) {
       errorMessage = error.message;
-    } else if (error.data && error.data.message) {
+    }
+    if (error.data !== undefined && error.data.message) {
       errorMessage = error.data.message;
     }
-    if (error.data && error.data.status == 401) {
+    if(JSON.parse(error).data && JSON.parse(error).data.status == 401) {
       return redirect("/logout/");
     }
     // Instead of throwing, return a json response with the error
