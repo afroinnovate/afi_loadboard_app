@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   useLoaderData,
   Form,
@@ -13,7 +13,8 @@ import {
   XCircleIcon,
   PhoneIcon,
   ChevronUpIcon,
-  CameraIcon
+  CameraIcon,
+  ChevronUpDownIcon
 } from "@heroicons/react/20/solid";
 import { UpdateBid } from "~/api/services/bid.service";
 import AccessDenied from "~/components/accessdenied";
@@ -172,10 +173,7 @@ export default function BidsView() {
     status: "all",
     minAmount: 0,
   });
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "ascending",
-  });
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedCarrier, setSelectedCarrier] = useState(null);
@@ -195,22 +193,18 @@ export default function BidsView() {
     );
   }
 
-  const handleSort = (key: any) => {
+  const handleSort = useCallback((key: string) => {
     setSortConfig((prevConfig) => ({
       key,
-      direction:
-        prevConfig.key === key && prevConfig.direction === "ascending"
-          ? "descending"
-          : "ascending",
+      direction: prevConfig.key === key && prevConfig.direction === 'ascending' ? 'descending' : 'ascending',
     }));
-  };
+  }, []);
 
   const handleFilter = (e: any) => {
     const { name, value } = e.target;
     setFilterConfig((prev) => ({
       ...prev,
-      [name]:
-        name === "minAmount" ? (value === "" ? 0 : parseFloat(value)) : value,
+      [name]: value,
     }));
   };
 
@@ -223,28 +217,36 @@ export default function BidsView() {
     setShowChatWindow(true);
   };
 
-  const filteredAndSortedBids = bids
-    .filter((bid: any) => {
+  // Modify filteredAndSortedBids to handle single sort field and filtering
+  const filteredAndSortedBids = useMemo(() => {
+    let filteredBids = bids.filter((bid: any) => {
       if (filterConfig.status === "all") {
         return true;
       } else {
         return bid.bidStatus === parseInt(filterConfig.status);
       }
-    })
-    .filter((bid: any) => {
-      return bid.bidAmount >= filterConfig.minAmount;
-    })
-    .sort((a: any, b: any) => {
-      if (sortConfig.key) {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-        if (aValue < bValue)
-          return sortConfig.direction === "ascending" ? -1 : 1;
-        if (aValue > bValue)
-          return sortConfig.direction === "ascending" ? 1 : -1;
-      }
-      return 0;
     });
+    
+    if (sortConfig.key) {
+      filteredBids.sort((a: any, b: any) => {
+        if (a[sortConfig.key!] < b[sortConfig.key!]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key!] > b[sortConfig.key!]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return filteredBids;
+  }, [bids, filterConfig, sortConfig]);
+
+  // Helper function to get sort direction icon
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) return <ChevronUpDownIcon className="w-4 h-4 inline-block ml-1" />;
+    return sortConfig.direction === 'ascending' ? '↑' : '↓';
+  };
 
   const themeClasses = {
     container:
@@ -276,58 +278,50 @@ export default function BidsView() {
 
   return (
     <div className={`container mx-auto px-4 py-8 ${themeClasses.container}`}>
-      <h1
-        className={`text-2xl md:text-3xl font-bold mb-6 text-center ${themeClasses.header}`}
-      >
+      <h1 className={`text-2xl md:text-3xl font-bold mb-6 text-center ${themeClasses.header}`}>
         Review Bids
       </h1>
 
-      <div className="mb-4 flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
+      <div className="mb-4 flex flex-wrap items-center space-y-2 md:space-y-0 md:space-x-4">
         <div className="flex items-center w-full md:w-auto">
-          <CameraIcon className={`w-5 h-5 mr-2 ${themeClasses.button}`} />
+          <CameraIcon className={`w-5 h-5 mr-2 ${themeClasses.button} hidden md:inline-block`} />
           <select
             name="status"
             onChange={handleFilter}
             className={`w-full md:w-auto mr-2 p-2 rounded ${themeClasses.input}`}
           >
             <option value="all">All Status</option>
-            <option value={0}>Pending</option>
-            <option value={1}>Accepted</option>
-            <option value={2}>Rejected</option>
+            <option value="0">Pending</option>
+            <option value="1">Accepted</option>
+            <option value="2">Rejected</option>
           </select>
         </div>
-        <input
-          type="number"
-          name="minAmount"
-          placeholder="Min Amount"
-          onChange={handleFilter}
-          className={`w-full md:w-auto p-2 rounded ${themeClasses.input}`}
-        />
+      </div>
+      <div className={`mb-4 ${themeClasses.text}`}>
+        Showing {filteredAndSortedBids.length} of {bids.length} bids
       </div>
 
-      <div
-        className={`overflow-x-auto rounded-lg shadow ${themeClasses.table}`}
-      >
-        <table className="w-full">
+      <div className={`overflow-x-auto rounded-lg shadow ${themeClasses.table}`}>
+        <table className="w-full table-auto">
           <thead>
             <tr className={themeClasses.tableHeader}>
               <th
                 onClick={() => handleSort("carrier.firstName")}
                 className="p-2 cursor-pointer text-left"
               >
-                Carrier
+                Carrier {getSortIcon("carrier.firstName")}
               </th>
               <th
                 onClick={() => handleSort("bidAmount")}
                 className="p-2 cursor-pointer text-left"
               >
-                Bid Amount
+                Bid Amount {getSortIcon("bidAmount")}
               </th>
               <th
                 onClick={() => handleSort("bidStatus")}
                 className="p-2 cursor-pointer text-left"
               >
-                Status
+                Status {getSortIcon("bidStatus")}
               </th>
               <th className="p-2 text-left">Actions</th>
             </tr>
@@ -339,16 +333,22 @@ export default function BidsView() {
                   className={`border-b ${themeClasses.tableRow} cursor-pointer`}
                   onClick={() => handleExpand(bid.id)}
                 >
-                  <td className="p-2 text-left">{`${bid.carrier.firstName} ${bid.carrier.lastName}`}</td>
+                  <td className="p-2 text-left">
+                    <div className="truncate max-w-[150px] sm:max-w-none">
+                      {`${bid.carrier.firstName} ${bid.carrier.lastName}`}
+                    </div>
+                  </td>
                   <td className="p-2 text-left">${bid.bidAmount}</td>
                   <td className="p-2 text-left">
-                    {["Pending", "Accepted", "Rejected"][bid.bidStatus]}
+                    <div className="truncate max-w-[100px] sm:max-w-none">
+                      {["Pending", "Accepted", "Rejected"][bid.bidStatus]}
+                    </div>
                   </td>
                   <td className="p-2 text-left">
                     <div className="flex justify-start items-center space-x-2">
                       {expandedBid !== bid.id ? (
                         <>
-                          <Form method="post">
+                          <Form method="post" className="inline-block">
                             <input type="hidden" name="bidId" value={bid.id} />
                             <button
                               type="submit"
@@ -360,7 +360,7 @@ export default function BidsView() {
                               <CheckCircleIcon className="w-5 h-5 text-green-600 hover:text-green-800" />
                             </button>
                           </Form>
-                          <Form method="post">
+                          <Form method="post" className="inline-block">
                             <input type="hidden" name="bidId" value={bid.id} />
                             <button
                               type="submit"
@@ -409,17 +409,17 @@ export default function BidsView() {
                           >
                             Carrier Details
                           </h3>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Name:{" "}
                             {`${bid.carrier.firstName} ${bid.carrier.lastName}`}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Phone: {bid.carrier.phone}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Email: {bid.carrier.email}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Company: {bid.carrier.companyName || "N/A"}
                           </p>
                         </div>
@@ -429,19 +429,19 @@ export default function BidsView() {
                           >
                             Load Details
                           </h3>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Origin: {bid.load.origin}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Destination: {bid.load.destination}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Pickup Date: {formatDate(bid.load.pickupDate)}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Delivery Date: {formatDate(bid.load.deliveryDate)}
                           </p>
-                          <p className={`${themeClasses.text} pl-4`}>
+                          <p className={`${themeClasses.text} pl-4 break-words`}>
                             Commodity: {bid.load.commodity}
                           </p>
                         </div>

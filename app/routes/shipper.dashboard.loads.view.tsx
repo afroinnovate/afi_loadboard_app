@@ -27,6 +27,7 @@ import {
   PencilIcon,
   ArrowRightIcon,
   CameraIcon,
+  ChevronUpDownIcon
 } from "@heroicons/react/20/solid";
 import { LoadStatusBadge } from "~/components/statusBadge";
 
@@ -290,9 +291,9 @@ export default function ViewLoads() {
     return filteredLoads;
   }, [localLoads, sortConfig]);
 
-  // Helper function to get sort direction icon
+  // Modify the getSortIcon function
   const getSortIcon = (key: string) => {
-    if (sortConfig.key !== key) return '↕️';
+    if (sortConfig.key !== key) return <ChevronUpDownIcon className="w-4 h-4 inline-block ml-1" />;
     return sortConfig.direction === 'ascending' ? '↑' : '↓';
   };
 

@@ -40,11 +40,12 @@
 * [10/4/24]: Fix the business profile completion live:
     - run the app as docker container and try to fill in business profile to replicate the error.
 * [10/4/24]: Fix light theme in shipper dashboard.
-
+* [10/4/24]: Fix Filtering on load board view and sorting
+* [10/4/24]: Fix 401 issue showing as error
+* [10/4/24]: Make sure the message box shows on bid dashboard:
+    - shipper dashboard when contacting carrier.
 
 ### TODO
-2. Make sure the message box shows on bid dashboard:
-    - shipper dashboard when contacting carrier.
 5. Fix the collapsable menu and the header 
     - Add theme button to the app.
     - Make sure the secondary header where HOME, LoadOps, and the items on the left are collapsed correcty on mobile view
@@ -56,5 +57,3 @@
     - Display those data in the bid expand mode.
 9. Enhance bid status update from the shipper to give a reason why he reject - or else give the reason as "Please reduce your price"
 10. Enhance carrier bidding, to show the reason why their bids get rejected
-11. Fix bid dashboard 401 unhandled error by logging out the user if the session expired.
-12. Fix Filtering on load board view and sorting
