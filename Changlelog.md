@@ -44,7 +44,8 @@
 * [10/4/24]: Fix 401 issue showing as error
 * [10/4/24]: Make sure the message box shows on bid dashboard:
             - shipper dashboard when contacting carrier.
-* [10/6/24]: Homepage display real data in shipper dashboard
+* [10/6/24]: Homepage display real data in shipper dashboard.
+* [10/6/24]: Make the footer only show on the home page.
 
 ### TODO
 4. Fix the carrier login once they complete their registration.
