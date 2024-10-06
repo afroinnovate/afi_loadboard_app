@@ -60,7 +60,7 @@ const Overview = ({
 
   // Calculate the statistics
   const activeLoads = loads.filter(
-    (load) => load.loadStatus === "En Route"
+    (load) => load.loadStatus !== "Closed"
   ).length;
   const pendingBids = bidsDict.reduce(
     (total, bidObj) =>
