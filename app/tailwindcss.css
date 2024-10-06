@@ -1389,6 +1389,10 @@ input[type="range"]::-ms-fill-lower {
   max-width: 100px;
 }
 
+.max-w-\[150px\] {
+  max-width: 150px;
+}
+
 .max-w-full {
   max-width: 100%;
 }
@@ -1399,10 +1403,6 @@ input[type="range"]::-ms-fill-lower {
 
 .max-w-sm {
   max-width: 24rem;
-}
-
-.max-w-\[150px\] {
-  max-width: 150px;
 }
 
 .flex-1 {

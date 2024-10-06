@@ -223,16 +223,25 @@ export default function Dashboard() {
     );
   }
 
+  const themeClasses = {
+    header: theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200",
+    headerText: theme === "dark" ? "text-white" : "text-black",
+    headerHover: theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
+    activeLink: theme === "dark" ? "border-blue-400" : "border-blue-600",
+    inactiveLink: theme === "dark" ? "text-gray-400" : "text-gray-500",
+    welcomeText: theme === "dark" ? "text-green-400" : "text-green-800",
+    main: theme === "dark" ? "bg-gray-900" : "bg-white",
+  };
+
   return (
     <>
       {/* Desktop view setup */}
-      <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 fixed top-16 left-0 right-0">
-        <div className="items-center space-x-4">
+      <header className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}>
+        <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
-            className="text-black hover:text-black mr-4 text-4xl"
+            className={`${themeClasses.headerText} ${themeClasses.headerHover} mr-4 text-4xl`}
           >
-            {/* Replace with an appropriate icon or text */}
             &#9776;
           </button>
 
@@ -240,10 +249,10 @@ export default function Dashboard() {
             to="/shipper/dashboard/"
             end
             className={({ isActive }) =>
-              "text-black font-semibold " +
+              `${themeClasses.headerText} font-semibold ` +
               (isActive
-                ? "border-b-2 border-blue-400"
-                : "text-gray-400 hover:text-black")
+                ? `border-b-2 ${themeClasses.activeLink}`
+                : `${themeClasses.inactiveLink} ${themeClasses.headerHover}`)
             }
           >
             Home
@@ -252,17 +261,17 @@ export default function Dashboard() {
           <NavLink
             to="/shipper/dashboard/loads/view/"
             className={() =>
-              "text-black font-semibold " +
+              `${themeClasses.headerText} font-semibold ` +
               (isLoadOperationsActive
-                ? "border-b-2 border-blue-400"
-                : "text-gray-500 hover:text-black")
+                ? `border-b-2 ${themeClasses.activeLink}`
+                : `${themeClasses.inactiveLink} ${themeClasses.headerHover}`)
             }
           >
             Load Operations
           </NavLink>
 
           <h2
-            className="font-bold text-xl flex justify-center items-center xmx-auto text-green-800"
+            className={`font-bold text-xl flex justify-center items-center mx-auto ${themeClasses.welcomeText}`}
             style={{
               animation: "bounce 2s ease-in-out 2",
             }}
@@ -275,7 +284,7 @@ export default function Dashboard() {
         <div className="hidden lg:flex top-30">
           {sidebarOpen && <Sidebar activeSection={activeSection} />}
         </div>
-        <main className="w-full flex justify-center content-center p-3 shadow-lg mt-20">
+        <main className={`w-full flex justify-center content-center p-3 shadow-lg mt-20 ${themeClasses.main}`}>
           {location.pathname === "/shipper/dashboard/" && <Overview />}
           <Outlet context={{ loads, bidsDict, theme, timezone }} />
         </main>
@@ -283,5 +292,3 @@ export default function Dashboard() {
     </>
   );
 }
-
-
