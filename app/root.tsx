@@ -135,6 +135,8 @@ export default function App() {
     link: theme === "dark" ? "hover:text-orange-400" : "hover:text-green-600",
   };
 
+  const isHomePage = location.pathname === "/";
+
   return (
     <html lang="en" className={`h-full ${themeClasses.html}`}>
       <head>
@@ -149,35 +151,37 @@ export default function App() {
           <main className="flex-grow">
             <Outlet context={{ theme, timezone, toggleTheme }} />
           </main>
-          <footer
-            className={`${
-              themeClasses.footer
-            } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
-              isFooterVisible ? "translate-y-0" : "translate-y-full"
-            } hidden md:block`}
-            onMouseEnter={() => setIsFooterVisible(true)}
-            onMouseLeave={() => setIsFooterVisible(false)}
-          >
-            <div className="container mx-auto text-center">
-              <nav className="flex justify-center space-x-4">
-                <Link to="/features" className={themeClasses.link}>
-                  Features
-                </Link>
-                <Link to="/how-it-works" className={themeClasses.link}>
-                  How It Works
-                </Link>
-                <Link to="/pricing" className={themeClasses.link}>
-                  Pricing
-                </Link>
-                <Link to="/contact" className={themeClasses.link}>
-                  Contacts
-                </Link>
-              </nav>
-              <p className="mt-4">
-                © 2024 AfroInnovate LoadBoard. All rights reserved.
-              </p>
-            </div>
-          </footer>
+          {isHomePage && (
+            <footer
+              className={`${
+                themeClasses.footer
+              } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
+                isFooterVisible ? "translate-y-0" : "translate-y-full"
+              } hidden md:block`}
+              onMouseEnter={() => setIsFooterVisible(true)}
+              onMouseLeave={() => setIsFooterVisible(false)}
+            >
+              <div className="container mx-auto text-center">
+                <nav className="flex justify-center space-x-4">
+                  <Link to="/features" className={themeClasses.link}>
+                    Features
+                  </Link>
+                  <Link to="/how-it-works" className={themeClasses.link}>
+                    How It Works
+                  </Link>
+                  <Link to="/pricing" className={themeClasses.link}>
+                    Pricing
+                  </Link>
+                  <Link to="/contact" className={themeClasses.link}>
+                    Contacts
+                  </Link>
+                </nav>
+                <p className="mt-4">
+                  © 2024 AfroInnovate LoadBoard. All rights reserved.
+                </p>
+              </div>
+            </footer>
+          )}
         </div>
         <ScrollRestoration />
         <Scripts />
