@@ -59,11 +59,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       return redirect("/shipper/dashboard/");
     }
 
-    const timezone = session.get("timeZone") || "UTC";
-
     return json({
       carrierProfile: carrierProfile,
-      timezone: timezone,
     });
   } catch (error: any) {
     if (JSON.parse(error).data.status == 401) {
@@ -184,14 +181,19 @@ export const action: ActionFunction = async ({ request }) => {
   return null;
 };
 
+interface OutletContext {
+  loads: any[];
+  bids: any[];
+  theme: 'light' | 'dark';
+  timezone: string;
+  toggleTheme: () => void;
+}
+
 export default function CarrierBidDashboard() {
   const loaderData: any = useLoaderData();
   const actionData = useActionData();
-  const { bids } = useOutletContext<{ loads: any; bids: any }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [localBids, setLocalBids] = useState(bids);
   const [selectedBid, setSelectedBid] = useState<any>(null);
-  const timezone = loaderData?.timezone || "UTC";
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [bidToDelete, setBidToDelete] = useState<number | null>(null)
   const [showContactShipper, setShowContactShipper] = useState(false);
@@ -201,6 +203,10 @@ export default function CarrierBidDashboard() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState(searchParams.get('status') || 'all');
   const [date, setDate] = useState(searchParams.get('date') || '');
+  const { theme, timezone, bids } = useOutletContext<OutletContext>();
+  const [localBids, setLocalBids] = useState(bids);
+  
+  console.log("theme", theme, "timezone", timezone);
 
   let error = "";
   let info = "";
@@ -214,27 +220,24 @@ export default function CarrierBidDashboard() {
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
-    const status = searchParams.get('status');
-    const date = searchParams.get('date');
-
     let filteredBids = bids;
     if (status && status !== 'all') {
-      filteredBids = filteredBids.filter((bid: { bidStatus: { toString: () => string } }) => bid.bidStatus.toString() === status);
+      filteredBids = filteredBids.filter((bid: { bidStatus: number }) => bid.bidStatus.toString() === status);
     }
 
     if (date) {
       const filterDate = parseISO(date);
-      filteredBids = filteredBids.filter(bid => isAfter(parseISO(bid.biddingTime), filterDate));
+      filteredBids = filteredBids.filter((bid: { biddingTime: string }) => isAfter(parseISO(bid.biddingTime), filterDate));
     }
 
     setLocalBids(filteredBids);
 
     if (filteredBids.length === 0) {
-      info = "No bids match the current filters.";
+      setFeedbackMessage("No bids match the current filters.");
     } else {
-      info = "";
+      setFeedbackMessage(null);
     }
-  }, [bids, searchParams]);
+  }, [bids, status, date]);
 
   // Update localBids if action was successful
   useEffect(() => {
@@ -357,7 +360,12 @@ export default function CarrierBidDashboard() {
 
   const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSearchParams({ status, date });
+    const formData = new FormData(event.currentTarget);
+    const newStatus = formData.get('status') as string;
+    const newDate = formData.get('date') as string;
+    setStatus(newStatus);
+    setDate(newDate);
+    setSearchParams({ status: newStatus, date: newDate });
   };
 
   const handleReset = () => {
@@ -366,8 +374,23 @@ export default function CarrierBidDashboard() {
     setSearchParams({});
   };
 
+  const themeClasses = {
+    container: theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
+    card: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100',
+    button: {
+      primary: theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600',
+      secondary: theme === 'dark' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-gray-300 hover:bg-gray-400',
+      danger: theme === 'dark' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
+    },
+    text: {
+      primary: theme === 'dark' ? 'text-white' : 'text-gray-900',
+      secondary: theme === 'dark' ? 'text-gray-300' : 'text-gray-600',
+    },
+    heading: theme === 'dark' ? 'text-white' : 'text-green-800',
+  };
+
   return (
-    <div className="container mx-auto dark:bg-gray-800 p-4">
+    <div className={`container mx-auto p-4 ${themeClasses.container}`}>
       {feedbackMessage && (
         <div
           className={`p-4 mb-4 text-center ${
@@ -390,7 +413,7 @@ export default function CarrierBidDashboard() {
         </div>
       )}
       <div className="flex justify-center items-center shadow-md mb-6">
-        <h1 className="text-3xl font-bold mb-4 p-3 text-center text-white">
+        <h1 className={`text-3xl font-bold mb-4 p-3 text-center ${themeClasses.heading}`}>
           Explore Bids Dashboard
         </h1>
       </div>
@@ -406,30 +429,26 @@ export default function CarrierBidDashboard() {
             name="status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="p-2 border rounded bg-gray-700 text-white"
+            className={`p-2 border rounded ${themeClasses.card} ${themeClasses.text.primary}`}
           >
             <option value="all">All Statuses</option>
             <option value="0">Pending</option>
             <option value="1">Accepted</option>
             <option value="2">Rejected</option>
+            <option value="3">Enroute</option>
+            <option value="4">Completed</option>
           </select>
           <input
             type="date"
             name="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="p-2 border rounded bg-gray-700 text-white"
+            className={`p-2 border rounded ${themeClasses.card} ${themeClasses.text.primary}`}
           />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Filter
-          </button>
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className={`px-4 py-2 ${themeClasses.button.secondary} ${themeClasses.text.primary} rounded`}
           >
             Reset
           </button>
@@ -440,8 +459,8 @@ export default function CarrierBidDashboard() {
         {localBids.map((bid: any) => (
           <Disclosure key={bid.id}>
             {({ open }) => (
-              <div className="bg-gray-700 shadow rounded-lg">
-                <Disclosure.Button className="flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-bold text-white hover:bg-gray-600">
+              <div className={`${themeClasses.card} shadow rounded-lg`}>
+                <Disclosure.Button className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-bold ${themeClasses.text.primary} hover:bg-opacity-80`}>
                   <div className="flex flex-wrap items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0">
                     <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
                       {bid.load.origin}
@@ -469,10 +488,10 @@ export default function CarrierBidDashboard() {
                   </div>
                 </Disclosure.Button>
 
-                <Disclosure.Panel className="p-4 text-gray-300 bg-gray-800">
+                <Disclosure.Panel className={`p-4 ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
-                      <h3 className="text-xl font-bold mb-2">Bid Details</h3>
+                    <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg`}>
+                      <h3 className={`text-xl font-bold mb-2 ${themeClasses.heading}`}>Bid Details</h3>
                       <p key={`amount-${bid.id}`}>
                         Amount: {currency} {bid.bidAmount}
                       </p>
@@ -493,8 +512,8 @@ export default function CarrierBidDashboard() {
                         />
                       </p>
                     </div>
-                    <div className="bg-gray-700 p-4 rounded-lg shadow-lg">
-                      <h3 className="text-xl font-bold mb-2">Load Details</h3>
+                    <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg`}>
+                      <h3 className={`text-xl font-bold mb-2 ${themeClasses.heading}`}>Load Details</h3>
                       <p key={`route-${bid.id}`}>
                         Route: {bid.load.origin} to {bid.load.destination}
                       </p>
@@ -531,12 +550,17 @@ export default function CarrierBidDashboard() {
                       </button>
                       <button
                         onClick={() => setSelectedBid(bid)}
-                        className="p-2 m-2 bg-orange-400 rounded-full hover:bg-orange-500 group relative"
+                        className={`p-2 m-2 rounded-full group relative ${
+                          bid.bidStatus === 0
+                            ? "bg-orange-400 hover:bg-orange-500"
+                            : "bg-gray-400 cursor-not-allowed"
+                        }`}
                         title="Update Bid"
+                        disabled={bid.bidStatus !== 0}
                       >
                         <PencilIcon className="w-5 h-5 text-white" />
                         <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          Update Bid
+                          {bid.bidStatus === 0 ? "Update Bid" : "Cannot update non-pending bid"}
                         </span>
                       </button>
                       <button
@@ -544,12 +568,17 @@ export default function CarrierBidDashboard() {
                         name="_action"
                         value="delete"
                         onClick={() => setBidToDelete(bid.id)}
-                        className="p-2 m-2 bg-red-500 rounded-full hover:bg-red-600 group relative"
+                        className={`p-2 m-2 rounded-full group relative ${
+                          bid.bidStatus === 0
+                            ? "bg-red-500 hover:bg-red-600"
+                            : "bg-gray-400 cursor-not-allowed"
+                        }`}
                         title="Withdraw Bid"
+                        disabled={bid.bidStatus !== 0}
                       >
                         <TrashIcon className="w-5 h-5 text-white" />
                         <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          Withdraw Bid
+                          {bid.bidStatus === 0 ? "Withdraw Bid" : "Cannot withdraw non-pending bid"}
                         </span>
                       </button>
                     </Form>
@@ -622,11 +651,21 @@ const DeleteConfirmationModal = ({
   bidId: number;
   onCancel: () => void;
 }) => {
+  const { theme } = useOutletContext<OutletContext>();
+
+  const themeClasses = {
+    modal: theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
+    button: {
+      primary: theme === 'dark' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
+      secondary: theme === 'dark' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-gray-300 hover:bg-gray-400',
+    },
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">
+      <div className={`${themeClasses.modal} rounded-lg p-8 max-w-md w-full`}>
         <h3 className="text-lg font-medium text-red-400 mb-4">Withdraw Bid</h3>
-        <p className="text-sm text-gray-300 mb-6">
+        <p className="text-sm mb-6">
           Are you sure you want to withdraw this bid? This action cannot be undone.
         </p>
         <div className="flex justify-end space-x-4">
@@ -636,14 +675,14 @@ const DeleteConfirmationModal = ({
               type="submit"
               name="_action"
               value="delete_confirmed"
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-200"
+              className={`px-4 py-2 ${themeClasses.button.primary} text-white rounded transition-colors duration-200`}
             >
               Withdraw
             </button>
           </Form>
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-200"
+            className={`px-4 py-2 ${themeClasses.button.secondary} rounded transition-colors duration-200`}
           >
             Cancel
           </button>

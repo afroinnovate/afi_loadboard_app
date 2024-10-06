@@ -6,6 +6,7 @@ import {
   Link,
   useLoaderData,
   useSubmit,
+  useOutletContext,
 } from "@remix-run/react";
 import {
   type ActionFunction,
@@ -80,6 +81,13 @@ export default function SetNewPassword() {
   const { token, email } = useLoaderData<{ token: string; email: string }>();
   const isSubmitting = navigation.state === "submitting";
   const submit = useSubmit();
+  const { theme } = useOutletContext<{ theme: 'light' | 'dark' }>();
+
+  const bgColor = theme === 'light' ? 'bg-gray-100' : 'bg-gray-900';
+  const cardBgColor = theme === 'light' ? 'bg-white' : 'bg-gray-800';
+  const textColor = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const inputBgColor = theme === 'light' ? 'bg-gray-100' : 'bg-gray-700';
+  const inputFocusBgColor = theme === 'light' ? 'focus:bg-white' : 'focus:bg-gray-600';
 
   console.log("Render: Email", email, "Token", token);
 
@@ -122,13 +130,13 @@ export default function SetNewPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-gray-800 p-8 rounded-lg">
+    <div className={`min-h-screen ${bgColor} flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300`}>
+      <div className={`max-w-md w-full space-y-8 ${cardBgColor} p-8 rounded-lg transition-colors duration-300`}>
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-orange-500">
             AfroInnovate
           </h2>
-          <h3 className="mt-2 text-center text-xl text-gray-300">
+          <h3 className={`mt-2 text-center text-xl ${textColor}`}>
             Set Your New Password
           </h3>
         </div>
@@ -162,7 +170,7 @@ export default function SetNewPassword() {
                 name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-gray-300 rounded-t-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm bg-gray-700"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 ${textColor} rounded-t-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm ${inputBgColor} transition-colors duration-300`}
                 placeholder="New Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -177,7 +185,7 @@ export default function SetNewPassword() {
                 name="confirmPassword"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-gray-300 rounded-b-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm bg-gray-700"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 ${textColor} rounded-b-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm ${inputBgColor} transition-colors duration-300`}
                 placeholder="Confirm New Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -193,7 +201,7 @@ export default function SetNewPassword() {
                 !isPasswordValid || isSubmitting
                   ? "bg-gray-600 cursor-not-allowed"
                   : "bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-              }`}
+              } transition-colors duration-300`}
             >
               {isSubmitting ? "Resetting Password..." : "Reset Password"}
             </button>

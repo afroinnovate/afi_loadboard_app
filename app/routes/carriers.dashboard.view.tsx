@@ -9,6 +9,7 @@ import {
   NavLink,
   useActionData,
   useLoaderData,
+  useOutletContext,
 } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
@@ -209,14 +210,22 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
+interface OutletContext {
+  loads: any[];
+  bids: any[];
+  theme: 'light' | 'dark';
+  timezone: string;
+  toggleTheme: () => void;
+}
+
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [selectedShipper, setSelectedShipper] = useState(null);
-  const [showContactShipper, setShowContactShipper] = useState(false);
-
+  const [selectedShipper, setSelectedShipper] = useState<any>(null);
+  const { theme } = useOutletContext<OutletContext>();
+  
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
     let errorMsg = "";
@@ -314,15 +323,17 @@ export default function CarrierViewLoads() {
   // Memoize the status styles function
   const getStatusStyles = useMemo(
     () => (status: string) => {
-      switch (status) {
+      switch (status.toLowerCase()) {
         case "open":
-          return "bg-green-600";
+          return `bg-green-600 text-white`;
         case "accepted":
-          return "bg-gray-500";
+          return `bg-gray-500 text-white`;
         case "enroute":
-          return "bg-red-500";
+          return `bg-red-500 text-white`;
+        case "completed":
+          return `bg-blue-500 text-white`;
         default:
-          return "bg-orange-500";
+          return `bg-orange-500 text-white`;
       }
     },
     []
@@ -340,15 +351,30 @@ export default function CarrierViewLoads() {
 
   const currency = "ETB";
 
+  const themeClasses = {
+    container: theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
+    card: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100',
+    button: {
+      primary: theme === 'dark' ? 'bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white' : 'bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white',
+      secondary: theme === 'dark' ? 'bg-white border border-green-400 text-green-500 hover:bg-gray-700' : 'bg-white border border-green-400 text-green-500 hover:bg-gray-400',
+      danger: theme === 'dark' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
+    },
+    text: {
+      primary: theme === 'dark' ? 'text-white' : 'text-gray-900',
+      secondary: theme === 'dark' ? 'text-gray-300' : 'text-gray-600',
+    },
+    heading: theme === 'dark' ? 'text-white' : 'text-green-800',
+  };
+
   return (
-    <div className="container mx-auto dark:bg-gray-800 max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className={`container mx-auto p-4 ${themeClasses.container}`}>
       {error && (
         <div className="p-4 mb-2 text-center text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-300">
           {error}
         </div>
       )}
       <div className="flex justify-center items-center shadow-md mb-3">
-        <h1 className="text-2xl font-serif mb-4 p-3 text-center text-white">
+        <h1 className={`text-2xl font-serif mb-4 p-3 text-center ${themeClasses.heading}`}>
           Pick your Load and Hit the Road
         </h1>
       </div>
@@ -362,7 +388,7 @@ export default function CarrierViewLoads() {
           <Disclosure
             as="div"
             key={load.loadId}
-            className="bg-gray-700 shadow rounded-lg"
+            className={`${themeClasses.card} shadow rounded-lg`}
           >
             {({ open }) => (
               <>
@@ -384,7 +410,7 @@ export default function CarrierViewLoads() {
                   />
                 )}
 
-                <Disclosure.Button className="flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium text-white hover:bg-gray-600">
+                <Disclosure.Button className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium ${themeClasses.text.primary} hover:bg-opacity-80`}>
                   <div className="w-full sm:w-auto flex flex-wrap items-center space-x-2 mb-2 sm:mb-0">
                     <h2 className="text-sm sm:text-base font-medium">
                       {load.origin}
@@ -400,9 +426,7 @@ export default function CarrierViewLoads() {
                       <LoadInfoDisplay
                         load={load}
                         currency={currency}
-                        background="bg-gray-800"
-                        shadow="shadow-lg"
-                        offerColor="white"
+                        theme={theme}
                       />
                       <div className="flex items-center space-x-2">
                         <span
@@ -423,7 +447,7 @@ export default function CarrierViewLoads() {
                   </div>
                 </Disclosure.Button>
 
-                <Disclosure.Panel className="p-2 pl-4 text-sm text-gray-300 bg-gray-800">
+                <Disclosure.Panel className={`p-2 pl-4 text-sm ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}>
                   <div className="grid grid-cols-1 gap-2">
                     <p className="flex flex-wrap">
                       <span className="w-full sm:w-auto sm:mr-2 font-medium">
@@ -473,7 +497,7 @@ export default function CarrierViewLoads() {
                     {carrierAccess && !carrierHasAccess && (
                       <NavLink
                         to="/carriers/dashboard/account/business/"
-                        className="w-full sm:w-auto inline-block bg-orange-500 text-white px-4 py-2 text-sm rounded cursor-pointer transform transition hover:bg-orange-600"
+                        className={`w-full sm:w-auto inline-block ${themeClasses.button.primary} text-white px-4 py-2 text-sm rounded cursor-pointer transform transition`}
                       >
                         Complete profile to pick up a load
                       </NavLink>
@@ -501,7 +525,7 @@ export default function CarrierViewLoads() {
                             type="submit"
                             name="_action"
                             value="contact"
-                            className="w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium text-green-400 bg-gray-700 border border-green-400 rounded hover:bg-green-500 hover:text-white focus:outline-none"
+                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.secondary} rounded hover:bg-green-500 hover:text-white focus:outline-none`}
                             aria-label="Contact Carrier"
                           >
                             <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
@@ -529,7 +553,7 @@ export default function CarrierViewLoads() {
                             type="submit"
                             name="_action"
                             value="bid"
-                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium text-orange-400 bg-gray-700 border border-orange-400 rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
+                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
                               load.loadStatus === "enroute" ||
                               load.loadStatus === "accepted" ||
                               load.loadStatus === "rejected" ||

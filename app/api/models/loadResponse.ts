@@ -1,5 +1,5 @@
 export interface Load {
-    id: number;
+    loadId: number;
     userId: string;
     origin: string;
     destination: string;

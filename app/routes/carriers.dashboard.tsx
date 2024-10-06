@@ -4,6 +4,7 @@ import {
   useLoaderData,
   useLocation,
   NavLink,
+  useOutletContext,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
 
@@ -37,9 +38,10 @@ export const links: LinksFunction = () => [
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
+    console.log("Carrier dashboard loader");
     const session = await getSession(request.headers.get("Cookie"));
     let user = session.get(authenticator.sessionKey);
-
+    
     if (!user) {
       return redirect("/logout/");
     }
@@ -55,7 +57,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Redirect user to the appropriate dashboard
     if (user?.user.userType === "shipper") {
-      return redirect("/shippers/dashboard/");
+      return redirect("/shipper/dashboard/");
     }
 
     var userBusinessInfo: any = await getUserInfo(user?.user.id, user?.token);
@@ -145,11 +147,18 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
+interface OutletContext {
+  theme: "light" | "dark";
+  timezone: string;
+  toggleTheme: () => void;
+}
+
 export default function CarrierDashboard() {
   const { user, loads, bids } = useLoaderData<typeof loader>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
+  const { theme, timezone, toggleTheme } = useOutletContext<OutletContext>();
 
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
@@ -173,14 +182,24 @@ export default function CarrierDashboard() {
     );
   }
 
+  const themeClasses = {
+    header: theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200",
+    headerText: theme === "dark" ? "text-white" : "text-black",
+    headerHover: theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
+    activeLink: theme === "dark" ? "border-blue-400" : "border-blue-600",
+    inactiveLink: theme === "dark" ? "text-gray-400" : "text-gray-500",
+    welcomeText: theme === "dark" ? "text-green-400" : "text-green-800",
+    main: theme === "dark" ? "bg-gray-900" : "bg-white",
+  };
+
   return (
     <>
       {/* Desktop view header */}
-      <header className="hidden lg:flex justify-between items-center py-4 px-8 bg-gray-100 border-b-2 border-gray-200 fixed top-16 left-0 right-0">
+      <header className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}>
         <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
-            className="text-black hover:text-black text-xl"
+            className={`${themeClasses.headerText} ${themeClasses.headerHover} text-xl`}
           >
             &#9776;
           </button>
@@ -189,10 +208,10 @@ export default function CarrierDashboard() {
             to="/carriers/dashboard/"
             end
             className={({ isActive }) =>
-              "text-black font-semibold " +
+              `${themeClasses.headerText} font-semibold ` +
               (isActive
-                ? "border-b-2 border-blue-400 text-lg"
-                : "text-gray-400 hover:text-black text-lg")
+                ? `border-b-2 ${themeClasses.activeLink} text-lg`
+                : `${themeClasses.inactiveLink} ${themeClasses.headerHover} text-lg`)
             }
           >
             Home
@@ -201,17 +220,17 @@ export default function CarrierDashboard() {
           <NavLink
             to="/carriers/dashboard/view/"
             className={() =>
-              "text-black font-semibold " +
+              `${themeClasses.headerText} font-semibold ` +
               (isLoadOperationsActive
-                ? "border-b-2 border-blue-400 text-lg"
-                : "text-gray-500 hover:text-black text-lg")
+                ? `border-b-2 ${themeClasses.activeLink} text-lg`
+                : `${themeClasses.inactiveLink} ${themeClasses.headerHover} text-lg`)
             }
           >
             Load Operations
           </NavLink>
         </div>
         <h2
-          className="font-bold text-xl flex justify-center items-center mx-auto text-green-800"
+          className={`font-bold text-xl flex justify-center items-center mx-auto ${themeClasses.welcomeText}`}
           style={{
             animation: "bounce 2s ease-in-out 2",
           }}
@@ -222,13 +241,13 @@ export default function CarrierDashboard() {
 
       <div className="flex pt-16 mt-14">
         <div className="top-40">
-          {sidebarOpen && <SidebarCarrier activeSection={activeSection} />}
+          {sidebarOpen && <SidebarCarrier activeSection={activeSection} theme={theme} />}
         </div>
-        <main className="w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto">
+        <main className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}>
           {location.pathname === "/carriers/dashboard/" && (
-            <CarrierOverview loads={loads} bids={bids} />
+            <CarrierOverview loads={loads} bids={bids} theme={theme} />
           )}
-          <Outlet context={{ loads, bids }} />
+          <Outlet context={{ loads, bids, theme, timezone, toggleTheme }} />
         </main>
       </div>
     </>

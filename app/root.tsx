@@ -54,7 +54,16 @@ export const loader: LoaderFunction = async ({ request }) => {
     session.set(authenticator.sessionKey, user);
     await commitSession(session, { expires });
 
-    return json({ user });
+    let timeZone = session.get("timeZone") || "UTC";
+    const url = new URL(request.url);
+    const timeZoneParam = url.searchParams.get("timeZone");
+
+    if (timeZoneParam && timeZoneParam !== timeZone) {
+      timeZone = timeZoneParam;
+      session.set("timeZone", timeZone);
+    }
+
+    return json({ user, timeZone });
   } catch (e: any) {
     if (JSON.parse(e).data.status === 401) {
       return "/";
@@ -66,9 +75,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
-  const [theme, setTheme] = useState("dark");
-  const [isFooterVisible, setIsFooterVisible] = useState(true);
+  const [theme, setTheme] = useState('dark'); // Default to light theme
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
 
+  let timezone = loaderData?.timeZone;
   let user = loaderData?.user;
   if (loaderData === "/" || location.pathname === "/") {
     user = null;
@@ -77,8 +87,26 @@ export default function App() {
   }
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
+    setTheme((prevTheme) => {
+      const newTheme = prevTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", newTheme);
+      return newTheme;
+    });
   };
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,14 +126,16 @@ export default function App() {
   }, []);
 
   const themeClasses = {
-    html: theme === "dark" ? "bg-gray-900" : "bg-gray-100",
-    body: theme === "dark" ? "text-white" : "text-gray-900",
+    html: theme === "dark" ? "bg-gray-900" : "bg-white", // Changed from bg-green-50 to bg-white
+    body: theme === "dark" ? "text-white" : "text-gray-900", // Changed text color to gray-900 for better contrast
     footer:
       theme === "dark"
         ? "bg-gray-800 text-gray-300"
-        : "bg-gray-200 text-gray-700",
-    link: theme === "dark" ? "hover:text-orange-400" : "hover:text-orange-600",
+        : "bg-gray-100 text-gray-800", // Changed footer background to gray-100
+    link: theme === "dark" ? "hover:text-orange-400" : "hover:text-green-600",
   };
+
+  const isHomePage = location.pathname === "/";
 
   return (
     <html lang="en" className={`h-full ${themeClasses.html}`}>
@@ -116,40 +146,42 @@ export default function App() {
         <Links />
       </head>
       <body className={`h-full ${themeClasses.body}`}>
-        <div className="min-h-screen flex flex-col">
-          <Header user={user} theme={theme} toggleTheme={toggleTheme} />
+        <div className="max-h-screen flex flex-col">
+          <Header user={user} theme={theme} toggleTheme={toggleTheme} timezone={timezone} />
           <main className="flex-grow">
-            <Outlet context={{ theme }} />
+            <Outlet context={{ theme, timezone, toggleTheme }} />
           </main>
-          <footer
-            className={`${
-              themeClasses.footer
-            } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
-              isFooterVisible ? "translate-y-0" : "translate-y-full"
-            } hidden md:block`} // Add hidden for small screens and block for medium and up
-            onMouseEnter={() => setIsFooterVisible(true)}
-            onMouseLeave={() => setIsFooterVisible(false)}
-          >
-            <div className="container mx-auto text-center">
-              <nav className="flex justify-center space-x-4">
-                <Link to="/features" className={themeClasses.link}>
-                  Features
-                </Link>
-                <Link to="/how-it-works" className={themeClasses.link}>
-                  How It Works
-                </Link>
-                <Link to="/pricing" className={themeClasses.link}>
-                  Pricing
-                </Link>
-                <Link to="/contact" className={themeClasses.link}>
-                  Contacts
-                </Link>
-              </nav>
-              <p className="mt-4">
-                © 2023 AfroInnovate LoadBoard. All rights reserved.
-              </p>
-            </div>
-          </footer>
+          {isHomePage && (
+            <footer
+              className={`${
+                themeClasses.footer
+              } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
+                isFooterVisible ? "translate-y-0" : "translate-y-full"
+              } hidden md:block`}
+              onMouseEnter={() => setIsFooterVisible(true)}
+              onMouseLeave={() => setIsFooterVisible(false)}
+            >
+              <div className="container mx-auto text-center">
+                <nav className="flex justify-center space-x-4">
+                  <Link to="/features" className={themeClasses.link}>
+                    Features
+                  </Link>
+                  <Link to="/how-it-works" className={themeClasses.link}>
+                    How It Works
+                  </Link>
+                  <Link to="/pricing" className={themeClasses.link}>
+                    Pricing
+                  </Link>
+                  <Link to="/contact" className={themeClasses.link}>
+                    Contacts
+                  </Link>
+                </nav>
+                <p className="mt-4">
+                  © 2024 AfroInnovate LoadBoard. All rights reserved.
+                </p>
+              </div>
+            </footer>
+          )}
         </div>
         <ScrollRestoration />
         <Scripts />

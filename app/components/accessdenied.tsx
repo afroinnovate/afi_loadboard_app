@@ -18,8 +18,8 @@ export default function AccessDenied({ returnUrl, message }: AccessDeniedProps) 
             </p>
             <div className="flex justify-center">
             <Link to={ returnUrl } className="primary-action">
-                <HomeIcon className="h-5  mr-2 font-extrabold w-full" />
-              </Link>
+              <HomeIcon className="h-5  mr-2 font-extrabold w-full" />
+            </Link>
             </div>
           </div>
         </div>

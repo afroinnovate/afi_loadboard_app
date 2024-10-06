@@ -6,6 +6,7 @@ const baseUrl = "https://api.frieght.afroinnovate.com/";
 
 export async function AddLoads(loadRequest: LoadRequest, token: string) {
   try {
+    console.log("load request", loadRequest);
     const response = await fetch(baseUrl + "loads/", {
       method: "POST",
       headers: {
@@ -24,6 +25,71 @@ export async function AddLoads(loadRequest: LoadRequest, token: string) {
     const data = await response.json();
 
     const responseData: Load = { ...data }
+    return responseData;
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw new Error(JSON.stringify({
+          data: {
+            message: "Bid with ID 0 not found",
+            status: 404,
+          },
+        }));
+
+      case 500:
+        throw new Error(
+          JSON.stringify({
+            data: {
+              message: "Internal server error",
+              status: 500,
+            },
+          })
+        );
+      case 400:
+        throw new Error(JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        }));
+      case 401:
+        throw new Error(JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        }));
+      default:
+        throw new Error(JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        }));
+    }
+  }
+}
+
+export async function GetLoads(token: string) {
+  try {
+    const response = await fetch(baseUrl + "loads/", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // Check if the response is not ok (e.g., 400 or 500 status codes)
+    if (response.status !== 200) {
+      throw response;
+    }
+
+    // Assuming the response returns a JSON object
+    const data = await response.json();
+    const responseData: LoadResponse = [...data];
+
+    // Get the user data from the response
     return responseData;
   } catch (error: any) {
     switch (error.status) {
@@ -69,9 +135,10 @@ export async function AddLoads(loadRequest: LoadRequest, token: string) {
   }
 }
 
-export async function GetLoads(token: string) {
+export async function getLoadsByShipperId(token: string, shipperId: string) {
   try {
-    const response = await fetch(baseUrl + "loads/", {
+    const response = await fetch(
+      `${baseUrl}loads/shipper/${shipperId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -79,36 +146,32 @@ export async function GetLoads(token: string) {
       },
     });
 
-    // Check if the response is not ok (e.g., 400 or 500 status codes)
     if (response.status !== 200) {
       throw response;
     }
 
-    // Assuming the response returns a JSON object
     const data = await response.json();
     const responseData: LoadResponse = [...data];
 
-    // Get the user data from the response
     return responseData;
+
   } catch (error: any) {
+    console.log("get loads by shipper id error", error);
     switch (error.status) {
       case 404:
         throw JSON.stringify({
           data: {
-            message: "Bid with ID 0 not found",
+            message: "Load with ID 0 not found",
             status: 404,
           },
         });
-
       case 500:
-        throw new Error(
-          JSON.stringify({
+        throw JSON.stringify({
             data: {
               message: "Internal server error",
               status: 500,
             },
           })
-        );
       case 400:
         throw JSON.stringify({
           data: {

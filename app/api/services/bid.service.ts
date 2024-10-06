@@ -201,6 +201,75 @@ export async function GetBid(token: string, id: Number) {
   }
 }
 
+export async function GetBidByLoadId(loadId: Number, token: string) {
+  try {
+    const response = await fetch(`${baseUrl}bids/load/${loadId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 404) {
+      console.log("No bids found for load", loadId);
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Response(`Error fetching bid with ID ${loadId}`, {
+        status: response.status,
+      });
+    }
+
+    const responseData = await response.json();
+    return responseData;
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: `Bid with ID ${loadId} not found`,
+            status: 404,
+          },
+        });
+
+      case 500:
+        throw JSON.stringify({
+          data: {
+            message: "Internal server error",
+            status: 500,
+          },
+        });
+
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Bad request",
+            status: 400,
+          },
+        });
+
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Unauthorized",
+            status: 401,
+          },
+        });
+
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
+  }
+}
+
+
 export async function GetBidByLoadIdandCarrierId(loadId: Number, carrierId: string, token: string) {
   try {
       const response = await fetch(`${baseUrl}bids/${loadId}/${carrierId}`, {
@@ -268,7 +337,8 @@ export async function GetBidByLoadIdandCarrierId(loadId: Number, carrierId: stri
           });
       }
     }
-  }
+}
+
 
 export async function DeleteBid(token: string, id: Number) {
   try {
@@ -339,6 +409,7 @@ export async function UpdateBid(
   id: Number,
   bidRequest: BidUpdateRequest
 ) {
+  console.log("bidRequest", bidRequest);
   try {
     const url = `${baseUrl}bids/${id}`;
     const response = await fetch(url, {

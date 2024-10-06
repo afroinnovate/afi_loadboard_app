@@ -5,9 +5,9 @@ export const checkUserRole = (roles: string[], finegrainedRole: string): boolean
 
   const shipperAccess = roles.includes("shipper");
   const shipperHasAccess =
-    finegrainedRole === "independentShipper" ||
-    finegrainedRole === "corporateShipper" ||
-    finegrainedRole === "govtShipper";
+    finegrainedRole === "independent_shipper" ||
+    finegrainedRole === "corporate_shipper" ||
+    finegrainedRole === "govt_shipper";
   const adminAccess = roles.includes("admin");
   // check if the user is carrier
   const carrierAccess = roles.includes("carrier") || roles.includes("admin");

@@ -11,6 +11,7 @@ interface FloatingPasswordInputProps {
   onChange: (name: string, value: string, isValid: boolean) => void;
   className?: string;
   newPassword?: string;
+  theme: "light" | "dark";
 }
 
 export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
@@ -20,7 +21,8 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
   required,
   onChange,
   className,
-  newPassword
+  newPassword,
+  theme,
 }) => {
   const [value, setValue] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
@@ -59,8 +61,10 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
   };
 
   const inputClasses = clsx(
-    "appearance-none block w-full bg-gray-100 text-gray-700 border rounded py-2 px-3 leading-tight focus:outline-none",
+    "appearance-none block w-full border rounded py-2 px-3 leading-tight focus:outline-none transition-colors duration-300",
     {
+      "bg-gray-700 text-white border-gray-600": theme === "dark",
+      "bg-gray-100 text-gray-900 border-gray-300": theme === "light",
       "border-red-500": isFocused && !isValid,
       "border-green-500": isValid && value,
     },
@@ -70,8 +74,12 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
   const labelClasses = clsx(
     "absolute left-3 transition-all duration-300 ease-in-out pointer-events-none",
     {
-      "top-2 text-gray-500": !isFocused && !value,
+      "text-gray-400": !isFocused && !value && theme === "dark",
+      "text-gray-500": !isFocused && !value && theme === "light",
+      "top-2": !isFocused && !value,
       "-top-6 text-xs": isFocused || value,
+      "text-white": (isFocused || value) && theme === "dark",
+      "text-gray-900": (isFocused || value) && theme === "light",
       "text-red-500": isFocused && !isValid,
       "text-green-500": isValid && value,
     }
@@ -97,12 +105,12 @@ export const FloatingPasswordInput: React.FC<FloatingPasswordInputProps> = ({
       <button
         type="button"
         onClick={toggleShowPassword}
-        className="absolute right-3 top-2 text-gray-500 focus:outline-none"
+        className={`absolute right-3 top-2 focus:outline-none ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
       >
         {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
       </button>
       {isFocused && (
-        <div className="mt-2 text-sm text-gray-600">
+        <div className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
           Password must:
           <ul className="list-disc pl-5">
             <li>Be at least 8 characters long</li>

@@ -11,8 +11,8 @@ const secretKey = process.env.NODE_ENV === "production" ? secretKeyProduction : 
 export const sessionStorage = createCookieSessionStorage({
   cookie: {
     name: "_session", // use any name you want here
-    domain: "afroinnovate.com", //change it to afroinnovate.com when you deploy
-    // domain: "localhost", //change it to afroinnovate.com when you deploy
+    domain:"afroinnovate.com", //change it to afroinnovate.com when you deploy
+    // domain: "localhost", // change it to afroinnovate.com when you deploy
     sameSite: "lax", // this helps with CSRF
     path: "/", // remember to add this so the cookie will work in all routes
     httpOnly: true, // for security reasons, make this cookie http only

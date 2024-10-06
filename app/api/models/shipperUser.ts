@@ -19,6 +19,6 @@ export interface businessProfile {
   companyName: string;
   businessType: string;
   businessRegistrationNumber: string;
-  shipperRole: number;
+  shipperRole: any;
   idCardOrDriverLicenceNumber: string;
 }
