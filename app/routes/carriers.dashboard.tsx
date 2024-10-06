@@ -241,7 +241,7 @@ export default function CarrierDashboard() {
 
       <div className="flex pt-16 mt-14">
         <div className="top-40">
-          {sidebarOpen && <SidebarCarrier activeSection={activeSection} />}
+          {sidebarOpen && <SidebarCarrier activeSection={activeSection} theme={theme} />}
         </div>
         <main className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}>
           {location.pathname === "/carriers/dashboard/" && (
