@@ -282,10 +282,10 @@ export default function Dashboard() {
       </header>
       <div className="flex pt-16 mt-20">
         <div className="hidden lg:flex top-30">
-          {sidebarOpen && <Sidebar activeSection={activeSection} />}
+          {sidebarOpen && <Sidebar activeSection={activeSection} theme={theme} />}
         </div>
         <main className={`w-full flex justify-center content-center p-3 shadow-lg mt-20 ${themeClasses.main}`}>
-          {location.pathname === "/shipper/dashboard/" && <Overview />}
+          {location.pathname === "/shipper/dashboard/" && <Overview loads={loads} bidsDict={bidsDict} theme={theme} />}
           <Outlet context={{ loads, bidsDict, theme, timezone }} />
         </main>
       </div>
