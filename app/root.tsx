@@ -76,7 +76,7 @@ export default function App() {
   const loaderData: any = useLoaderData();
   const location = useLocation();
   const [theme, setTheme] = useState('dark'); // Default to light theme
-  const [isFooterVisible, setIsFooterVisible] = useState(false);
+  const [isFooterVisible, setIsFooterVisible] = useState(true);
 
   let timezone = loaderData?.timeZone;
   let user = loaderData?.user;
@@ -146,16 +146,14 @@ export default function App() {
         <Links />
       </head>
       <body className={`h-full ${themeClasses.body}`}>
-        <div className="max-h-screen flex flex-col">
+        <div className="flex flex-col h-full">
           <Header user={user} theme={theme} toggleTheme={toggleTheme} timezone={timezone} />
-          <main className="flex-grow">
+          <main className="flex-grow overflow-auto">
             <Outlet context={{ theme, timezone, toggleTheme }} />
           </main>
           {isHomePage && (
             <footer
-              className={`${
-                themeClasses.footer
-              } py-6 fixed bottom-0 right-0 left-0 transition-transform duration-300 ease-in-out ${
+              className={`${themeClasses.footer} py-6 transition-transform duration-300 ease-in-out ${
                 isFooterVisible ? "translate-y-0" : "translate-y-full"
               } hidden md:block`}
               onMouseEnter={() => setIsFooterVisible(true)}

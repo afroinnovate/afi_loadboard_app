@@ -208,5 +208,66 @@ input[type="radio"] {
   transform: translateX(10%);
 }
 
+/* Add this at the end of the file */
+@keyframes swirl {
+  0% {
+    transform: rotate(0deg) translateX(var(--swirl-radius)) rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg) translateX(var(--swirl-radius)) rotate(-360deg);
+  }
+}
+
+@keyframes moveToTarget {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(calc(var(--target-x) - 100%), calc(var(--target-y) - 100%)) rotate(360deg);
+  }
+}
+
+@keyframes crash {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(calc(var(--crash-x, 10px) - 50%), calc(var(--crash-y, 10px) - 50%)) scale(1.5);
+  }
+  100% {
+    transform: translate(calc(var(--crash-x, -10px) - 100%), calc(var(--crash-y, -10px) - 100%)) scale(0.1);
+    opacity: 0;
+  }
+}
+
+.particle {
+  position: absolute;
+  transition: all 0.5s ease;
+}
+
+.particle.swirling {
+  animation: swirl var(--swirl-speed) infinite linear;
+  animation-delay: var(--delay);
+}
+
+.particle.forming {
+  animation: moveToTarget 10s forwards;
+}.particle.formed {
+  left: var(--target-x) !important;
+  top: var(--target-y) !important;
+  transition: none;
+}
+
+.particle.crashing {
+  animation: crash 2s forwards;
+  --crash-x: calc(50% - var(--target-x));
+  --crash-y: calc(50% - var(--target-y));
+}.particle.reforming {
+  animation: moveToTarget 5s forwards;
+}
+
+
+
+
 
 

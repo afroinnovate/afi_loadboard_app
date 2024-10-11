@@ -204,7 +204,7 @@ export default function CarrierBidDashboard() {
   const [status, setStatus] = useState(searchParams.get('status') || 'all');
   const [date, setDate] = useState(searchParams.get('date') || '');
   const { theme, timezone, bids } = useOutletContext<OutletContext>();
-  const [localBids, setLocalBids] = useState(bids);
+  const [localBids, setLocalBids] = useState(bids || []); // Initialize with an empty array if bids is null
   
   console.log("theme", theme, "timezone", timezone);
 
@@ -220,7 +220,7 @@ export default function CarrierBidDashboard() {
   let carrierProfile: any = loaderData?.carrierProfile || {};
 
   useEffect(() => {
-    let filteredBids = bids;
+    let filteredBids = bids || []; // Use an empty array if bids is null
     if (status && status !== 'all') {
       filteredBids = filteredBids.filter((bid: { bidStatus: number }) => bid.bidStatus.toString() === status);
     }
@@ -456,138 +456,146 @@ export default function CarrierBidDashboard() {
       </form>
 
       <div className="space-y-4">
-        {localBids.map((bid: any) => (
-          <Disclosure key={bid.id}>
-            {({ open }) => (
-              <div className={`${themeClasses.card} shadow rounded-lg`}>
-                <Disclosure.Button className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-bold ${themeClasses.text.primary} hover:bg-opacity-80`}>
-                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0">
-                    <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
-                      {bid.load.origin}
-                    </h2>
-                    <ArrowRightIcon className="w-4 h-4 sm:w-6 sm:h-6 text-red-400 flex-shrink-0" />
-                    <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
-                      {bid.load.destination}
-                    </h2>
-                  </div>
-                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 justify-end">
-                    <span className="hidden sm:inline">
-                      <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
-                    </span>
-                    <span className="sm:hidden">
-                      <LoadStatusIcon status={getStatusText(bid.bidStatus)} />
-                    </span>
-                    <span className="text-sm sm:text-lg font-normal sm:font-bold">
-                      {currency} {bid.bidAmount}
-                    </span>
-                    <ChevronUpIcon
-                      className={`hidden sm:block sm:w-6 sm:h-6 ${
-                        open ? "transform rotate-180" : ""
-                      } text-gray-300`}
-                    />
-                  </div>
-                </Disclosure.Button>
+        {localBids.length > 0 ? (
+          localBids.map((bid: any) => (
+            <Disclosure key={bid.id}>
+              {({ open }) => (
+                <div className={`${themeClasses.card} shadow rounded-lg`}>
+                  <Disclosure.Button className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-bold ${themeClasses.text.primary} hover:bg-opacity-80`}>
+                    <div className="flex flex-wrap items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0">
+                      <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
+                        {bid.load.origin}
+                      </h2>
+                      <ArrowRightIcon className="w-4 h-4 sm:w-6 sm:h-6 text-red-400 flex-shrink-0" />
+                      <h2 className="text-sm sm:text-lg sm:font-bold font-normal truncate max-w-[100px] sm:max-w-none">
+                        {bid.load.destination}
+                      </h2>
+                    </div>
+                    <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 justify-end">
+                      <span className="hidden sm:inline">
+                        <LoadStatusBadge status={getStatusText(bid.bidStatus)} />
+                      </span>
+                      <span className="sm:hidden">
+                        <LoadStatusIcon status={getStatusText(bid.bidStatus)} />
+                      </span>
+                      <span className="text-sm sm:text-lg font-normal sm:font-bold">
+                        {currency} {bid.bidAmount}
+                      </span>
+                      <ChevronUpIcon
+                        className={`hidden sm:block sm:w-6 sm:h-6 ${
+                          open ? "transform rotate-180" : ""
+                        } text-gray-300`}
+                      />
+                    </div>
+                  </Disclosure.Button>
 
-                <Disclosure.Panel className={`p-4 ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg`}>
-                      <h3 className={`text-xl font-bold mb-2 ${themeClasses.heading}`}>Bid Details</h3>
-                      <p key={`amount-${bid.id}`}>
-                        Amount: {currency} {bid.bidAmount}
-                      </p>
-                      <p key={`date-${bid.id}`}>
-                        Date: {formatDateTime(bid.biddingTime, "date")}
-                      </p>
-                      <p key={`time-${bid.id}`}>
-                        Time: {formatDateTime(bid.biddingTime, "time")}{" "}
-                        <TimezoneAbbr
-                          dateTime={bid.biddingTime}
-                          timezone={timezone}
-                        />
-                      </p>
-                      <p key={`status-${bid.id}`}>
-                        Status:{" "}
-                        <LoadStatusBadge
-                          status={getStatusText(bid.bidStatus)}
-                        />
-                      </p>
+                  <Disclosure.Panel className={`p-4 ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg`}>
+                        <h3 className={`text-xl font-bold mb-2 ${themeClasses.heading}`}>Bid Details</h3>
+                        <p key={`amount-${bid.id}`}>
+                          Amount: {currency} {bid.bidAmount}
+                        </p>
+                        <p key={`date-${bid.id}`}>
+                          Date: {formatDateTime(bid.biddingTime, "date")}
+                        </p>
+                        <p key={`time-${bid.id}`}>
+                          Time: {formatDateTime(bid.biddingTime, "time")}{" "}
+                          <TimezoneAbbr
+                            dateTime={bid.biddingTime}
+                            timezone={timezone}
+                          />
+                        </p>
+                        <p key={`status-${bid.id}`}>
+                          Status:{" "}
+                          <LoadStatusBadge
+                            status={getStatusText(bid.bidStatus)}
+                          />
+                        </p>
+                      </div>
+                      <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg`}>
+                        <h3 className={`text-xl font-bold mb-2 ${themeClasses.heading}`}>Load Details</h3>
+                        <p key={`route-${bid.id}`}>
+                          Route: {bid.load.origin} to {bid.load.destination}
+                        </p>
+                        <p key={`pickup-${bid.id}`}>
+                          Pickup: {formatDateTime(bid.load.pickupDate, "date")}
+                        </p>
+                        <p key={`delivery-${bid.id}`}>
+                          Delivery:{" "}
+                          {formatDateTime(bid.load.deliveryDate, "date")}
+                        </p>
+                        <p key={`weight-${bid.id}`}>
+                          Weight: {bid.load.weight} kg
+                        </p>
+                        <p key={`offer-${bid.id}`}>
+                          Shipper's Offer: {currency} {bid.load.offerAmount}
+                        </p>
+                      </div>
                     </div>
-                    <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg`}>
-                      <h3 className={`text-xl font-bold mb-2 ${themeClasses.heading}`}>Load Details</h3>
-                      <p key={`route-${bid.id}`}>
-                        Route: {bid.load.origin} to {bid.load.destination}
-                      </p>
-                      <p key={`pickup-${bid.id}`}>
-                        Pickup: {formatDateTime(bid.load.pickupDate, "date")}
-                      </p>
-                      <p key={`delivery-${bid.id}`}>
-                        Delivery:{" "}
-                        {formatDateTime(bid.load.deliveryDate, "date")}
-                      </p>
-                      <p key={`weight-${bid.id}`}>
-                        Weight: {bid.load.weight} kg
-                      </p>
-                      <p key={`offer-${bid.id}`}>
-                        Shipper's Offer: {currency} {bid.load.offerAmount}
-                      </p>
+                    <div className="mt-4 flex justify-end space-x-2">
+                      <Form method="post">
+                        <input type="hidden" name="bidId" value={bid.id} />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleContactShipper(bid.load?.createdBy, bid.load)
+                          }
+                          className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
+                          title="Contact Shipper"
+                        >
+                          <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
+                          <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                            Contact Shipper
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => setSelectedBid(bid)}
+                          className={`p-2 m-2 rounded-full group relative ${
+                            bid.bidStatus === 0
+                              ? "bg-orange-400 hover:bg-orange-500"
+                              : "bg-gray-400 cursor-not-allowed"
+                          }`}
+                          title="Update Bid"
+                          disabled={bid.bidStatus !== 0}
+                        >
+                          <PencilIcon className="w-5 h-5 text-white" />
+                          <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                            {bid.bidStatus === 0 ? "Update Bid" : "Cannot update non-pending bid"}
+                          </span>
+                        </button>
+                        <button
+                          type="submit"
+                          name="_action"
+                          value="delete"
+                          onClick={() => setBidToDelete(bid.id)}
+                          className={`p-2 m-2 rounded-full group relative ${
+                            bid.bidStatus === 0
+                              ? "bg-red-500 hover:bg-red-600"
+                              : "bg-gray-400 cursor-not-allowed"
+                          }`}
+                          title="Withdraw Bid"
+                          disabled={bid.bidStatus !== 0}
+                        >
+                          <TrashIcon className="w-5 h-5 text-white" />
+                          <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
+                            {bid.bidStatus === 0 ? "Withdraw Bid" : "Cannot withdraw non-pending bid"}
+                          </span>
+                        </button>
+                      </Form>
                     </div>
-                  </div>
-                  <div className="mt-4 flex justify-end space-x-2">
-                    <Form method="post">
-                      <input type="hidden" name="bidId" value={bid.id} />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleContactShipper(bid.load?.createdBy, bid.load)
-                        }
-                        className="p-2 m-2 bg-green-500 rounded-full hover:bg-green-600 group relative"
-                        title="Contact Shipper"
-                      >
-                        <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
-                        <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          Contact Shipper
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => setSelectedBid(bid)}
-                        className={`p-2 m-2 rounded-full group relative ${
-                          bid.bidStatus === 0
-                            ? "bg-orange-400 hover:bg-orange-500"
-                            : "bg-gray-400 cursor-not-allowed"
-                        }`}
-                        title="Update Bid"
-                        disabled={bid.bidStatus !== 0}
-                      >
-                        <PencilIcon className="w-5 h-5 text-white" />
-                        <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          {bid.bidStatus === 0 ? "Update Bid" : "Cannot update non-pending bid"}
-                        </span>
-                      </button>
-                      <button
-                        type="submit"
-                        name="_action"
-                        value="delete"
-                        onClick={() => setBidToDelete(bid.id)}
-                        className={`p-2 m-2 rounded-full group relative ${
-                          bid.bidStatus === 0
-                            ? "bg-red-500 hover:bg-red-600"
-                            : "bg-gray-400 cursor-not-allowed"
-                        }`}
-                        title="Withdraw Bid"
-                        disabled={bid.bidStatus !== 0}
-                      >
-                        <TrashIcon className="w-5 h-5 text-white" />
-                        <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                          {bid.bidStatus === 0 ? "Withdraw Bid" : "Cannot withdraw non-pending bid"}
-                        </span>
-                      </button>
-                    </Form>
-                  </div>
-                </Disclosure.Panel>
-              </div>
-            )}
-          </Disclosure>
-        ))}
+                  </Disclosure.Panel>
+                </div>
+              )}
+            </Disclosure>
+          ))
+        ) : (
+          <div className={`${themeClasses.card} p-4 rounded-lg shadow-lg text-center`}>
+            <p className={`${themeClasses.text.secondary} text-lg`}>
+              No bids available. Start bidding on loads to see them here!
+            </p>
+          </div>
+        )}
       </div>
 
       {showContactShipper && selectedShipper && (
@@ -693,6 +701,3 @@ const DeleteConfirmationModal = ({
 };
 
 <ErrorBoundary />
-
-
-
