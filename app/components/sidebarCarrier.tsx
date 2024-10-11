@@ -12,11 +12,11 @@ const sidebarLinks = [
 export default function SidebarCarrier({ activeSection, theme }: { activeSection: string, theme: string }) {
   var renderingLinks = sidebarLinks;
   if (activeSection === "home") {
-    renderingLinks = [{ name: "Overview", to: "/carriers/dashboard/" }];
+    renderingLinks = [{ name: "Overview", to: "/carrier/dashboard/" }];
   } else {
     renderingLinks = [
-      { name: "View Open Loads", to: "/carriers/dashboard/view/" },
-      { name: "View Bids", to: "/carriers/dashboard/bid/" },
+      { name: "View Open Loads", to: "/carrier/dashboard/view/" },
+      { name: "View Bids", to: "/carrier/dashboard/bid/" },
     ];
   }
 

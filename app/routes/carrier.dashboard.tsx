@@ -41,7 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     console.log("Carrier dashboard loader");
     const session = await getSession(request.headers.get("Cookie"));
     let user = session.get(authenticator.sessionKey);
-    
+
     if (!user) {
       return redirect("/logout/");
     }
@@ -74,19 +74,23 @@ export const loader: LoaderFunction = async ({ request }) => {
           userType: userBusinessInfo.userType,
           businessProfile: {
             companyName: userBusinessInfo.businessProfile.companyName,
-            motorCarrierNumber: userBusinessInfo.businessProfile.motorCarrierNumber,
+            motorCarrierNumber:
+              userBusinessInfo.businessProfile.motorCarrierNumber,
             dotNumber: userBusinessInfo.businessProfile.dotNumber,
             equipmentType: userBusinessInfo.businessProfile.equipmentType,
-            availableCapacity: userBusinessInfo.businessProfile.availableCapacity,
-            idCardOrDriverLicenceNumber: userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
+            availableCapacity:
+              userBusinessInfo.businessProfile.availableCapacity,
+            idCardOrDriverLicenceNumber:
+              userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
             insuranceName: userBusinessInfo.businessProfile.insuranceName,
             businessType: userBusinessInfo.businessProfile.businessType,
             carrierRole: userBusinessInfo.businessProfile.carrierRole,
             shipperRole: null,
-            businessRegistrationNumber: userBusinessInfo.businessProfile.businessRegistrationNumber,
+            businessRegistrationNumber:
+              userBusinessInfo.businessProfile.businessRegistrationNumber,
             carrierVehicles: userBusinessInfo.businessProfile.carrierVehicles,
           },
-        }
+        },
       };
       session.set("carrier", carrierUser);
     } else {
@@ -127,10 +131,10 @@ export const loader: LoaderFunction = async ({ request }) => {
     const bids = await GetBidsByCarrierId(user?.token, carrierProfile.id);
 
     return json(
-      { 
+      {
         user: carrierProfile,
         loads,
-        bids
+        bids,
       },
       {
         headers: {
@@ -160,11 +164,10 @@ export default function CarrierDashboard() {
   const location = useLocation();
   const { theme, timezone, toggleTheme } = useOutletContext<OutletContext>();
 
-  const isLoadOperationsActive = location.pathname.startsWith(
-    "/carriers/dashboard/view/"
-  );
+  const isViewLoadsActive = location.pathname.startsWith("/carrier/dashboard/view/");
+  const isManageBidsActive = location.pathname.startsWith("/carrier/dashboard/bid/");
 
-  const activeSection = location.pathname.split("/")[2] || "home";
+  const activeSection = location.pathname.split("/")[3] || "home";
 
   useEffect(() => {
     const handleResize = () => setSidebarOpen(window.innerWidth > 768);
@@ -183,9 +186,13 @@ export default function CarrierDashboard() {
   }
 
   const themeClasses = {
-    header: theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200",
+    header:
+      theme === "dark"
+        ? "bg-gray-800 border-gray-700"
+        : "bg-gray-100 border-gray-200",
     headerText: theme === "dark" ? "text-white" : "text-black",
-    headerHover: theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
+    headerHover:
+      theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
     activeLink: theme === "dark" ? "border-blue-400" : "border-blue-600",
     inactiveLink: theme === "dark" ? "text-gray-400" : "text-gray-500",
     welcomeText: theme === "dark" ? "text-green-400" : "text-green-800",
@@ -195,7 +202,9 @@ export default function CarrierDashboard() {
   return (
     <>
       {/* Desktop view header */}
-      <header className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}>
+      <header
+        className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}
+      >
         <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
@@ -205,7 +214,7 @@ export default function CarrierDashboard() {
           </button>
 
           <NavLink
-            to="/carriers/dashboard/"
+            to="/carrier/dashboard/"
             end
             className={({ isActive }) =>
               `${themeClasses.headerText} font-semibold ` +
@@ -218,15 +227,27 @@ export default function CarrierDashboard() {
           </NavLink>
 
           <NavLink
-            to="/carriers/dashboard/view/"
-            className={() =>
+            to="/carrier/dashboard/view/"
+            className={({ isActive }) =>
               `${themeClasses.headerText} font-semibold ` +
-              (isLoadOperationsActive
+              (isActive || isViewLoadsActive
                 ? `border-b-2 ${themeClasses.activeLink} text-lg`
                 : `${themeClasses.inactiveLink} ${themeClasses.headerHover} text-lg`)
             }
           >
-            Load Operations
+            View Loads
+          </NavLink>
+
+          <NavLink
+            to="/carrier/dashboard/bid/"
+            className={({ isActive }) =>
+              `${themeClasses.headerText} font-semibold ` +
+              (isActive || isManageBidsActive
+                ? `border-b-2 ${themeClasses.activeLink} text-lg`
+                : `${themeClasses.inactiveLink} ${themeClasses.headerHover} text-lg`)
+            }
+          >
+            Manage Bids
           </NavLink>
         </div>
         <h2
@@ -241,13 +262,18 @@ export default function CarrierDashboard() {
 
       <div className="flex pt-16 mt-14">
         <div className="top-40">
-          {sidebarOpen && <SidebarCarrier activeSection={activeSection} theme={theme} />}
-        </div>
-        <main className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}>
-          {location.pathname === "/carriers/dashboard/" && (
-            <CarrierOverview loads={loads} bids={bids} theme={theme} />
+          {sidebarOpen && (
+            <SidebarCarrier activeSection={activeSection} theme={theme} />
           )}
-          <Outlet context={{ loads, bids, theme, timezone, toggleTheme }} />
+        </div>
+        <main
+          className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}
+        >
+          {location.pathname === "/carrier/dashboard/" ? (
+            <CarrierOverview loads={loads} bids={bids} theme={theme} />
+          ) : (
+            <Outlet context={{ loads, bids, theme, timezone, toggleTheme }} />
+          )}
         </main>
       </div>
     </>

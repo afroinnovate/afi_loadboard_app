@@ -20,7 +20,7 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
 
   const isAuthenticated =
     location.pathname.startsWith("/shipper/dashboard/") ||
-    location.pathname.startsWith("/carriers/dashboard/");
+    location.pathname.startsWith("/carrier/dashboard/");
   
   const userType = location.pathname.split("/")[1];
   console.log("User type from URL: ", userType);
@@ -68,14 +68,14 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
             className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? (
+            {theme === "dark" ? (
               <SunIcon className="h-5 w-5" />
             ) : (
               <MoonIcon className="h-5 w-5" />
             )}
           </button>
 
-          {(location.pathname.startsWith("/carriers/dashboard") ||
+          {(location.pathname.startsWith("/carrier/dashboard") ||
             location.pathname.startsWith("/shipper/dashboard/")) && (
             <div className="hidden lg:flex items-center space-x-4">
               {!isAuthenticated ? (
@@ -95,9 +95,9 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
                 </>
               ) : (
                 <>
-                  {location.pathname === "/carriers/dashboard/" && (
+                  {location.pathname === "/carrier/dashboard/" && (
                     <Link
-                      to="/carriers/dashboard/view"
+                      to="/carrier/dashboard/view"
                       className="bg-orange-500 text-white font-bold px-4 py-2 rounded hover:bg-orange-600 transition duration-300"
                     >
                       PickUp Load Now
@@ -173,7 +173,7 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
             </div>
           )}
 
-          {(location.pathname.startsWith("/carriers/dashboard") ||
+          {(location.pathname.startsWith("/carrier/dashboard") ||
             location.pathname.startsWith("/shipper/dashboard/")) && (
             <button
               onClick={toggleMenu}
@@ -189,7 +189,7 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
         </div>
 
         {isMenuOpen &&
-          (location.pathname.startsWith("/carriers/dashboard/") ||
+          (location.pathname.startsWith("/carrier/dashboard/") ||
             location.pathname.startsWith("/shipper/dashboard/")) && (
             <div className="lg:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1">
@@ -201,7 +201,7 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
       </nav>
 
       {isMenuOpen &&
-        (location.pathname.startsWith("/carriers/dashboard/") ||
+        (location.pathname.startsWith("/carrier/dashboard/") ||
           location.pathname.startsWith("/shipper/dashboard/")) && (
           <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">

@@ -1,5 +1,5 @@
 import { EnvelopeIcon, PhoneIcon } from "@heroicons/react/20/solid";
-import { useOutletContext } from "@remix-run/react";
+import { useOutletContext, useParams, Link } from "@remix-run/react";
 
 interface OutletContext {
   theme: "light" | "dark";
@@ -7,6 +7,7 @@ interface OutletContext {
 
 export default function AccountHelp() {
   const { theme } = useOutletContext<OutletContext>();
+  const { userType } = useParams();
   const isDarkTheme = theme === "dark";
 
   const themeClasses = {
@@ -17,10 +18,20 @@ export default function AccountHelp() {
     icon: isDarkTheme ? "text-green-400" : "text-green-700",
     border: isDarkTheme ? "border-gray-700" : "border-gray-200",
     cardBorder: isDarkTheme ? "border-green-700" : "border-green-500",
+    button: isDarkTheme ? "bg-green-700 text-white hover:bg-green-600" : "bg-green-500 text-white hover:bg-green-400",
   };
 
   return (
     <div className={`w-full ${themeClasses.container} p-6 rounded-lg shadow-lg border-2 ${themeClasses.cardBorder}`}>
+      <div className="mb-4">
+        <Link
+          to={`/${userType}/dashboard/`}
+          className={`inline-block px-4 py-2 rounded ${themeClasses.button}`}
+        >
+          Back to Dashboard
+        </Link>
+      </div>
+
       <h2 className={`text-2xl font-semibold mb-6 ${themeClasses.header}`}>Need Help?</h2>
       <div className="space-y-6">
         <div className={`flex items-center space-x-4 border-b pb-4 ${themeClasses.border}`}>

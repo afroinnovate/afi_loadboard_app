@@ -74,7 +74,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const expires = new Date(Date.now() + EXPIRES_IN);
 
     if (user?.user.userType === "carrier") {
-      return redirect("/carriers/dashboard/");
+      return redirect("/carrier/dashboard/");
     }
 
     // hydrate session user with shipper data

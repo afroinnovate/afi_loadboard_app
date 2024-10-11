@@ -1,4 +1,4 @@
-import { useLoaderData, useOutletContext } from "@remix-run/react";
+import { useLoaderData, useOutletContext, Link } from "@remix-run/react";
 import { json, LoaderFunction } from "@remix-run/node";
 
 interface OutletContext {
@@ -29,10 +29,25 @@ export default function Subscriptions() {
     border: isDarkTheme ? "border-gray-700" : "border-gray-200",
     background: isDarkTheme ? "bg-gray-800" : "bg-white",
     cardBorder: isDarkTheme ? "border-green-700" : "border-green-500",
+    button: isDarkTheme
+      ? "bg-green-600 text-white hover:bg-green-700"
+      : "bg-green-500 text-white hover:bg-green-600",
+    disabledButton: isDarkTheme
+      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+      : "bg-gray-300 text-gray-500 cursor-not-allowed",
   };
 
   return (
     <div className={`w-full ${themeClasses.background} p-6 rounded-lg shadow-lg border-2 ${themeClasses.cardBorder}`}>
+      <div className="mb-4">
+        <Link
+          to={`/${userType}/dashboard/`}
+          className={`inline-block px-4 py-2 rounded ${themeClasses.button}`}
+        >
+          Back to Dashboard
+        </Link>
+      </div>
+      
       <h2 className={`text-2xl font-bold mb-6 ${themeClasses.label}`}>Your Subscription Details</h2>
       <div className="space-y-6">
         <div className={`flex justify-between items-center border-b ${themeClasses.border} py-3`}>
@@ -58,7 +73,7 @@ export default function Subscriptions() {
           Your subscription is currently active. You're all set to enjoy our premium features!
         </p>
         <button 
-          className={`bg-gray-400 text-white px-6 py-2 rounded cursor-not-allowed opacity-50`}
+          className={themeClasses.disabledButton}
           disabled
         >
           Manage Subscription

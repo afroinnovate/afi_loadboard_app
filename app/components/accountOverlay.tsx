@@ -25,10 +25,9 @@ export default function AccountOverlay({
   const [isMobile, setIsMobile] = useState(false);
   const isDarkTheme = theme === "dark";
 
-  const basePath =
-    location.pathname.includes("/shipper/")
-      ? "/shipper/dashboard/account"
-      : "/carriers/dashboard/account";
+  const basePath = location.pathname.includes("/shipper/")
+    ? "/shipper/dashboard/account"
+    : "/carrier/dashboard/account";
 
   useEffect(() => {
     const checkMobile = () => {

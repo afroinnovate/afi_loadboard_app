@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import {
   Form,
-  Link,
-  NavLink,
   useActionData,
   useFetcher,
   useLoaderData,
-  useLocation,
   useNavigation,
   useOutletContext,
 } from "@remix-run/react";
@@ -30,6 +27,8 @@ import { CreateUser } from "~/api/services/user.service";
 import VehicleForm from "~/components/vehicleForm";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { CheckCircleIcon } from "@heroicons/react/20/solid";
+import { businessProfile } from '../api/models/shipperUser';
+import { Link } from "@remix-run/react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -48,6 +47,10 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
+
+    if (!user) {
+      return redirect("/logout/");
+    }
     
     let { userType } = params;
 
@@ -57,11 +60,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       return redirect(`/${user?.user.userType}/dashboard/account/business`);
     }
 
-    // Determine the correct user type for session retrieval
-    const sessionUserType: string = userType === "carriers" ? "carrier" : userType ?? "";
-
-    const userProfile = session.get(sessionUserType);
-    
+    const userProfile = session.get(userType ?? "");
+  
     if (!userProfile) {
       return redirect("/logout/");
     }
@@ -74,12 +74,12 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     userProfile.user.roles = user.user.roles;
     userProfile.user.userType = user.user.userType;
     userProfile.user.businessProfile.carrierRole =
-      userProfile.user.businessProfile.carrierRole !== null ||
+      userProfile.user.businessProfile.businessType !== null ||
       userProfile.user.businessProfile.carrierRole !== undefined
         ? userProfile.user.businessProfile.carrierRole
         : null;
     userProfile.user.businessProfile.shipperRole =
-      userProfile.user.businessProfile.shipperRole !== null ||
+      userProfile.user.businessProfile.businessType !== null ||
       userProfile.user.businessProfile.shipperRole !== undefined
         ? userProfile.user.businessProfile.shipperRole
         : null;
@@ -94,7 +94,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           "Independent Shipper": "independent_shipper",
           "Government Shipper": "govt_shipper",
           "Corporate Shipper": "corporate_shipper",
-        };
+      };
+
     if (
       userProfile.user.businessProfile.carrierRole !== null
     ) {
@@ -122,7 +123,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     // update the session so the user can keep working long as they are active
     const expires = new Date(Date.now() + EXPIRES_IN);
     session.set(authenticator.sessionKey, user);
-    session.set(sessionUserType, userProfile);
+    session.set(userType ?? "", userProfile);
     await commitSession(session, { expires });
 
     return json(
@@ -154,9 +155,8 @@ export let action: ActionFunction = async ({ params, request }: any) => {
   if (!userType) {
     return redirect("/logout/");
   }
-  const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
 
-  const userProfile = session.get(userTypeFiltered);
+  const userProfile = session.get(userType);
   let user = userProfile;
 
   user.user.phone = authUser.user.phoneNumber;
@@ -339,8 +339,8 @@ export let action: ActionFunction = async ({ params, request }: any) => {
             businessProfile: business_req.businessProfile,
           },
         };
-        const userTypeFiltered = userType === "carriers" ? "carrier" : userType;
-        session.set(userTypeFiltered, updatedUser);
+      
+        session.set(userType, updatedUser);
         await commitSession(session);
       }
 
@@ -393,7 +393,6 @@ export default function Business() {
   const [showCompleteProfileForm, setShowCompleteProfileForm] = useState(false);
   const [documents, setDocuments] = useState<File[]>([]);
   const [isUpdateEnabled, setIsUpdateEnabled] = useState(false);
-  const [fleetSize, setFleetSize] = useState("");
   const { theme } = useOutletContext<OutletContext>();
   const fetcher = useFetcher();
 
@@ -425,7 +424,7 @@ export default function Business() {
     businessUpdated = true;
   }
 
-  const [vehicleTypes, setVehicleTypes]: any = useState({
+  const [vehicleTypes, setVehicleTypes] = useState({
     Trucks: { selected: false, quantity: 0 },
     Boats: { selected: false, quantity: 0 },
     Vans: { selected: false, quantity: 0 },
@@ -438,12 +437,12 @@ export default function Business() {
     }
   };
 
-  const handleRemoveFile = (index) => {
+  const handleRemoveFile = (index: number) => {
     setDocuments((prevDocs) => prevDocs.filter((_, i) => i !== index));
   };
 
-  const handleVehicleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleVehicleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, checked } = e.target;
     if (selectedRole === "owner_operator") {
       setVehicleTypes({
         Trucks: { selected: value === "Trucks", quantity: 0 },
@@ -459,16 +458,12 @@ export default function Business() {
     }
   };
 
-  const handleVehicleQuantityChange = (e, vehicle) => {
+  const handleVehicleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>, vehicle: string) => {
     const { value } = e.target;
     setVehicleTypes((prevVehicles) => ({
       ...prevVehicles,
       [vehicle]: { ...prevVehicles[vehicle], quantity: parseInt(value, 10) },
     }));
-  };
-
-  const handleFleetSizeChange = (e) => {
-    setFleetSize(e.target.value);
   };
 
   const [formValues, setFormValues] = useState({
@@ -488,7 +483,7 @@ export default function Business() {
     );
   };
 
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues({
       ...formValues,
@@ -509,7 +504,7 @@ export default function Business() {
       setIsUpdateEnabled(isValid);
     } else if (selectedRole === "fleet_owner") {
       const isVehicleSelected = Object.values(vehicleTypes).some(
-        (v) => v.selected && v.quantity > 0
+        (v: any) => v.selected && v.quantity > 0
       );
       const requiredDocCount = requiredDocs.length >= 2;
       const isValid = isVehicleSelected && requiredDocCount;
@@ -534,7 +529,7 @@ export default function Business() {
       setIsUpdateEnabled(false);
     }
 
-    if ((fetcher.data && fetcher.data.success) || businessUpdated) {
+    if ((fetcher.data && 'success' in fetcher.data && fetcher.data.success) || businessUpdated) {
       setIsModalOpen(true);
     }
   }, [
@@ -546,7 +541,7 @@ export default function Business() {
     businessUpdated,
   ]);
 
-  const handleEditClick = (field: any) => {
+  const handleEditClick = (field: string) => {
     setIsEditingField(field);
   };
 
@@ -568,8 +563,21 @@ export default function Business() {
     (key) => vehicleTypes[key].selected
   );
 
+  const isBusinessProfileComplete =
+    user.user.businessProfile.companyName &&
+    user.user.businessProfile.businessType;
+  
   return (
     <div className={`p-6 rounded-lg shadow-lg w-full h-full flex flex-col ${themeClasses.container}`}>
+      <div className="mb-4">
+        <Link
+          to={`/${user.user.userType}/dashboard/`}
+          className={`inline-block px-4 py-2 rounded ${themeClasses.button}`}
+        >
+          Back to Dashboard
+        </Link>
+      </div>
+
       <Modal
         isOpen={isModalOpen}
         title="Success"
@@ -720,8 +728,7 @@ export default function Business() {
                 {!showCompleteProfileForm && (
                   <>
                     <div className="flex items-center mb-2">
-                      {user?.user.businessProfile.carrierRole !== null ||
-                      user?.user.businessProfile.shipperRole !== null ? (
+                      {isBusinessProfileComplete ? (
                         <>
                           <p className={`p-2 mr-2 font-semibold ${themeClasses.subHeader}`}>
                             Profile Status:
@@ -752,20 +759,19 @@ export default function Business() {
                       </div>
                     )}
 
-                    {user.user.businessProfile.carrierRole === null &&
-                      user.user.businessProfile.shipperRole === null && (
-                        <div className={`border ${themeClasses.warningBox} p-4 rounded-lg`}>
-                          <p className={`text-sm ${themeClasses.warningText} mb-4`}>
-                            Your business profile is not complete. Please complete your profile to start picking up or posting loads.
-                          </p>
-                          <button
-                            className={`${themeClasses.button} px-4 py-2 rounded transition duration-300`}
-                            onClick={() => setShowCompleteProfileForm(true)}
-                          >
-                            Complete your Profile
-                          </button>
-                        </div>
-                      )}
+                    {!isBusinessProfileComplete && (
+                      <div className={`border ${themeClasses.warningBox} p-4 rounded-lg`}>
+                        <p className={`text-sm ${themeClasses.warningText} mb-4`}>
+                          Your business profile is not complete. Please complete your profile to start picking up or posting loads.
+                        </p>
+                        <button
+                          className={`${themeClasses.button} px-4 py-2 rounded transition duration-300`}
+                          onClick={() => setShowCompleteProfileForm(true)}
+                        >
+                          Complete your Profile
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
 

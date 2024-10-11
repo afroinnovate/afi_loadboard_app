@@ -5,6 +5,7 @@ import {
   useLoaderData,
   useNavigation,
   useOutletContext,
+  Link,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { PencilIcon } from "lucide-react";
@@ -145,8 +146,19 @@ export default function Profile() {
     formBackground: theme === "dark" ? "bg-gray-800" : "bg-gray-50",
   };
 
+  const dashboardUrl = `/${user.userType}/dashboard`;
+
   return (
     <div className={`w-full p-4 ${themeClasses.container}`}>
+      <div className="mb-4">
+        <Link
+          to={`/${LoaderData.userType}/dashboard/`}
+          className={`inline-block px-4 py-2 rounded ${themeClasses.button}`}
+        >
+          Back to Dashboard
+        </Link>
+      </div>
+      
       {actionData?.error && (
         <p className="text-red-500 text-xs italic mb-4">{actionData.error}</p>
       )}

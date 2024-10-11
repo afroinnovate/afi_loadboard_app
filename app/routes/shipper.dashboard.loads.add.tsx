@@ -24,7 +24,6 @@ import type { ShipperUser } from "~/api/models/shipperUser";
 import { FloatingLabelInput } from "~/components/FloatingInput";
 import { DateInput } from "~/components/dateInput";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import { the } from "../api/services/session";
 
 export const meta: MetaFunction = () => {
   return [
@@ -70,7 +69,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     }
 
     if (user.user.userType === "carrier") {
-      return redirect("/carriers/dashboard/", {
+      return redirect("/carrier/dashboard/", {
         headers: {
           "Set-Cookie": await commitSession(session, { expires }),
         },
@@ -189,7 +188,6 @@ export const action: ActionFunction = async ({ request }) => {
     };
 
     const response: any = await AddLoads(loadRequest, user.token);
-    console.log("response: ", response);
     if (Object.keys(response).length > 0 && response.origin !== undefined) {
       return redirect("/shipper/dashboard/loads/view");
     } else {

@@ -64,7 +64,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     return redirect(
       user?.user.userType === "shipper"
         ? "/shipper/dashboard/"
-        : "/carriers/dashboard/"
+        : "/carrier/dashboard/"
     );
   }
 

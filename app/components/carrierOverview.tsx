@@ -37,9 +37,13 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
   };
 
   return (
-    <div className={`${themeClasses.background} ${themeClasses.text} min-h-screen`}>
+    <div
+      className={`${themeClasses.background} ${themeClasses.text} min-h-screen`}
+    >
       <main className="container mx-auto px-4 py-8">
-        <h2 className={`text-2xl font-bold mb-6 text-center ${themeClasses.accent}`}>
+        <h2
+          className={`text-2xl font-bold mb-6 text-center ${themeClasses.accent}`}
+        >
           Pick your Load and Hit the Road
         </h2>
 
@@ -47,21 +51,21 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
           <QuickLinkCard
             title="Available Open Loads"
             description="Browse and bid on available shipments"
-            link="/carriers/dashboard/view"
+            link="/carrier/dashboard/view"
             icon={<Package />}
             themeClasses={themeClasses}
           />
           <QuickLinkCard
             title="My Bids"
             description="Manage your current bids"
-            link="/carriers/dashboard/bid/"
+            link="/carrier/dashboard/bid/"
             icon={<DollarSign />}
             themeClasses={themeClasses}
           />
           <QuickLinkCard
             title="Active Shipments"
             description="View and update your ongoing shipments"
-            link="/carriers/dashboard/"
+            link="/carrier/dashboard/"
             icon={<Truck />}
             themeClasses={themeClasses}
           />
@@ -75,7 +79,9 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
                   route={`${latestBid.load.origin} → ${latestBid.load.destination}`}
                   date={new Date(latestBid.biddingTime).toLocaleDateString()}
                   amount={`ETB ${latestBid.bidAmount}`}
-                  status={mapStatus[latestBid.bidStatus as keyof typeof mapStatus]}
+                  status={
+                    mapStatus[latestBid.bidStatus as keyof typeof mapStatus]
+                  }
                   themeClasses={themeClasses}
                 />
               )}
@@ -87,17 +93,25 @@ export default function CarrierDashboard({ loads, bids, theme }: { loads: any, b
               <StatLink
                 label="Open Loads"
                 value={openLoads}
-                link="/carriers/dashboard/view"
+                link="/carrier/dashboard/view"
                 themeClasses={themeClasses}
               />
               <StatLink
                 label="Active Bids"
                 value={activeBids}
-                link="/carriers/dashboard/bid/"
+                link="/carrier/dashboard/bid/"
                 themeClasses={themeClasses}
               />
-              <Stat label="Completed Loads" value={completedLoads} themeClasses={themeClasses} />
-              <Stat label="Revenue" value={`$${revenue.toLocaleString()}`} themeClasses={themeClasses} />
+              <Stat
+                label="Completed Loads"
+                value={completedLoads}
+                themeClasses={themeClasses}
+              />
+              <Stat
+                label="Revenue"
+                value={`$${revenue.toLocaleString()}`}
+                themeClasses={themeClasses}
+              />
             </div>
           </DashboardCard>
         </div>
@@ -140,12 +154,28 @@ const StatLink = ({ label, value, link, themeClasses }: { label: string, value: 
   </Link>
 );
 
-const BidItem = ({ route, date, amount, status, themeClasses }: { route: string, date: string, amount: string, status: string, themeClasses: any }) => (
-  <NavLink 
-    className={({ isActive }) => 
-      `flex justify-between items-center ${themeClasses.bidItemBackground} p-3 rounded ${themeClasses.linkHover} transition duration-300 ho ${isActive ? themeClasses.accent : ''}`
-    } 
-    to={`/carriers/dashboard/bid`}
+const BidItem = ({
+  route,
+  date,
+  amount,
+  status,
+  themeClasses,
+}: {
+  route: string;
+  date: string;
+  amount: string;
+  status: string;
+  themeClasses: any;
+}) => (
+  <NavLink
+    className={({ isActive }) =>
+      `flex justify-between items-center ${
+        themeClasses.bidItemBackground
+      } p-3 rounded ${themeClasses.linkHover} transition duration-300 ho ${
+        isActive ? themeClasses.accent : ""
+      }`
+    }
+    to={`/carrier/dashboard/bid`}
   >
     <div>
       <p className="font-semibold">{route}</p>

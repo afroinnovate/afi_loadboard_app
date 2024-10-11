@@ -60,7 +60,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     return redirect(
       user?.user.userType === "shipper"
         ? "/shipper/dashboard/"
-        : "/carriers/dashboard/"
+        : "/carrier/dashboard/"
     );
   }
 
@@ -85,13 +85,19 @@ export const action: ActionFunction = async ({ request }) => {
 
     const expires = new Date(Date.now() + EXPIRES_IN);
     if (!user) {
-      session.flash(authenticator.sessionErrorKey, "Invalid username or password");
-      return json({ error: "Invalid username or password" }, {
-        status: 400,
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      session.flash(
+        authenticator.sessionErrorKey,
+        "Invalid username or password"
+      );
+      return json(
+        { error: "Invalid username or password" },
+        {
+          status: 400,
+          headers: {
+            "Set-Cookie": await commitSession(session),
+          },
+        }
+      );
     }
 
     session.set(authenticator.sessionKey, user);
@@ -99,7 +105,7 @@ export const action: ActionFunction = async ({ request }) => {
     const redirectUrl =
       user?.user.userType === "shipper"
         ? "/shipper/dashboard/"
-        : "/carriers/dashboard/";
+        : "/carrier/dashboard/";
     return redirect(redirectUrl, {
       headers: {
         "Set-Cookie": await commitSession(session, { expires }),
@@ -111,9 +117,10 @@ export const action: ActionFunction = async ({ request }) => {
       {
         status: 400,
         headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
+          "Set-Cookie": await commitSession(session),
+        },
+      }
+    );
   }
 };
 

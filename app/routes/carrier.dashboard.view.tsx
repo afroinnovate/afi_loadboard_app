@@ -13,7 +13,11 @@ import {
 } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { Disclosure } from "@headlessui/react";
-import { commitSession, destroySession, getSession } from "../api/services/session";
+import {
+  commitSession,
+  destroySession,
+  getSession,
+} from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
@@ -162,7 +166,7 @@ export const action: ActionFunction = async ({ request }) => {
         });
 
       case "closeContact":
-        return redirect("/carriers/dashboard/view");
+        return redirect("/carrier/dashboard/view");
 
       case "sendMessage": {
         const message = formData.get("message") as string;
@@ -213,7 +217,7 @@ export const action: ActionFunction = async ({ request }) => {
 interface OutletContext {
   loads: any[];
   bids: any[];
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   timezone: string;
   toggleTheme: () => void;
 }
@@ -226,7 +230,7 @@ export default function CarrierViewLoads() {
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
   const { theme } = useOutletContext<OutletContext>();
   const [contactMode, setContactMode] = useState<ContactMode | null>(null);
-  
+
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
     let errorMsg = "";
@@ -349,25 +353,32 @@ export default function CarrierViewLoads() {
   const currency = "ETB";
 
   const themeClasses = {
-    container: theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
-    card: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100',
+    container:
+      theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
+    card: theme === "dark" ? "bg-gray-700" : "bg-gray-100",
     button: {
-      primary: theme === 'dark' 
-        ? 'bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white' 
-        : 'bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white',
-      secondary: theme === 'dark' 
-        ? 'bg-white border border-green-400 text-green-500 hover:bg-gray-700' 
-        : 'bg-white border border-green-400 text-green-500 hover:bg-gray-400',
-      danger: theme === 'dark' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
-      completeProfile: theme === 'dark'
-        ? 'bg-orange-500 text-white border border-white hover:bg-white hover:text-orange-500'
-        : 'bg-blue-500 text-white border border-orange-500 hover:bg-white hover:text-blue-500',
+      primary:
+        theme === "dark"
+          ? "bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white"
+          : "bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white",
+      secondary:
+        theme === "dark"
+          ? "bg-white border border-green-400 text-green-500 hover:bg-gray-700"
+          : "bg-white border border-green-400 text-green-500 hover:bg-gray-400",
+      danger:
+        theme === "dark"
+          ? "bg-red-600 hover:bg-red-700"
+          : "bg-red-500 hover:bg-red-600",
+      completeProfile:
+        theme === "dark"
+          ? "bg-orange-500 text-white border border-white hover:bg-white hover:text-orange-500"
+          : "bg-blue-500 text-white border border-orange-500 hover:bg-white hover:text-blue-500",
     },
     text: {
-      primary: theme === 'dark' ? 'text-white' : 'text-gray-900',
-      secondary: theme === 'dark' ? 'text-gray-300' : 'text-gray-600',
+      primary: theme === "dark" ? "text-white" : "text-gray-900",
+      secondary: theme === "dark" ? "text-gray-300" : "text-gray-600",
     },
-    heading: theme === 'dark' ? 'text-white' : 'text-green-800',
+    heading: theme === "dark" ? "text-white" : "text-green-800",
   };
 
   return (
@@ -378,7 +389,9 @@ export default function CarrierViewLoads() {
         </div>
       )}
       <div className="flex justify-center items-center shadow-md mb-3">
-        <h1 className={`text-2xl font-serif mb-4 p-3 text-center ${themeClasses.heading}`}>
+        <h1
+          className={`text-2xl font-serif mb-4 p-3 text-center ${themeClasses.heading}`}
+        >
           Pick your Load and Hit the Road
         </h1>
       </div>
@@ -414,7 +427,9 @@ export default function CarrierViewLoads() {
                   />
                 )}
 
-                <Disclosure.Button className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium ${themeClasses.text.primary} hover:bg-opacity-80`}>
+                <Disclosure.Button
+                  className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium ${themeClasses.text.primary} hover:bg-opacity-80`}
+                >
                   <div className="w-full sm:w-auto flex flex-wrap items-center space-x-2 mb-2 sm:mb-0">
                     <h2 className="text-sm sm:text-base font-medium">
                       {load.origin}
@@ -451,7 +466,9 @@ export default function CarrierViewLoads() {
                   </div>
                 </Disclosure.Button>
 
-                <Disclosure.Panel className={`p-2 pl-4 text-sm ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}>
+                <Disclosure.Panel
+                  className={`p-2 pl-4 text-sm ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}
+                >
                   <div className="grid grid-cols-1 gap-2">
                     <p className="flex flex-wrap">
                       <span className="w-full sm:w-auto sm:mr-2 font-medium">
@@ -500,7 +517,7 @@ export default function CarrierViewLoads() {
                   <div className="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
                     {carrierAccess && !carrierHasAccess && (
                       <NavLink
-                        to="/carriers/dashboard/account/business/"
+                        to="/carrier/dashboard/account/business/"
                         className={`w-full sm:w-auto inline-block ${themeClasses.button.completeProfile} px-4 py-2 text-sm rounded cursor-pointer transform transition duration-300 ease-in-out hover:scale-105 animate-pulse hover:animate-none`}
                       >
                         Complete profile to pick up a load
@@ -557,7 +574,9 @@ export default function CarrierViewLoads() {
                             type="submit"
                             name="_action"
                             value="bid"
-                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
+                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${
+                              themeClasses.button.primary
+                            } rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
                               load.loadStatus === "enroute" ||
                               load.loadStatus === "accepted" ||
                               load.loadStatus === "rejected" ||
