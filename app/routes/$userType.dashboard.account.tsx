@@ -27,7 +27,7 @@ export default function Account() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-white mt-14">
+    <div className={`flex h-screen w-full ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
       <AccountOverlay
         onClose={closeOverlay}
         isOpen={isSidebarOpen}

@@ -126,12 +126,12 @@ export default function App() {
   }, []);
 
   const themeClasses = {
-    html: theme === "dark" ? "bg-gray-900" : "bg-white", // Changed from bg-green-50 to bg-white
-    body: theme === "dark" ? "text-white" : "text-gray-900", // Changed text color to gray-900 for better contrast
+    html: theme === "dark" ? "bg-gray-900" : "bg-white",
+    body: theme === "dark" ? "text-white" : "text-gray-900",
     footer:
       theme === "dark"
         ? "bg-gray-800 text-gray-300"
-        : "bg-gray-100 text-gray-800", // Changed footer background to gray-100
+        : "bg-gray-100 text-gray-800",
     link: theme === "dark" ? "hover:text-orange-400" : "hover:text-green-600",
   };
 

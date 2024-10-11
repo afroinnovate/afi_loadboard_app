@@ -8,6 +8,7 @@ import {
   Bars3Icon,
   XMarkIcon,
 } from "@heroicons/react/20/solid";
+import { ErrorBoundary } from "./errorBoundary";
 
 export default function AccountOverlay({
   theme,
@@ -15,16 +16,17 @@ export default function AccountOverlay({
   isOpen,
   toggleSidebar,
 }: {
-  theme: string;
+  theme: "light" | "dark";
   onClose: () => void;
   isOpen: boolean;
   toggleSidebar: () => void;
 }) {
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(false);
+  const isDarkTheme = theme === "dark";
 
   const basePath =
-    location.pathname === "/dashboard/"
+    location.pathname.includes("/shipper/")
       ? "/shipper/dashboard/account"
       : "/carriers/dashboard/account";
 
@@ -49,11 +51,17 @@ export default function AccountOverlay({
     { path: "help", icon: LifebuoyIcon, label: "Help" },
   ];
 
+  const isActive = (path: string) => {
+    return location.pathname.endsWith(path);
+  };
+
   return (
-    <div className={`flex h-screen bg-white text-green-800 ${theme === "dark" ? "text-white" : ""}`}>
+    <div className={`flex h-screen ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
       {/* Sidebar */}
       <div
-        className={`fixed top-16 inset-y-0 left-0 z-30 w-64 bg-gray-900 text-green-400 transition-all duration-300 ease-in-out transform ${
+        className={`fixed top-16 inset-y-0 left-0 z-30 w-64 ${
+          isDarkTheme ? "bg-gray-800" : "bg-gray-100"
+        } transition-all duration-300 ease-in-out transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } ${isMobile ? "shadow-lg" : ""}`}
       >
@@ -67,9 +75,17 @@ export default function AccountOverlay({
                 <li key={item.path}>
                   <Link
                     to={`${basePath}/${item.path}`}
-                    className="flex items-center py-2 px-4 text-green-400 hover:bg-gray-700 hover:text-white rounded transition-colors duration-200"
+                    className={`flex items-center py-2 px-4 rounded transition-colors duration-200 ${
+                      isActive(item.path)
+                        ? isDarkTheme
+                          ? "bg-green-700 text-white"
+                          : "bg-green-100 text-green-800"
+                        : isDarkTheme
+                        ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                        : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
+                    }`}
                   >
-                    <item.icon className="w-5 h-5 mr-3" />
+                    <item.icon className={`w-5 h-5 mr-3 ${isActive(item.path) ? "text-current" : ""}`} />
                     {item.label}
                   </Link>
                 </li>
@@ -80,24 +96,24 @@ export default function AccountOverlay({
       </div>
 
       {/* Main content */}
-      <div className="flex-1 transition-all duration-300 ease-in-out ml-0 md:ml-64">
-        <header className="bg-white shadow-sm">
+      <div className={`flex-1 transition-all duration-300 ease-in-out ${isOpen ? "ml-0 md:ml-64" : "ml-0"}`}>
+        <header className={`${isDarkTheme ? "bg-gray-800" : "bg-white"} shadow-sm`}>
           <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <button
               onClick={toggleSidebar}
-              className="text-gray-500 focus:outline-none mr-4"
+              className={`${isDarkTheme ? "text-gray-300" : "text-gray-500"} focus:outline-none mr-4`}
             >
               <Bars3Icon className="w-6 h-6" />
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">
+            <h1 className={`text-2xl font-semibold ${isDarkTheme ? "text-white" : "text-gray-900"}`}>
               Account Settings
             </h1>
-            <button onClick={onClose} className="text-gray-500 focus:outline-none">
+            <button onClick={onClose} className={`${isDarkTheme ? "text-gray-300" : "text-gray-500"} focus:outline-none`}>
               <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
         </header>
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 bg-white">
+        <main className={`max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 ${isDarkTheme ? "bg-gray-900" : "bg-white"}`}>
           <div className="px-4 py-6 sm:px-0">
             <Outlet context={{ theme }}/>
           </div>
@@ -106,3 +122,5 @@ export default function AccountOverlay({
     </div>
   );
 }
+
+<ErrorBoundary />;

@@ -397,25 +397,27 @@ export default function Business() {
   const { theme } = useOutletContext<OutletContext>();
   const fetcher = useFetcher();
 
+  const isDarkTheme = theme === "dark";
+
   const themeClasses = {
-      container:
-        theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black",
-      header: theme === "dark" ? "text-green-400" : "text-green-800",
-      subHeader: theme === "dark" ? "text-green-300" : "text-green-700",
-      input:
-        theme === "dark"
-          ? "bg-gray-800 border-gray-700 text-white"
-          : "bg-white border-gray-300 text-black",
-      button:
-        theme === "dark"
-          ? "bg-green-600 text-white hover:bg-green-700"
-          : "bg-green-500 text-white hover:bg-green-600",
-      cancelButton:
-        theme === "dark"
-          ? "bg-gray-600 text-white hover:bg-gray-700"
-          : "bg-gray-300 text-gray-700 hover:bg-gray-400",
-      card: theme === "dark" ? "bg-gray-800" : "bg-white",
-      border: theme === "dark" ? "border-gray-700" : "border-gray-200",
+    container: isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-black",
+    header: isDarkTheme ? "text-green-400" : "text-green-800",
+    subHeader: isDarkTheme ? "text-green-300" : "text-green-700",
+    input: isDarkTheme
+      ? "bg-gray-800 border-gray-700 text-white"
+      : "bg-white border-gray-300 text-black",
+    button: isDarkTheme
+      ? "bg-green-600 text-white hover:bg-green-700"
+      : "bg-green-500 text-white hover:bg-green-600",
+    cancelButton: isDarkTheme
+      ? "bg-gray-600 text-white hover:bg-gray-700"
+      : "bg-gray-300 text-gray-700 hover:bg-gray-400",
+    card: isDarkTheme ? "bg-gray-800" : "bg-white",
+    border: isDarkTheme ? "border-green-700" : "border-green-500",
+    warningBox: isDarkTheme
+      ? "bg-gray-800 border-yellow-600"
+      : "bg-yellow-50 border-yellow-400",
+    warningText: isDarkTheme ? "text-yellow-200" : "text-yellow-800",
   };
 
   let businessUpdated = false;
@@ -567,9 +569,7 @@ export default function Business() {
   );
 
   return (
-    <div
-      className={`p-6 rounded-lg shadow-lg w-full h-full flex flex-col ${themeClasses.container}`}
-    >
+    <div className={`p-6 rounded-lg shadow-lg w-full h-full flex flex-col ${themeClasses.container}`}>
       <Modal
         isOpen={isModalOpen}
         title="Success"
@@ -612,9 +612,7 @@ export default function Business() {
           {activeTab === "personal" && (
             <div>
               <div className="flex justify-between items-center mb-4 py-2">
-                <h3
-                  className={`text-lg font-semibold ${themeClasses.subHeader}`}
-                >
+                <h3 className={`text-lg font-semibold ${themeClasses.subHeader}`}>
                   Personal Information
                 </h3>
                 {isEditingField !== "personal" && (
@@ -642,9 +640,7 @@ export default function Business() {
                       key={index}
                       className={`flex justify-between items-center border-t py-1 ${themeClasses.border}`}
                     >
-                      <label
-                        className={`w-1/3 font-semibold ${themeClasses.subHeader}`}
-                      >
+                      <label className={`w-1/3 font-semibold ${themeClasses.subHeader}`}>
                         {field.label}
                       </label>
                       <span className="w-2/3">{user.user[field.name]}</span>
@@ -664,9 +660,7 @@ export default function Business() {
                       key={index}
                       className={`flex justify-between items-center border-t py-1 ${themeClasses.border}`}
                     >
-                      <label
-                        className={`w-1/3 font-semibold ${themeClasses.subHeader}`}
-                      >
+                      <label className={`w-1/3 font-semibold ${themeClasses.subHeader}`}>
                         {field.label}
                       </label>
                       <input
@@ -718,10 +712,8 @@ export default function Business() {
           )}
 
           {activeTab === "business" && (
-            <div className={`shadow-lg rounded-lg p-4 ${themeClasses.card}`}>
-              <h3
-                className={`text-2xl font-bold mb-4 ${themeClasses.header} border-b pb-2`}
-              >
+            <div className={`shadow-lg rounded-lg p-4 ${themeClasses.card} border ${themeClasses.border}`}>
+              <h3 className={`text-2xl font-bold mb-4 ${themeClasses.header} border-b pb-2 ${themeClasses.border}`}>
                 Business Information
               </h3>
               <div className="space-y-6">
@@ -731,9 +723,7 @@ export default function Business() {
                       {user?.user.businessProfile.carrierRole !== null ||
                       user?.user.businessProfile.shipperRole !== null ? (
                         <>
-                          <p
-                            className={`p-2 mr-2 font-semibold ${themeClasses.subHeader}`}
-                          >
+                          <p className={`p-2 mr-2 font-semibold ${themeClasses.subHeader}`}>
                             Profile Status:
                           </p>
                           <CheckCircleIcon className="w-6 h-6 text-green-600 ml-6"></CheckCircleIcon>
@@ -741,7 +731,7 @@ export default function Business() {
                       ) : null}
                     </div>
 
-                    <div className="p-2 rounded-lg">
+                    <div className={`p-2 rounded-lg ${themeClasses.card}`}>
                       <p className={`font-semibold ${themeClasses.subHeader}`}>
                         Current Role:
                         <span className="font-normal ml-12 text-green-600">
@@ -751,65 +741,22 @@ export default function Business() {
                       </p>
                     </div>
 
-                    {user.user.status &&
-                      user.user.businessProfile.companyName && (
-                        <div className="p-2 rounded-lg">
-                          <p
-                            className={`font-semibold ${themeClasses.subHeader}`}
-                          >
-                            Company Name:
-                            <span className="font-normal ml-5 text-green-600">
-                              {user.user.businessProfile.companyName}
-                            </span>
-                          </p>
-                        </div>
-                      )}
-
-                    {user.user.userType === "carrier" &&
-                      user.user.businessProfile.carrierRole !== null && (
-                        <div
-                          className={`bg-green-50 border ${themeClasses.border} p-4 rounded-lg`}
-                        >
-                          <p className="text-sm text-blue-800">
-                            Your business profile is complete. Start picking up
-                            loads.
-                            <Link
-                              to="/carriers/dashboard/view/"
-                              className="text-blue-600 underline ml-1 hover:text-blue-800"
-                            >
-                              View Loads
-                            </Link>
-                          </p>
-                        </div>
-                      )}
-
-                    {user.user.userType === "shipper" &&
-                      user.user.businessProfile.shipperRole !== null && (
-                        <div
-                          className={`bg-green-50 border ${themeClasses.border} p-4 rounded-lg`}
-                        >
-                          <p className="text-sm text-blue-800">
-                            Your business profile is complete. Start posting
-                            loads.
-                            <Link
-                              to="/shipper/dashboard/loads/view"
-                              className="text-blue-600 underline ml-1 hover:text-blue-800"
-                            >
-                              View Loads
-                            </Link>
-                          </p>
-                        </div>
-                      )}
+                    {user.user.status && user.user.businessProfile.companyName && (
+                      <div className={`p-2 rounded-lg ${themeClasses.card}`}>
+                        <p className={`font-semibold ${themeClasses.subHeader}`}>
+                          Company Name:
+                          <span className="font-normal ml-5 text-green-600">
+                            {user.user.businessProfile.companyName}
+                          </span>
+                        </p>
+                      </div>
+                    )}
 
                     {user.user.businessProfile.carrierRole === null &&
                       user.user.businessProfile.shipperRole === null && (
-                        <div
-                          className={`bg-yellow-50 border ${themeClasses.border} p-4 rounded-lg`}
-                        >
-                          <p className="text-sm text-yellow-800 mb-4">
-                            Your business profile is not complete. Please
-                            complete your profile to start picking up or posting
-                            loads.
+                        <div className={`border ${themeClasses.warningBox} p-4 rounded-lg`}>
+                          <p className={`text-sm ${themeClasses.warningText} mb-4`}>
+                            Your business profile is not complete. Please complete your profile to start picking up or posting loads.
                           </p>
                           <button
                             className={`${themeClasses.button} px-4 py-2 rounded transition duration-300`}

@@ -13,15 +13,15 @@ const mapStatus = {
 export default function CarrierDashboard({ loads, bids, theme }: { loads: any, bids: any, theme: 'light' | 'dark' }) {
   console.log("Theme", theme);
   const openLoads = loads.filter((load: any) => load.loadStatus === "Open").length;
-  const activeBids = bids.filter((bid: any) => bid.bidStatus === 0).length;
-  const completedLoads = bids.filter((bid: any) => bid.bidStatus === 1).length;
-  const revenue = bids
+  const activeBids = bids ? bids.filter((bid: any) => bid.bidStatus === 0).length : 0;
+  const completedLoads = bids ? bids.filter((bid: any) => bid.bidStatus === 1).length : 0;
+  const revenue = bids ? bids
     .filter((bid: any) => bid.bidStatus === 1)
-    .reduce((total: any, bid: any) => total + bid.bidAmount, 0);
+    .reduce((total: any, bid: any) => total + bid.bidAmount, 0) : 0;
 
-  const latestBid = bids.sort((a: any, b: any) => 
+  const latestBid = bids ? bids.sort((a: any, b: any) => 
     new Date(b.biddingTime).getTime() - new Date(a.biddingTime).getTime()
-  )[0];
+  )[0] : null;
 
   const themeClasses = {
     background: theme === 'dark' ? 'bg-gray-900' : 'bg-white',

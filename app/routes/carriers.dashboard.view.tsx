@@ -225,6 +225,7 @@ export default function CarrierViewLoads() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
   const { theme } = useOutletContext<OutletContext>();
+  const [contactMode, setContactMode] = useState<ContactMode | null>(null);
   
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
@@ -291,10 +292,6 @@ export default function CarrierViewLoads() {
   const carrierAccess =
     carrierProfile.user.userType === "carrier" ? true : false;
 
-  let contactMode =
-    actionData && actionData.message === "contactMode"
-      ? actionData.message
-      : "";
   let contactLoadShipper =
     contactMode === "contactMode" ? actionData.contactLoadShipper : null;
   let contactLoad =
@@ -355,9 +352,16 @@ export default function CarrierViewLoads() {
     container: theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
     card: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100',
     button: {
-      primary: theme === 'dark' ? 'bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white' : 'bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white',
-      secondary: theme === 'dark' ? 'bg-white border border-green-400 text-green-500 hover:bg-gray-700' : 'bg-white border border-green-400 text-green-500 hover:bg-gray-400',
+      primary: theme === 'dark' 
+        ? 'bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white' 
+        : 'bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white',
+      secondary: theme === 'dark' 
+        ? 'bg-white border border-green-400 text-green-500 hover:bg-gray-700' 
+        : 'bg-white border border-green-400 text-green-500 hover:bg-gray-400',
       danger: theme === 'dark' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
+      completeProfile: theme === 'dark'
+        ? 'bg-orange-500 text-white border border-white hover:bg-white hover:text-orange-500'
+        : 'bg-blue-500 text-white border border-orange-500 hover:bg-white hover:text-blue-500',
     },
     text: {
       primary: theme === 'dark' ? 'text-white' : 'text-gray-900',
@@ -397,7 +401,7 @@ export default function CarrierViewLoads() {
                   <ContactShipperView
                     shipper={contactLoadShipper}
                     load={contactLoad}
-                    onClose={() => setShowContactShipper(false)}
+                    onClose={() => setContactMode(null)}
                     onChat={() => handleOpenChat(contactLoadShipper)}
                   />
                 )}
@@ -497,7 +501,7 @@ export default function CarrierViewLoads() {
                     {carrierAccess && !carrierHasAccess && (
                       <NavLink
                         to="/carriers/dashboard/account/business/"
-                        className={`w-full sm:w-auto inline-block ${themeClasses.button.primary} text-white px-4 py-2 text-sm rounded cursor-pointer transform transition`}
+                        className={`w-full sm:w-auto inline-block ${themeClasses.button.completeProfile} px-4 py-2 text-sm rounded cursor-pointer transform transition duration-300 ease-in-out hover:scale-105 animate-pulse hover:animate-none`}
                       >
                         Complete profile to pick up a load
                       </NavLink>

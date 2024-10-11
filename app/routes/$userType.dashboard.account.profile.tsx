@@ -4,6 +4,7 @@ import {
   useActionData,
   useLoaderData,
   useNavigation,
+  useOutletContext,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { PencilIcon } from "lucide-react";
@@ -19,8 +20,6 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-    let theme = session.get("theme");
-    theme = theme ?? "dark";
     
     if (!user) {
       console.log("no auth user found");
@@ -43,10 +42,8 @@ export const loader: LoaderFunction = async ({ params, request }: any) => {
       return redirect("/logout/");
     }
 
-    session.set("theme", theme)
-
     return json(
-      { user, userType, "theme": theme },
+      { user, userType },
       { headers: { "Set-Cookie": await commitSession(session) } }
     );
   } catch (error: any) {
@@ -101,6 +98,9 @@ export let action: ActionFunction = async ({ request }) => {
   }
 };
 
+interface OutletContext {
+  theme: string;
+}
 
 export default function Profile() {
   const navigation = useNavigation();
@@ -112,7 +112,7 @@ export default function Profile() {
   const [isEditingField, setIsEditingField] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const theme = LoaderData?.theme || "light"; // Assuming theme is passed from the loader
+  const { theme }: OutletContext = useOutletContext();
 
   const isPasswordValid = newPassword !== "" && newPassword === confirmPassword;
 
@@ -125,42 +125,36 @@ export default function Profile() {
   };
 
   const themeClasses = {
-    container:
-      theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black",
+    container: theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900",
     header: theme === "dark" ? "text-green-400" : "text-green-700",
-    input:
-      theme === "dark"
-        ? "bg-gray-800 border-gray-700 text-white focus:border-blue-500 focus:ring-blue-500"
-        : "bg-white border-gray-300 text-black focus:border-blue-500 focus:ring-blue-500",
-    button:
-      theme === "dark"
-        ? "bg-green-600 text-white hover:bg-green-700"
-        : "bg-green-500 text-white hover:bg-green-600",
-    cancelButton:
-      theme === "dark"
-        ? "bg-gray-600 text-white hover:bg-gray-700"
-        : "bg-gray-500 text-white hover:bg-gray-600",
+    input: theme === "dark"
+      ? "bg-gray-800 border-gray-700 text-white focus:border-blue-500 focus:ring-blue-500"
+      : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500",
+    button: theme === "dark"
+      ? "bg-green-600 text-white hover:bg-green-700"
+      : "bg-green-500 text-white hover:bg-green-600",
+    cancelButton: theme === "dark"
+      ? "bg-gray-600 text-white hover:bg-gray-700"
+      : "bg-gray-200 text-gray-700 hover:bg-gray-300",
     border: theme === "dark" ? "border-gray-700" : "border-gray-200",
-    editIcon:
-      theme === "dark"
-        ? "text-blue-400 hover:text-orange-300"
-        : "text-blue-500 hover:text-orange-400",
+    editIcon: theme === "dark"
+      ? "text-blue-400 hover:text-orange-300"
+      : "text-blue-600 hover:text-orange-500",
+    cardBorder: theme === "dark" ? "border-green-700" : "border-green-500",
+    text: theme === "dark" ? "text-gray-300" : "text-gray-700",
+    formBackground: theme === "dark" ? "bg-gray-800" : "bg-gray-50",
   };
 
   return (
-    <div className={`w-full ${themeClasses.container}`}>
+    <div className={`w-full p-4 ${themeClasses.container}`}>
       {actionData?.error && (
         <p className="text-red-500 text-xs italic mb-4">{actionData.error}</p>
       )}
-      <Form method="post">
-        <div className="space-y-4 max-w-full p-5">
+      <Form method="post" className={`shadow-lg rounded-lg p-6 border ${themeClasses.cardBorder} ${themeClasses.formBackground}`}>
+        <div className="space-y-4 max-w-full">
           {/* Email Row */}
-          <div
-            className={`flex justify-between items-center border-b py-3 ${themeClasses.border}`}
-          >
-            <span className={`font-semibold ${themeClasses.header}`}>
-              Email:
-            </span>
+          <div className={`flex justify-between items-center border-b py-3 ${themeClasses.border}`}>
+            <span className={`font-semibold ${themeClasses.header}`}>Email:</span>
             <div>
               <input type="hidden" name="email" value={user.email} />
               {isEditingField === "email" ? (
@@ -176,30 +170,24 @@ export default function Profile() {
                   theme={theme}
                 />
               ) : (
-                <span>{user.email}</span>
+                <span className={themeClasses.text}>{user.email}</span>
               )}
             </div>
           </div>
 
           {/* Name Row */}
-          <div
-            className={`flex justify-between items-center border-b py-3 ${themeClasses.border}`}
-          >
-            <span className={`font-semibold ${themeClasses.header}`}>
-              Name:
-            </span>
-            <span>
+          <div className={`flex justify-between items-center border-b py-3 ${themeClasses.border}`}>
+            <span className={`font-semibold ${themeClasses.header}`}>Name:</span>
+            <span className={themeClasses.text}>
               {user.firstName} {user.lastName}
             </span>
           </div>
 
           {/* Password Row */}
-          <div
-            className={`flex justify-between items-center border-b py-2 space-x-4 ${themeClasses.border}`}
-          >
-            <div className="flex items-center">
+          <div className={`flex justify-between items-center border-b py-2 ${themeClasses.border}`}>
+            <div className="flex items-center w-full">
               {isEditingPassword ? (
-                <div className="space-y-7">
+                <div className="space-y-7 w-full">
                   <FloatingPasswordInput
                     name="password"
                     placeholder="Current Password"
@@ -227,13 +215,9 @@ export default function Profile() {
                   />
                 </div>
               ) : (
-                <div className="flex justify-between">
-                  <span
-                    className={`font-semibold ${themeClasses.header} items-start`}
-                  >
-                    Password:
-                  </span>
-                  <span className="ml-12 items-end">********</span>
+                <div className="flex justify-between w-full">
+                  <span className={`font-semibold ${themeClasses.header}`}>Password:</span>
+                  <span className={`${themeClasses.text}`}>********</span>
                 </div>
               )}
               {!isEditingPassword && (
