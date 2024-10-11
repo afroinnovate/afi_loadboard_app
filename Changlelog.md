@@ -46,9 +46,10 @@
             - shipper dashboard when contacting carrier.
 * [10/6/24]: Homepage display real data in shipper dashboard.
 * [10/6/24]: Make the footer only show on the home page.
+* [10/10/24]: Fix the carrier login once they complete their registration.
+* [[10/10/24]: Fix scroller to be fit to only the contents.
 
 ### TODO
-4. Fix the carrier login once they complete their registration.
 5. Fix the collapsable menu and the header 
     - Add theme button to the app.
     - Make sure the secondary header where HOME, LoadOps, and the items on the left are collapsed correcty on mobile view
