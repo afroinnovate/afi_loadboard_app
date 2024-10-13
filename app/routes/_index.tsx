@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useOutletContext } from "@remix-run/react";
+import { Link, useOutletContext, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 
 export default function Index() {
   const { theme } = useOutletContext<{ theme: string }>();
@@ -53,7 +53,7 @@ export default function Index() {
           }
 
           .swirl-container { position: relative; overflow: hidden; width: 100%; height: 100%; }
-          .map-mask { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-image: url('/path/to/african-map.png'); background-size: cover; background-position: center; }
+          .map-mask { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-image: url('/assets/images/africa-map.png'); background-size: cover; background-position: center; }
           .swirl-text { 
             position: absolute; 
             font-size: 1.5rem; 
@@ -167,12 +167,26 @@ function BenefitCard({ title, description, action, theme, randomWord }: any) {
             {words.map((word, index) => (
               <span
                 key={index}
-                className={`swirl-text swirl-text-${index} ${index % 2 === 0 ? "swirl-text-small" : ""} ${africanColors[index % africanColors.length]}`}
+                className={`swirl-text swirl-text-${index} ${index % 2 === 0 ? "swirl-text-small" : ""} ${africanColors[index % africanColors.length]} font-bold`}
+                style={{
+                  textShadow: theme === "dark" 
+                    ? "0 0 3px #fff, 0 0 5px #fff" 
+                    : "0 0 3px #000, 0 0 5px #000",
+                }}
               >
                 {word}
               </span>
             ))}
-            <span className={`whirlpool-text ${africanColors[0]}`}>{randomWord}</span>
+            <span 
+              className={`whirlpool-text ${africanColors[0]} font-bold`}
+              style={{
+                textShadow: theme === "dark" 
+                  ? "0 0 3px #fff, 0 0 5px #fff" 
+                  : "0 0 3px #000, 0 0 5px #000",
+              }}
+            >
+              {randomWord}
+            </span>
           </div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
@@ -191,4 +205,28 @@ function BenefitCard({ title, description, action, theme, randomWord }: any) {
       </Link>
     </div>
   );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  if (isRouteErrorResponse(error)) {
+    return (
+      <div className="error-container">
+        <h1>
+          {error.status} {error.statusText}
+        </h1>
+        <p>{error.data}</p>
+      </div>
+    );
+  } else if (error instanceof Error) {
+    return (
+      <div className="error-container">
+        <h1>Error</h1>
+        <p>{error.message}</p>
+      </div>
+    );
+  } else {
+    return <h1>Unknown Error</h1>;
+  }
 }

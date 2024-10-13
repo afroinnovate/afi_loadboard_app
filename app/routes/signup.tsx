@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useNavigation,
   Form,
@@ -52,13 +52,23 @@ export const loader: LoaderFunction = async ({ request }) => {
   const expires = new Date(Date.now() + EXPIRES_IN);
 
   let timeZone = session.get("timeZone") || "UTC";
-  const url = new URL(request.headers.get("Referer") || "");
-  const timeZoneParam = url.searchParams.get("timeZone");
-
-  if (timeZoneParam && timeZoneParam !== timeZone) {
-    timeZone = timeZoneParam;
-    session.set("timeZone", timeZone);
+  const referer = request.headers.get("Referer");
+  
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      const timeZoneParam = url.searchParams.get("timeZone");
+      if (timeZoneParam && timeZoneParam !== timeZone) {
+        timeZone = timeZoneParam;
+        session.set("timeZone", timeZone);
+      }
+    } catch (error) {
+      console.error("Invalid Referer URL:", error);
+    }
   }
+
+  const termsRead = session.get("termsRead") === "true";
+  const privacyRead = session.get("privacyRead") === "true";
 
   if (user) {
     return redirect(
@@ -69,24 +79,35 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   return json(
-    { timeZone },
+    { timeZone, termsRead, privacyRead },
     { headers: { "Set-Cookie": await commitSession(session, { expires }) } }
   );
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  const body = await request.formData();
-  const email = body.get("email");
-  const password = body.get("password");
-  const confirmPassword = body.get("confirmPassword");
-  const termsAndPrivacyAccepted = body.get("terms-and-privacy") === "on";
+  const session = await getSession(request.headers.get("Cookie"));
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "markTermsPrivacyRead") {
+    session.set("termsPrivacyRead", "true");
+    return json(
+      { success: true },
+      { headers: { "Set-Cookie": await commitSession(session) } }
+    );
+  }
+
+  const email = formData.get("email");
+  const password = formData.get("password");
+  const confirmPassword = formData.get("confirmPassword");
+  const termsAndPrivacyAccepted = formData.get("terms-and-privacy") === "on";
 
   let errorMessage = "";
 
   try {
     const user: any = {
-      email: body.get("email") as string,
-      password: body.get("password") as string,
+      email: email as string,
+      password: password as string,
     };
 
     // Server-side validation
@@ -136,7 +157,8 @@ export const action: ActionFunction = async ({ request }) => {
         errorMessage = error.message.replace("Invariant failed: ", "");
         break;
       case "Invariant failed: You must accept the Terms of Service and Privacy Policy":
-        errorMessage = "You must accept the Terms of Service and Privacy Policy";
+        errorMessage =
+          "You must accept the Terms of Service and Privacy Policy";
         break;
       default:
         errorMessage = "Oops! Something went wrong. Please try again.";
@@ -156,12 +178,17 @@ export default function Signup() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const { theme } = useOutletContext<{ theme: "light" | "dark" }>();
-  const [termsPopupOpen, setTermsPopupOpen] = useState(false);
-  const [privacyPopupOpen, setPrivacyPopupOpen] = useState(false);
+  const [termsPrivacyPopupOpen, setTermsPrivacyPopupOpen] = useState(false);
+  const [termsPrivacyRead, setTermsPrivacyRead] = useState(false);
   const navigate = useNavigate();
-  const loaderData = useLoaderData<{ timeZone?: string }>();
+  const loaderData = useLoaderData<{
+    timeZone?: string;
+    termsRead: boolean;
+    privacyRead: boolean;
+  }>();
   const [searchParams] = useSearchParams();
   const [timeZoneName, setTimeZoneName] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const bgColor = theme === "light" ? "bg-gray-100" : "bg-gray-900";
   const cardBgColor = theme === "light" ? "bg-white" : "bg-gray-800";
@@ -218,14 +245,19 @@ export default function Signup() {
     }
   };
 
-  const handleTermsClick = (e: React.MouseEvent) => {
+  const handleTermsPrivacyClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate("/terms");
+    setTermsPrivacyPopupOpen(true);
   };
 
-  const handlePrivacyClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate("/privacy");
+  const handlePopupClose = async (agreed: boolean) => {
+    setTermsPrivacyPopupOpen(false);
+    if (agreed && !termsPrivacyRead) {
+      const formData = new FormData();
+      formData.append("intent", "markTermsPrivacyRead");
+      await fetch("/signup", { method: "POST", body: formData });
+      setTermsPrivacyRead(true);
+    }
   };
 
   return (
@@ -285,7 +317,7 @@ export default function Signup() {
           </div>
         )}
 
-        <Form method="post" className="space-y-6">
+        <Form method="post" className="space-y-6" ref={formRef}>
           <FloatingLabelInput
             name="email"
             theme={theme}
@@ -321,6 +353,7 @@ export default function Signup() {
               required
               className="h-4 w-4 border-gray-300 rounded text-orange-500 focus:ring-orange-500"
               onChange={() => setTermsAccepted(!termsAccepted)}
+              disabled={!termsPrivacyRead}
             />
             <label
               htmlFor="terms-and-privacy"
@@ -331,18 +364,10 @@ export default function Signup() {
               I agree to the{" "}
               <button
                 type="button"
-                onClick={handleTermsClick}
+                onClick={handleTermsPrivacyClick}
                 className="font-bold text-orange-400 hover:text-orange-300"
               >
-                Terms
-              </button>{" "}
-              and{" "}
-              <button
-                type="button"
-                onClick={handlePrivacyClick}
-                className="font-bold text-orange-400 hover:text-orange-300"
-              >
-                Privacy Policy
+                Terms and Privacy Policy
               </button>
             </label>
           </div>
@@ -387,15 +412,8 @@ export default function Signup() {
       </div>
 
       <TermsPrivacyPopup
-        isOpen={termsPopupOpen}
-        onClose={() => setTermsPopupOpen(false)}
-        content="terms"
-        theme={theme}
-      />
-      <TermsPrivacyPopup
-        isOpen={privacyPopupOpen}
-        onClose={() => setPrivacyPopupOpen(false)}
-        content="privacy"
+        isOpen={termsPrivacyPopupOpen}
+        onClose={handlePopupClose}
         theme={theme}
       />
     </div>
