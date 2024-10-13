@@ -1,23 +1,17 @@
 import { NavLink } from "@remix-run/react";
 
-
 const sidebarLinks = [
-  { name: 'Overview', to: '/shipper/dashboard/'},
-  { name: 'View Loads', to: '/shipper/dashboard/loads/view/' },
-  { name: 'Add Loads', to: '/shipper/dashboard/loads/add/' },
-  { name: 'Bids', to: '/shipper/dashboard/loads/bids/' },
-  // ... other sub-task links
+  { name: 'Overview', to: '/carrier/dashboard/'},
+  { name: 'View Open Loads', to: '/carrier/dashboard/view/' },
+  { name: 'View Bids', to: '/carrier/dashboard/bid/' },
 ];
 
-export default function SidebarCarrier({ activeSection, theme }: { activeSection: string, theme: string }) {
+export default function SidebarCarrier({ activeSection, theme, isAuthenticated, userType }: { activeSection: string, theme: string, isAuthenticated: boolean, userType: string }) {
+  if (!isAuthenticated || userType !== "carrier") return null;
+
   var renderingLinks = sidebarLinks;
   if (activeSection === "home") {
     renderingLinks = [{ name: "Overview", to: "/carrier/dashboard/" }];
-  } else {
-    renderingLinks = [
-      { name: "View Open Loads", to: "/carrier/dashboard/view/" },
-      { name: "View Bids", to: "/carrier/dashboard/bid/" },
-    ];
   }
 
   const themeClasses = {

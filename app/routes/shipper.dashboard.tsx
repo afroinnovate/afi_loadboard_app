@@ -234,8 +234,8 @@ export default function Dashboard() {
   };
 
   return (
-    <>
-      {/* Desktop view setup */}
+    <div className="flex flex-col min-h-screen pt-16">
+      {/* Desktop view header */}
       <header className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}>
         <div className="flex items-center space-x-4">
           <button
@@ -280,15 +280,19 @@ export default function Dashboard() {
           </h2>
         </div>
       </header>
-      <div className="flex pt-16 mt-20">
-        <div className="hidden lg:flex top-30">
-          {sidebarOpen && <Sidebar activeSection={activeSection} theme={theme} />}
+
+      <div className="flex flex-grow">
+        {/* Sidebar for large screens */}
+        <div className="hidden lg:block">
+          <Sidebar activeSection={activeSection} theme={theme} isAuthenticated={true} userType="shipper" />
         </div>
-        <main className={`w-full flex justify-center content-center p-3 shadow-lg mt-20 ${themeClasses.main}`}>
+
+        {/* Main content area */}
+        <main className={`flex-grow p-4 ${themeClasses.main}`}>
           {location.pathname === "/shipper/dashboard/" && <Overview loads={loads} bidsDict={bidsDict} theme={theme} />}
           <Outlet context={{ loads, bidsDict, theme, timezone }} />
         </main>
       </div>
-    </>
+    </div>
   );
 }

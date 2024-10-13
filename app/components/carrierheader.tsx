@@ -2,24 +2,21 @@ import { Form, Link, NavLink } from "@remix-run/react";
 
 export default function CarrierHeader({ isAuthenticated, isLoadOperationsActive, toggleMenu }) {
     return (
-      <div className="flex flex-col space-y-4">
-        {/* If the carrier hasn't logged in */}
+      <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:justify-between">
         {!isAuthenticated && (
           <>
-            <div className="pt-4 pl-4">
+            <div className="md:hidden">
               <Link
                 onClick={toggleMenu}
                 to="/login/"
-                className="px-3 py-4 items-center text-green-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
+                className="block px-4 py-2 text-sm text-green-700 font-extrabold hover:bg-gray-100 hover:text-green-800"
               >
                 Login
               </Link>
-            </div>
-            <div className="pb-4 pl-4">
               <Link
                 onClick={toggleMenu}
                 to="/signup/"
-                className="px-3 py-2 rounded-lg bg-green-500 text-white hover:bg-blue-400 hover:translate-y-1 hover:translate-x-2"
+                className="block px-4 py-2 text-sm bg-green-500 text-white hover:bg-green-600"
               >
                 Get Started Now
               </Link>
@@ -27,64 +24,43 @@ export default function CarrierHeader({ isAuthenticated, isLoadOperationsActive,
           </>
         )}
 
-        {/* If the carrier logged in */}
         {isAuthenticated && (
           <>
-            <span className="bd-solid w-auto"></span>
-            <div className="pt-4 pl-4 m-2">
-              <NavLink
-                onClick={toggleMenu}
-                to="/carrier/dashboard/"
-                end
-                className={({ isActive }) =>
-                  "text-black font-semibold " +
-                  (isActive
-                    ? "border-b-2 border-blue-400 sm:text items-center text-green-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
-                    : "text-gray-400 hover:text-black sm:text")
-                }
-              >
-                Home
-              </NavLink>
-            </div>
-            {/* <div className="pl-4 m-2"> 
-                    <NavLink
-                      onClick={toggleMenu}
-                      to="/dashboard/loads/view/"
-                      className={() =>
-                        "text-black font-semibold " +
-                        (isLoadOperationsActive
-                          ? "border-b-2 border-blue-400 sm:text items-center text-green-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
-                          : "text-gray-500 hover:text-black sm:text")
-                      }
-                    >
-                      Load Operations
-                    </NavLink>
-                  </div> */}
-            <div className="pl-2 m-2">
-              <Link
-                onClick={toggleMenu}
-                to="/carrier/dashboard/view"
-                className="px-3 py-4 items-center text-green-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
-              >
-                PickUp Load Now
-              </Link>
-            </div>
-            <Form action="/logout/" method="post" className="pl-2 m-2">
+            <NavLink
+              onClick={toggleMenu}
+              to="/carrier/dashboard/"
+              end
+              className={({ isActive }) =>
+                `block px-4 py-2 text-sm ${
+                  isActive
+                    ? "bg-green-500 text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-green-700"
+                }`
+              }
+            >
+              Home
+            </NavLink>
+            <Link
+              onClick={toggleMenu}
+              to="/carrier/dashboard/view"
+              className="block px-4 py-2 text-sm text-green-700 hover:bg-gray-100 hover:text-green-800"
+            >
+              PickUp Load Now
+            </Link>
+            <Link
+              to="/carrier/dashboard/help"
+              className="block px-4 py-2 text-sm text-blue-400 hover:bg-gray-100 hover:text-blue-500"
+            >
+              Help
+            </Link>
+            <Form action="/logout/" method="post" className="md:hidden">
               <button
                 type="submit"
-                className="px-3 py-2 rounded border-black text-orange-700 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
+                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 hover:text-red-700"
               >
                 Logout
               </button>
             </Form>
-            <div className="mb-4 pl-8">
-              <Link
-                to="/carrier/dashboard/help"
-                className="sm:text items-center text-blue-400 font-extrabold font-sans hover:underline hover:translate-y-1 hover:translate-x-2"
-              >
-                Help
-              </Link>
-            </div>
           </>
         )}
       </div>

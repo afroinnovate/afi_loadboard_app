@@ -200,7 +200,7 @@ export default function CarrierDashboard() {
   };
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen pt-16">
       {/* Desktop view header */}
       <header
         className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}
@@ -260,15 +260,14 @@ export default function CarrierDashboard() {
         </h2>
       </header>
 
-      <div className="flex pt-16 mt-14">
-        <div className="top-40">
-          {sidebarOpen && (
-            <SidebarCarrier activeSection={activeSection} theme={theme} />
-          )}
+      <div className="flex flex-grow">
+        {/* Sidebar for large screens */}
+        <div className="hidden lg:block">
+          <SidebarCarrier activeSection={activeSection} theme={theme} isAuthenticated={true} userType="carrier" />
         </div>
-        <main
-          className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}
-        >
+
+        {/* Main content area */}
+        <main className={`flex-grow p-4 ${themeClasses.main}`}>
           {location.pathname === "/carrier/dashboard/" ? (
             <CarrierOverview loads={loads} bids={bids} theme={theme} />
           ) : (
@@ -276,7 +275,7 @@ export default function CarrierDashboard() {
           )}
         </main>
       </div>
-    </>
+    </div>
   );
 }
 

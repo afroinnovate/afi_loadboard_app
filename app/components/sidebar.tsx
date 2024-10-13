@@ -8,16 +8,12 @@ const sidebarLinks = [
   // ... other sub-task links
 ];
 
-export default function Sidebar({ activeSection, theme }: { activeSection: string, theme: string }) {
-  var renderingLinks = sidebarLinks
-  if (activeSection === "home"){
+export default function Sidebar({ activeSection, theme, isAuthenticated, userType }: { activeSection: string, theme: string, isAuthenticated: boolean, userType: string }) {
+  if (!isAuthenticated || userType !== "shipper") return null;
+
+  var renderingLinks = sidebarLinks;
+  if (activeSection === "home") {
     renderingLinks = [{ name: "Overview", to: "/shipper/dashboard/" }];
-  }else {
-    renderingLinks = [
-      { name: "View Loads", to: "/shipper/dashboard/loads/view/" },
-      { name: "Add Loads", to: "/shipper/dashboard/loads/add/" },
-      { name: "Bids", to: "/shipper/dashboard/loads/bids/" },
-    ];
   }
 
   const themeClasses = {
