@@ -80,7 +80,7 @@ export default function Index() {
           .swirl-text-11 { --scatter-x: 40px; --scatter-y: 70px; animation-delay: 11s, 11s, 31s; }
         `}
       </style>
-      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl w-full space-y-8">
           <header className="text-center">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-yellow-500">

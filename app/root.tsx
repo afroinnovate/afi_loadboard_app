@@ -147,14 +147,14 @@ export default function App() {
         <Links />
       </head>
       <body className={`h-full ${themeClasses.body}`}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col min-h-screen">
           <Header 
             user={user} 
             theme={theme} 
             toggleTheme={toggleTheme} 
             timezone={timezone}
           />
-          <main className="flex-grow">
+          <main className="flex-grow pt-16 md:pt-20">
             <Outlet context={{ theme, timezone, toggleTheme }} />
           </main>
           {isHomePage && (

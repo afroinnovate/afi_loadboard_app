@@ -49,9 +49,9 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
   const headerLinkUnderlineClass = "absolute bottom-0 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full";
 
   return (
-    <header className={`fixed top-0 left-0 right-0 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border-b border-gray-200 dark:border-gray-700 shadow-sm z-20 font-sans`}>
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className={`fixed top-0 left-0 right-0 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border-b border-gray-200 dark:border-gray-700 shadow-sm z-20 font-sans h-16 md:h-20`}>
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="flex items-center justify-between h-full">
           <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center">
               <img
