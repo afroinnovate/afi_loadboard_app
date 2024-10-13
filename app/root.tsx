@@ -21,6 +21,7 @@ import { commitSession, getSession } from "./api/services/session";
 import Header from "./components/headers";
 import { authenticator } from "./api/services/auth.server";
 import { ErrorBoundary } from "./components/errorBoundary";
+import { FaEnvelope, FaPhone, FaTwitter, FaFacebook, FaLinkedin } from 'react-icons/fa';
 
 export const meta: MetaFunction = () => {
   return [
@@ -147,35 +148,45 @@ export default function App() {
       </head>
       <body className={`h-full ${themeClasses.body}`}>
         <div className="flex flex-col h-full">
-          <Header user={user} theme={theme} toggleTheme={toggleTheme} timezone={timezone} />
-          <main className="flex-grow overflow-auto">
+          <Header 
+            user={user} 
+            theme={theme} 
+            toggleTheme={toggleTheme} 
+            timezone={timezone}
+          />
+          <main className="flex-grow">
             <Outlet context={{ theme, timezone, toggleTheme }} />
           </main>
           {isHomePage && (
             <footer
-              className={`${themeClasses.footer} py-6 transition-transform duration-300 ease-in-out ${
-                isFooterVisible ? "translate-y-0" : "translate-y-full"
-              } hidden md:block`}
+              className={`${themeClasses.footer} py-2 fixed bottom-0 right-0 w-auto transition-transform duration-300 ease-in-out ${
+                isFooterVisible ? "translate-x-0" : "translate-x-full"
+              } hidden md:block rounded-tl-lg shadow-lg`}
               onMouseEnter={() => setIsFooterVisible(true)}
               onMouseLeave={() => setIsFooterVisible(false)}
             >
-              <div className="container mx-auto text-center">
-                <nav className="flex justify-center space-x-4">
-                  <Link to="/features" className={themeClasses.link}>
-                    Features
-                  </Link>
-                  <Link to="/how-it-works" className={themeClasses.link}>
-                    How It Works
-                  </Link>
-                  <Link to="/pricing" className={themeClasses.link}>
-                    Pricing
-                  </Link>
-                  <Link to="/contact" className={themeClasses.link}>
-                    Contacts
-                  </Link>
-                </nav>
-                <p className="mt-4">
-                  © 2024 AfroInnovate LoadBoard. All rights reserved.
+              <div className="px-4 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <a href="mailto:afroinnovate@gmail.com" className={`${themeClasses.link} flex items-center text-sm`}>
+                    <FaEnvelope className="mr-2" /> afroinnovate@gmail.com
+                  </a>
+                  <a href="tel:+251915121312" className={`${themeClasses.link} flex items-center text-sm ml-4`}>
+                    <FaPhone className="mr-2" /> +251 915 121 312
+                  </a>
+                </div>
+                <div className="flex justify-center space-x-4 mb-2">
+                  <a href="https://twitter.com/afroinnovate" target="_blank" rel="noopener noreferrer" className={`${themeClasses.link} hover:opacity-75 transition-opacity`}>
+                    <FaTwitter size={18} />
+                  </a>
+                  <a href="https://facebook.com/afroinnovate" target="_blank" rel="noopener noreferrer" className={`${themeClasses.link} hover:opacity-75 transition-opacity`}>
+                    <FaFacebook size={18} />
+                  </a>
+                  <a href="https://linkedin.com/company/afroinnovate" target="_blank" rel="noopener noreferrer" className={`${themeClasses.link} hover:opacity-75 transition-opacity`}>
+                    <FaLinkedin size={18} />
+                  </a>
+                </div>
+                <p className="text-xs text-center">
+                  © 2024 AfroInnovate LoadBoard
                 </p>
               </div>
             </footer>

@@ -29,7 +29,7 @@ export default function Index() {
   };
 
   return (
-    <div className={`font-sans ${themeClasses.background} ${themeClasses.text} min-h-full flex flex-col`}>
+    <div className={`font-sans ${themeClasses.background} ${themeClasses.text} min-h-screen flex flex-col`}>
       <style>
         {`
           @keyframes textCycle {
@@ -80,21 +80,21 @@ export default function Index() {
           .swirl-text-11 { --scatter-x: 40px; --scatter-y: 70px; animation-delay: 11s, 11s, 31s; }
         `}
       </style>
-      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16 overflow-auto">
-        <div className="max-w-7xl w-full space-y-16">
+      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-5xl w-full space-y-8">
           <header className="text-center">
-            <h1 className="text-5xl sm:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-yellow-500">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-yellow-500">
               AFI LoadBoard
             </h1>
-            <p className={`text-xl sm:text-2xl ${themeClasses.subtext} mb-8`}>
+            <p className={`text-xl sm:text-2xl ${themeClasses.subtext} mb-4`}>
               Your One-Stop Solution for Freight Transportation
             </p>
-            <blockquote className="text-2xl sm:text-3xl italic font-medium mb-8 relative">
-              <span className="absolute top-0 left-0 transform -translate-x-6 -translate-y-6 text-5xl sm:text-6xl text-yellow-500 opacity-25">
+            <blockquote className="text-2xl sm:text-3xl italic font-medium mb-4 relative">
+              <span className="absolute top-0 left-0 transform -translate-x-4 -translate-y-4 text-4xl sm:text-5xl text-yellow-500 opacity-25">
                 "
               </span>
               Creating one Africa, one load at a time.
-              <span className="absolute bottom-0 right-0 transform translate-x-6 translate-y-6 text-5xl sm:text-6xl text-yellow-500 opacity-25">
+              <span className="absolute bottom-0 right-0 transform translate-x-4 translate-y-4 text-4xl sm:text-5xl text-yellow-500 opacity-25">
                 "
               </span>
             </blockquote>
@@ -106,14 +106,14 @@ export default function Index() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <BenefitCard
               title="For Shippers"
-              description="List loads effortlessly and connect with top carriers instantly. Our streamlined process ensures your cargo moves without delay."
+              description="List loads effortlessly and connect with top carriers instantly."
               action="Post a Load"
               theme={theme}
               randomWord={randomWord}
             />
             <BenefitCard
               title="For Carriers"
-              description="Access premium loads, optimize your routes for maximum profit, and reduce empty miles. Find the perfect hauls for your fleet."
+              description="Access premium loads, optimize routes for maximum profit."
               action="Find Loads"
               theme={theme}
               randomWord={randomWord}
@@ -123,13 +123,13 @@ export default function Index() {
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Link
               to="/signup/"
-              className={`px-8 py-4 text-center text-lg font-medium ${themeClasses.button} rounded-full transition duration-300 shadow-lg transform hover:scale-105`}
+              className={`px-8 py-3 text-center text-lg font-medium ${themeClasses.button} rounded-full transition duration-300 shadow-lg transform hover:scale-105`}
             >
               Get Started
             </Link>
             <Link
               to="/login/"
-              className={`px-8 py-4 text-center text-lg font-medium ${themeClasses.outlineButton} bg-transparent border-2 rounded-full transition duration-300 transform hover:scale-105`}
+              className={`px-8 py-3 text-center text-lg font-medium ${themeClasses.outlineButton} bg-transparent border-2 rounded-full transition duration-300 transform hover:scale-105`}
             >
               Sign In
             </Link>
@@ -160,8 +160,8 @@ function BenefitCard({ title, description, action, theme, randomWord }: any) {
   ];
 
   return (
-    <div className={`${themeClasses.card} rounded-2xl p-6 space-y-4 ${themeClasses.cardHover} transition duration-300 transform hover:scale-105 shadow-lg border border-opacity-20 ${theme === "dark" ? "border-yellow-400" : "border-green-500"}`}>
-      <div className="relative h-64 rounded-xl overflow-hidden mb-4">
+    <div className={`${themeClasses.card} rounded-2xl p-4 space-y-3 ${themeClasses.cardHover} transition duration-300 transform hover:scale-105 shadow-lg border border-opacity-20 ${theme === "dark" ? "border-yellow-400" : "border-green-500"}`}>
+      <div className="relative h-48 rounded-xl overflow-hidden mb-3">
         <div className="swirl-container relative h-full w-full flex items-center justify-center">
           <div className="map-mask relative">
             {words.map((word, index) => (
@@ -194,12 +194,12 @@ function BenefitCard({ title, description, action, theme, randomWord }: any) {
           {title}
         </h2>
       </div>
-      <p className={`${themeClasses.subtext} text-lg leading-relaxed`}>
+      <p className={`${themeClasses.subtext} text-sm leading-relaxed`}>
         {description}
       </p>
       <Link
         to="/signup/"
-        className={`inline-block ${themeClasses.link} text-lg font-medium`}
+        className={`inline-block ${themeClasses.link} text-sm font-medium`}
       >
         {action} →
       </Link>

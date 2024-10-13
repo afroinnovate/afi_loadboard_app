@@ -45,6 +45,9 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const headerLinkClass = `text-sm font-medium ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'} transition-colors duration-200 relative group`;
+  const headerLinkUnderlineClass = "absolute bottom-0 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full";
+
   return (
     <header className={`fixed top-0 left-0 right-0 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border-b border-gray-200 dark:border-gray-700 shadow-sm z-20 font-sans`}>
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,6 +62,21 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
               <span className="text-2xl font-bold text-orange-500">
                 AFI LoadBoard
               </span>
+            </Link>
+          </div>
+
+          <div className="hidden md:flex items-center space-x-4">
+            <Link to="/features" className={headerLinkClass}>
+              Features
+              <span className={headerLinkUnderlineClass}></span>
+            </Link>
+            <Link to="/how-it-works" className={headerLinkClass}>
+              How It Works
+              <span className={headerLinkUnderlineClass}></span>
+            </Link>
+            <Link to="/pricing" className={headerLinkClass}>
+              Pricing
+              <span className={headerLinkUnderlineClass}></span>
             </Link>
           </div>
 
@@ -212,6 +230,26 @@ export default function Header({ user, theme, toggleTheme, timezone }: { user: a
             </div>
           </div>
         )}
+
+      {isMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            <Link to="/features" className={`block ${headerLinkClass}`}>
+              Features
+              <span className={headerLinkUnderlineClass}></span>
+            </Link>
+            <Link to="/how-it-works" className={`block ${headerLinkClass}`}>
+              How It Works
+              <span className={headerLinkUnderlineClass}></span>
+            </Link>
+            <Link to="/pricing" className={`block ${headerLinkClass}`}>
+              Pricing
+              <span className={headerLinkUnderlineClass}></span>
+            </Link>
+            {/* ... (other mobile menu items) */}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
