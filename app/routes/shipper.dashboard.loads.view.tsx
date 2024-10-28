@@ -185,7 +185,7 @@ export default function ViewLoads() {
   const { loads, theme } = useOutletContext<OutletContext>();
   const actionData = useActionData() as ActionData;
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [selectedLoad, setSelectedLoad] = useState(null);
+  const [selectedLoad, setSelectedLoad]: any = useState(null);
   const navigation = useNavigation();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -478,9 +478,8 @@ export default function ViewLoads() {
 
       {isUpdateModalOpen && selectedLoad && (
         <UpdateLoadView
-          {...(selectedLoad as Object)}
+          {...selectedLoad}
           onClose={handleCloseUpdateModal}
-          isSuccess={isSuccess}
         />
       )}
 
