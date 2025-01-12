@@ -76,6 +76,12 @@ export function InvoiceCard({ invoice, theme, onClick }: InvoiceCardProps) {
         </div>
         <ArrowTopRightOnSquareIcon className="h-5 w-5" />
       </div>
+
+      <div className="mt-2 text-sm">
+        <p className={themeClasses.subtext}>
+          Created: {new Date(invoice.createdAt).toLocaleDateString()}
+        </p>
+      </div>
     </div>
   );
 }

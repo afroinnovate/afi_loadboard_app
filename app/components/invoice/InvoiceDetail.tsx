@@ -4,6 +4,8 @@ import {
   PrinterIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
+import { PaymentSection } from "./PaymentSection";
+import type { PaymentInfo } from "~/api/mocks/invoiceData";
 
 interface InvoiceDetailProps {
   invoice: Invoice;
@@ -18,6 +20,16 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
     section: theme === "dark" ? "bg-gray-700" : "bg-gray-50",
     border: theme === "dark" ? "border-gray-700" : "border-gray-200",
     subtext: theme === "dark" ? "text-gray-400" : "text-gray-600",
+  };
+
+  const handlePaymentInfoUpdate = (updatedInfo: PaymentInfo) => {
+    // Here you would typically update the invoice in your state/database
+    console.log("Payment info updated:", updatedInfo);
+  };
+
+  const handlePaymentSubmit = () => {
+    // Here you would typically handle the payment submission
+    console.log("Payment submitted for invoice:", invoice.id);
   };
 
   return (
@@ -46,6 +58,28 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Add dates section */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className={`${themeClasses.section} p-4 rounded`}>
+              <p className={themeClasses.subtext}>Created On</p>
+              <p className="font-medium">
+                {new Date(invoice.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div className={`${themeClasses.section} p-4 rounded`}>
+              <p className={themeClasses.subtext}>Status Changed</p>
+              <p className="font-medium">
+                {new Date(invoice.load.statusChangeDate).toLocaleDateString()}
+              </p>
+            </div>
+            <div className={`${themeClasses.section} p-4 rounded`}>
+              <p className={themeClasses.subtext}>Due Date</p>
+              <p className="font-medium">
+                {new Date(invoice.dueDate).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+
           {/* Parties Information */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
@@ -146,6 +180,24 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
             </p>
           </div>
         </div>
+
+        {/* Add Payment Section with null check */}
+        {!invoice.paymentStatus?.isPaid && (
+          <PaymentSection
+            invoice={{
+              ...invoice,
+              paymentStatus: invoice.paymentStatus || {
+                carrierInfoConfirmed: false,
+                taxInfoConfirmed: false,
+                disclaimerAccepted: false,
+                isPaid: false,
+              },
+            }}
+            theme={theme}
+            onPaymentInfoUpdate={handlePaymentInfoUpdate}
+            onPaymentSubmit={handlePaymentSubmit}
+          />
+        )}
       </div>
     </div>
   );

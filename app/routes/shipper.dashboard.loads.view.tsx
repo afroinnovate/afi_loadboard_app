@@ -312,18 +312,19 @@ export default function ViewLoads() {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("Invoice button clicked"); // Debug log
+    const currentDate = new Date();
+    const dueDate = new Date(currentDate);
+    dueDate.setDate(dueDate.getDate() + 30); // 30 days from now
 
     const partialInvoice: Partial<Invoice> = {
       id: `INV-${load.loadId}`,
-      invoiceNumber: `INV/${new Date().getFullYear()}/${load.loadId
+      invoiceNumber: `INV/${currentDate.getFullYear()}/${load.loadId
         .toString()
         .padStart(3, "0")}`,
       loadId: load.loadId.toString(),
-      issuedDate: new Date().toISOString().split("T")[0],
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
+      issuedDate: currentDate.toISOString().split("T")[0],
+      dueDate: dueDate.toISOString().split("T")[0],
+      createdAt: currentDate.toISOString(), // Add creation timestamp
       status: "pending",
       shipper: {
         name: load.shipper?.name || "Shipper Name Pending",
@@ -345,27 +346,37 @@ export default function ViewLoads() {
         deliveryDate: load.deliveryDate,
         commodity: load.commodity,
         weight: load.weight,
+        statusChangeDate: currentDate.toISOString(), // Add status change date
       },
       charges: {
         baseRate: Number(load.offerAmount),
-        additionalServices: [],
-        subtotal: Number(load.offerAmount),
+        additionalServices: [
+          {
+            description: "Loading Fee",
+            amount: Number(load.offerAmount) * 0.05, // 5% of base rate
+          },
+          {
+            description: "Insurance",
+            amount: Number(load.offerAmount) * 0.03, // 3% of base rate
+          },
+        ],
+        subtotal: Number(load.offerAmount) * 1.08, // Base + Loading + Insurance
         taxes: {
           VAT: Number(load.offerAmount) * 0.15,
           withholding: Number(load.offerAmount) * 0.02,
         },
-        total: Number(load.offerAmount) * 1.17,
+        total: Number(load.offerAmount) * 1.25, // Including all charges and taxes
       },
       paymentTerms: "Net 30",
-      notes: `Invoice for load ${load.loadId} - ${load.commodity} shipment from ${load.origin} to ${load.destination}`,
+      notes: `Invoice for load ${load.loadId} - ${
+        load.commodity
+      } shipment from ${load.origin} to ${
+        load.destination
+      }. Generated on ${currentDate.toLocaleDateString()}`,
     };
 
     try {
-      // Store in sessionStorage
       sessionStorage.setItem("draftInvoice", JSON.stringify(partialInvoice));
-      console.log("Invoice stored in session"); // Debug log
-
-      // Navigate to invoices page
       navigate("/shipper/dashboard/invoices");
     } catch (error) {
       console.error("Error handling invoice action:", error);

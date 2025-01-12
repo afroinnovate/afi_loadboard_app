@@ -1,3 +1,18 @@
+export interface PaymentInfo {
+  preferredMethod: 'bank' | 'mobile_money';
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+    branchCode: string;
+  };
+  mobileMoneyDetails?: {
+    provider: 'MPesa' | 'TeleBirr';
+    phoneNumber: string;
+    accountName: string;
+  };
+}
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -18,6 +33,7 @@ export interface Invoice {
     address: string;
     taxId: string;
     email: string;
+    paymentInfo: PaymentInfo;
   };
   load: {
     origin: string;
@@ -25,6 +41,7 @@ export interface Invoice {
     deliveryDate: string;
     commodity: string;
     weight: number;
+    statusChangeDate: string;
   };
   charges: {
     baseRate: number;
@@ -41,6 +58,15 @@ export interface Invoice {
   };
   paymentTerms: string;
   notes: string;
+  createdAt: string;
+  paymentStatus: {
+    carrierInfoConfirmed: boolean;
+    taxInfoConfirmed: boolean;
+    disclaimerAccepted: boolean;
+    isPaid: boolean;
+    paidAt?: string;
+    transactionId?: string;
+  };
 }
 
 export const mockInvoices: Invoice[] = [
@@ -63,14 +89,24 @@ export const mockInvoices: Invoice[] = [
       companyName: "FastTrack Transport",
       address: "456 Carrier Road, Addis Ababa",
       taxId: "TAX789012",
-      email: "accounts@fasttrack.com"
+      email: "accounts@fasttrack.com",
+      paymentInfo: {
+        preferredMethod: 'bank',
+        bankDetails: {
+          bankName: "Bank of Ethiopia",
+          accountNumber: "1234567890",
+          accountName: "ABC Logistics Ltd",
+          branchCode: "001"
+        }
+      }
     },
     load: {
       origin: "Addis Ababa",
       destination: "Dire Dawa",
       deliveryDate: "2024-03-14",
       commodity: "Electronics",
-      weight: 5000
+      weight: 5000,
+      statusChangeDate: "2024-03-14T15:45:00Z",
     },
     charges: {
       baseRate: 25000,
@@ -86,7 +122,14 @@ export const mockInvoices: Invoice[] = [
       total: 31075
     },
     paymentTerms: "Net 30",
-    notes: "Please include invoice number in payment reference"
+    notes: "Please include invoice number in payment reference",
+    createdAt: "2024-03-15T10:30:00Z",
+    paymentStatus: {
+      carrierInfoConfirmed: false,
+      taxInfoConfirmed: false,
+      disclaimerAccepted: false,
+      isPaid: false
+    },
   },
   // Add more mock invoices...
 ]; 
