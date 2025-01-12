@@ -3,13 +3,14 @@ export interface PaymentInfo {
   bankDetails?: {
     bankName: string;
     accountNumber: string;
-    accountName: string;
-    branchCode: string;
+    accountHolderName: string;
+    routingNumber?: string;  // For international transfers
   };
   mobileMoneyDetails?: {
-    provider: 'MPesa' | 'TeleBirr';
+    provider: 'TeleBirr' | 'CBEBirr' | 'HelloCash' | 'AmolePay';
     phoneNumber: string;
     accountName: string;
+    accountNumber?: string;  // Some mobile money services require this
   };
 }
 
@@ -93,10 +94,10 @@ export const mockInvoices: Invoice[] = [
       paymentInfo: {
         preferredMethod: 'bank',
         bankDetails: {
-          bankName: "Bank of Ethiopia",
-          accountNumber: "1234567890",
-          accountName: "ABC Logistics Ltd",
-          branchCode: "001"
+          bankName: "Commercial Bank of Ethiopia",
+          accountNumber: "1000123456789",
+          accountHolderName: "FastTrack Transport",
+          routingNumber: "CBE001"
         }
       }
     },

@@ -35,14 +35,14 @@ export function PaymentSection({
     border: theme === "dark" ? "border-gray-700" : "border-gray-200",
     button: {
       primary:
-        theme === "dark"
-          ? "bg-blue-600 hover:bg-blue-700 text-white"
-          : "bg-blue-500 hover:bg-blue-600 text-white",
-      secondary:
-        theme === "dark"
-          ? "border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
-          : "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white",
+        "bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 text-white disabled:bg-gray-700 disabled:cursor-not-allowed",
+      edit: "text-orange-400 hover:text-orange-300 font-bold",
+      save: "text-orange-400 hover:text-orange-300 font-bold",
     },
+    checkbox:
+      theme === "dark"
+        ? "h-4 w-4 border-gray-300 rounded text-orange-500 focus:ring-orange-500"
+        : "h-4 w-4 border-gray-300 rounded text-orange-500 focus:ring-orange-500",
   };
 
   const handlePaymentInfoEdit = () => {
@@ -74,7 +74,7 @@ export function PaymentSection({
           {!isEditing ? (
             <button
               onClick={handlePaymentInfoEdit}
-              className="flex items-center text-blue-500 hover:text-blue-600"
+              className={`flex items-center ${themeClasses.button.edit}`}
             >
               <PencilIcon className="h-4 w-4 mr-1" />
               Edit
@@ -82,7 +82,7 @@ export function PaymentSection({
           ) : (
             <button
               onClick={handlePaymentInfoSave}
-              className="flex items-center text-green-500 hover:text-green-600"
+              className={`flex items-center ${themeClasses.button.save}`}
             >
               <CheckCircleIcon className="h-4 w-4 mr-1" />
               Save
@@ -100,7 +100,7 @@ export function PaymentSection({
                   preferredMethod: e.target.value as "bank" | "mobile_money",
                 })
               }
-              className="w-full p-2 rounded border"
+              className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
             >
               <option value="bank">Bank Transfer</option>
               <option value="mobile_money">Mobile Money</option>
@@ -108,9 +108,7 @@ export function PaymentSection({
 
             {paymentInfo.preferredMethod === "bank" ? (
               <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Bank Name"
+                <select
                   value={paymentInfo.bankDetails?.bankName || ""}
                   onChange={(e) =>
                     setPaymentInfo({
@@ -121,8 +119,17 @@ export function PaymentSection({
                       },
                     })
                   }
-                  className="w-full p-2 rounded border"
-                />
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
+                >
+                  <option value="">Select Bank</option>
+                  <option value="Commercial Bank of Ethiopia">
+                    Commercial Bank of Ethiopia
+                  </option>
+                  <option value="Dashen Bank">Dashen Bank</option>
+                  <option value="Awash Bank">Awash Bank</option>
+                  <option value="Bank of Abyssinia">Bank of Abyssinia</option>
+                  {/* Add other Ethiopian banks as needed */}
+                </select>
                 <input
                   type="text"
                   placeholder="Account Number"
@@ -136,30 +143,66 @@ export function PaymentSection({
                       },
                     })
                   }
-                  className="w-full p-2 rounded border"
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
                 />
-                {/* Add other bank fields */}
+                <input
+                  type="text"
+                  placeholder="Account Holder Name"
+                  value={paymentInfo.bankDetails?.accountHolderName || ""}
+                  onChange={(e) =>
+                    setPaymentInfo({
+                      ...paymentInfo,
+                      bankDetails: {
+                        ...paymentInfo.bankDetails!,
+                        accountHolderName: e.target.value,
+                      },
+                    })
+                  }
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
+                />
+                <input
+                  type="text"
+                  placeholder="Routing Number (Optional)"
+                  value={paymentInfo.bankDetails?.routingNumber || ""}
+                  onChange={(e) =>
+                    setPaymentInfo({
+                      ...paymentInfo,
+                      bankDetails: {
+                        ...paymentInfo.bankDetails!,
+                        routingNumber: e.target.value,
+                      },
+                    })
+                  }
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
+                />
               </div>
             ) : (
               <div className="space-y-2">
                 <select
-                  value={paymentInfo.mobileMoneyDetails?.provider}
+                  value={paymentInfo.mobileMoneyDetails?.provider || ""}
                   onChange={(e) =>
                     setPaymentInfo({
                       ...paymentInfo,
                       mobileMoneyDetails: {
                         ...paymentInfo.mobileMoneyDetails!,
-                        provider: e.target.value as "MPesa" | "TeleBirr",
+                        provider: e.target.value as
+                          | "TeleBirr"
+                          | "CBEBirr"
+                          | "HelloCash"
+                          | "AmolePay",
                       },
                     })
                   }
-                  className="w-full p-2 rounded border"
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
                 >
-                  <option value="MPesa">MPesa</option>
+                  <option value="">Select Provider</option>
                   <option value="TeleBirr">TeleBirr</option>
+                  <option value="CBEBirr">CBEBirr</option>
+                  <option value="HelloCash">HelloCash</option>
+                  <option value="AmolePay">AmolePay</option>
                 </select>
                 <input
-                  type="text"
+                  type="tel"
                   placeholder="Phone Number"
                   value={paymentInfo.mobileMoneyDetails?.phoneNumber || ""}
                   onChange={(e) =>
@@ -171,16 +214,45 @@ export function PaymentSection({
                       },
                     })
                   }
-                  className="w-full p-2 rounded border"
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
                 />
-                {/* Add other mobile money fields */}
+                <input
+                  type="text"
+                  placeholder="Account Name"
+                  value={paymentInfo.mobileMoneyDetails?.accountName || ""}
+                  onChange={(e) =>
+                    setPaymentInfo({
+                      ...paymentInfo,
+                      mobileMoneyDetails: {
+                        ...paymentInfo.mobileMoneyDetails!,
+                        accountName: e.target.value,
+                      },
+                    })
+                  }
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
+                />
+                <input
+                  type="text"
+                  placeholder="Account Number (if applicable)"
+                  value={paymentInfo.mobileMoneyDetails?.accountNumber || ""}
+                  onChange={(e) =>
+                    setPaymentInfo({
+                      ...paymentInfo,
+                      mobileMoneyDetails: {
+                        ...paymentInfo.mobileMoneyDetails!,
+                        accountNumber: e.target.value,
+                      },
+                    })
+                  }
+                  className={`w-full p-2 rounded border ${themeClasses.border} ${themeClasses.text} bg-transparent`}
+                />
               </div>
             )}
           </div>
         ) : (
           <div className="space-y-2">
             <p className={themeClasses.text}>
-              Method:{" "}
+              Payment Method:{" "}
               {paymentInfo.preferredMethod === "bank"
                 ? "Bank Transfer"
                 : "Mobile Money"}
@@ -193,6 +265,14 @@ export function PaymentSection({
                 <p className={themeClasses.subtext}>
                   Account: {paymentInfo.bankDetails?.accountNumber}
                 </p>
+                <p className={themeClasses.subtext}>
+                  Account Holder: {paymentInfo.bankDetails?.accountHolderName}
+                </p>
+                {paymentInfo.bankDetails?.routingNumber && (
+                  <p className={themeClasses.subtext}>
+                    Routing Number: {paymentInfo.bankDetails.routingNumber}
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -202,6 +282,15 @@ export function PaymentSection({
                 <p className={themeClasses.subtext}>
                   Phone: {paymentInfo.mobileMoneyDetails?.phoneNumber}
                 </p>
+                <p className={themeClasses.subtext}>
+                  Account Name: {paymentInfo.mobileMoneyDetails?.accountName}
+                </p>
+                {paymentInfo.mobileMoneyDetails?.accountNumber && (
+                  <p className={themeClasses.subtext}>
+                    Account Number:{" "}
+                    {paymentInfo.mobileMoneyDetails.accountNumber}
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -215,7 +304,7 @@ export function PaymentSection({
             type="checkbox"
             checked={carrierInfoConfirmed}
             onChange={(e) => setCarrierInfoConfirmed(e.target.checked)}
-            className="mt-1"
+            className={themeClasses.checkbox}
           />
           <span className={`${themeClasses.text} text-sm`}>
             I confirm that the carrier payment information is correct and
@@ -228,7 +317,7 @@ export function PaymentSection({
             type="checkbox"
             checked={taxInfoConfirmed}
             onChange={(e) => setTaxInfoConfirmed(e.target.checked)}
-            className="mt-1"
+            className={themeClasses.checkbox}
           />
           <span className={`${themeClasses.text} text-sm`}>
             I confirm that ETB {invoice.charges.taxes.VAT.toLocaleString()}{" "}
@@ -243,7 +332,7 @@ export function PaymentSection({
             type="checkbox"
             checked={disclaimerAccepted}
             onChange={(e) => setDisclaimerAccepted(e.target.checked)}
-            className="mt-1"
+            className={themeClasses.checkbox}
           />
           <span className={`${themeClasses.text} text-sm`}>
             I understand that this payment is final and cannot be reversed once
@@ -256,12 +345,8 @@ export function PaymentSection({
       <button
         onClick={onPaymentSubmit}
         disabled={!isPaymentEnabled}
-        className={`w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200
-          ${
-            isPaymentEnabled
-              ? themeClasses.button.primary
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
+        className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium transition-colors duration-300 flex items-center justify-center
+          ${isPaymentEnabled ? themeClasses.button.primary : ""}`}
       >
         Pay ETB {invoice.charges.total.toLocaleString()}
       </button>
