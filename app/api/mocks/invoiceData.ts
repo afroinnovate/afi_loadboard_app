@@ -34,7 +34,7 @@ export interface Invoice {
     address: string;
     taxId: string;
     email: string;
-    paymentInfo: PaymentInfo;
+    paymentInfo?: PaymentInfo;
   };
   load: {
     origin: string;
@@ -60,7 +60,7 @@ export interface Invoice {
   paymentTerms: string;
   notes: string;
   createdAt: string;
-  paymentStatus: {
+  paymentStatus?: {
     carrierInfoConfirmed: boolean;
     taxInfoConfirmed: boolean;
     disclaimerAccepted: boolean;
@@ -77,7 +77,7 @@ export const mockInvoices: Invoice[] = [
     loadId: "LOAD-001",
     issuedDate: "2024-03-15",
     dueDate: "2024-04-14",
-    status: "pending",
+    status: "paid",
     shipper: {
       name: "John Doe",
       companyName: "ABC Logistics Ltd",

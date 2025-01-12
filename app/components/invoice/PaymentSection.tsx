@@ -1,12 +1,14 @@
 import { useState } from "react";
 import type { Invoice, PaymentInfo } from "~/api/mocks/invoiceData";
 import { PencilIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { Loader } from "~/components/loader";
 
 interface PaymentSectionProps {
   invoice: Invoice;
   theme: "light" | "dark";
   onPaymentInfoUpdate: (updatedInfo: PaymentInfo) => void;
-  onPaymentSubmit: () => void;
+  onPaymentSubmit: (updatedInvoice: Invoice) => void;
+  onClose: () => void;
 }
 
 export function PaymentSection({
@@ -14,18 +16,38 @@ export function PaymentSection({
   theme,
   onPaymentInfoUpdate,
   onPaymentSubmit,
+  onClose,
 }: PaymentSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [carrierInfoConfirmed, setCarrierInfoConfirmed] = useState(
-    invoice.paymentStatus.carrierInfoConfirmed
+    invoice.paymentStatus?.carrierInfoConfirmed || false
   );
   const [taxInfoConfirmed, setTaxInfoConfirmed] = useState(
-    invoice.paymentStatus.taxInfoConfirmed
+    invoice.paymentStatus?.taxInfoConfirmed || false
   );
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(
-    invoice.paymentStatus.disclaimerAccepted
+    invoice.paymentStatus?.disclaimerAccepted || false
   );
-  const [paymentInfo, setPaymentInfo] = useState(invoice.carrier.paymentInfo);
+
+  // Add default payment info
+  const defaultPaymentInfo: PaymentInfo = {
+    preferredMethod: "bank",
+    bankDetails: {
+      bankName: "",
+      accountNumber: "",
+      accountHolderName: "",
+    },
+    mobileMoneyDetails: {
+      provider: "TeleBirr",
+      phoneNumber: "",
+      accountName: "",
+    },
+  };
+
+  const [paymentInfo, setPaymentInfo] = useState(
+    invoice.carrier.paymentInfo || defaultPaymentInfo
+  );
 
   const themeClasses = {
     container: theme === "dark" ? "bg-gray-800" : "bg-white",
@@ -56,6 +78,34 @@ export function PaymentSection({
 
   const isPaymentEnabled =
     carrierInfoConfirmed && taxInfoConfirmed && disclaimerAccepted;
+
+  const handlePayment = async () => {
+    setIsProcessing(true);
+
+    // Simulate payment processing
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const now = new Date().toISOString();
+    const updatedInvoice: Invoice = {
+      ...invoice,
+      status: "paid",
+      carrier: {
+        ...invoice.carrier,
+        paymentInfo: paymentInfo,
+      },
+      paymentStatus: {
+        isPaid: true,
+        paidAt: now,
+        transactionId: `TXN-${Date.now()}`,
+        carrierInfoConfirmed: true,
+        taxInfoConfirmed: true,
+        disclaimerAccepted: true,
+      },
+    };
+
+    onPaymentSubmit(updatedInvoice);
+    setIsProcessing(false);
+  };
 
   return (
     <div
@@ -343,12 +393,23 @@ export function PaymentSection({
 
       {/* Payment Button */}
       <button
-        onClick={onPaymentSubmit}
-        disabled={!isPaymentEnabled}
+        onClick={handlePayment}
+        disabled={!isPaymentEnabled || isProcessing}
         className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium transition-colors duration-300 flex items-center justify-center
-          ${isPaymentEnabled ? themeClasses.button.primary : ""}`}
+          ${
+            isPaymentEnabled && !isProcessing
+              ? themeClasses.button.primary
+              : "bg-gray-700 cursor-not-allowed"
+          }`}
       >
-        Pay ETB {invoice.charges.total.toLocaleString()}
+        {isProcessing ? (
+          <>
+            <Loader size={20} strokeWidth={2} className="mr-2" />
+            <span>Processing Payment...</span>
+          </>
+        ) : (
+          `Pay ETB ${invoice.charges.total.toLocaleString()}`
+        )}
       </button>
     </div>
   );

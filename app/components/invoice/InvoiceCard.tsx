@@ -2,6 +2,7 @@ import { type Invoice } from "~/api/mocks/invoiceData";
 import {
   DocumentTextIcon,
   ArrowTopRightOnSquareIcon,
+  ReceiptRefundIcon,
 } from "@heroicons/react/24/outline";
 
 interface InvoiceCardProps {
@@ -34,7 +35,11 @@ export function InvoiceCard({ invoice, theme, onClick }: InvoiceCardProps) {
       <div className="flex justify-between items-start mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <DocumentTextIcon className="h-5 w-5" />
+            {invoice.status === "paid" ? (
+              <ReceiptRefundIcon className="h-5 w-5 text-green-500" />
+            ) : (
+              <DocumentTextIcon className="h-5 w-5" />
+            )}
             <h3 className={`${themeClasses.text} font-semibold text-lg`}>
               {invoice.invoiceNumber}
             </h3>

@@ -6,6 +6,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { PaymentSection } from "./PaymentSection";
 import type { PaymentInfo } from "~/api/mocks/invoiceData";
+import { Receipt } from "./Receipt";
+import { useState } from "react";
+import type { Receipt as ReceiptType } from "~/api/mocks/receiptData";
 
 interface InvoiceDetailProps {
   invoice: Invoice;
@@ -13,7 +16,26 @@ interface InvoiceDetailProps {
   onClose: () => void;
 }
 
-export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
+export function InvoiceDetail({
+  invoice: initialInvoice,
+  theme,
+  onClose,
+}: InvoiceDetailProps) {
+  const [invoice, setInvoice] = useState({
+    ...initialInvoice,
+    paymentStatus: {
+      carrierInfoConfirmed: false,
+      taxInfoConfirmed: false,
+      disclaimerAccepted: false,
+      isPaid: false,
+      ...initialInvoice.paymentStatus,
+    },
+  });
+
+  const [showReceipt, setShowReceipt] = useState(
+    invoice.status === "paid" || invoice.paymentStatus?.isPaid || false
+  );
+
   const themeClasses = {
     modal:
       theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
@@ -23,14 +45,76 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
   };
 
   const handlePaymentInfoUpdate = (updatedInfo: PaymentInfo) => {
-    // Here you would typically update the invoice in your state/database
-    console.log("Payment info updated:", updatedInfo);
+    setInvoice((prev) => ({
+      ...prev,
+      carrier: {
+        ...prev.carrier,
+        paymentInfo: updatedInfo,
+      },
+    }));
   };
 
-  const handlePaymentSubmit = () => {
-    // Here you would typically handle the payment submission
-    console.log("Payment submitted for invoice:", invoice.id);
+  const handlePaymentSubmit = (updatedInvoice: Invoice) => {
+    const updatedWithStatus = {
+      ...updatedInvoice,
+      paymentStatus: {
+        carrierInfoConfirmed: true,
+        taxInfoConfirmed: true,
+        disclaimerAccepted: true,
+        isPaid: true,
+        paidAt: new Date().toISOString(),
+        ...updatedInvoice.paymentStatus,
+      },
+    };
+
+    setInvoice(updatedWithStatus);
+    console.log("Payment processed:", updatedWithStatus);
+    setShowReceipt(true);
   };
+
+  const generateReceipt = (): ReceiptType => ({
+    receiptNumber: `RCP-${invoice.id.split("-")[1]}-${Date.now()}`,
+    invoiceNumber: invoice.invoiceNumber,
+    transactionId: invoice.paymentStatus.transactionId || "",
+    paidAmount: invoice.charges.total,
+    paidAt: invoice.paymentStatus.paidAt || new Date().toISOString(),
+    paymentMethod:
+      invoice.carrier.paymentInfo.preferredMethod === "bank"
+        ? "Bank Transfer"
+        : "Mobile Money",
+    taxes: invoice.charges.taxes,
+    payer: {
+      name: invoice.shipper.name,
+      companyName: invoice.shipper.companyName,
+      taxId: invoice.shipper.taxId,
+    },
+    recipient: {
+      name: invoice.carrier.name,
+      companyName: invoice.carrier.companyName,
+      taxId: invoice.carrier.taxId,
+    },
+    bankInfo: invoice.carrier.paymentInfo.bankDetails,
+    mobileMoneyInfo: invoice.carrier.paymentInfo.mobileMoneyDetails,
+  });
+
+  if (
+    invoice.status === "paid" ||
+    invoice.paymentStatus?.isPaid ||
+    showReceipt
+  ) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <Receipt
+          receipt={generateReceipt()}
+          theme={theme}
+          onClose={() => {
+            setShowReceipt(false);
+            onClose();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -58,7 +142,6 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Add dates section */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className={`${themeClasses.section} p-4 rounded`}>
               <p className={themeClasses.subtext}>Created On</p>
@@ -80,7 +163,6 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
             </div>
           </div>
 
-          {/* Parties Information */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold mb-2">From</h3>
@@ -110,7 +192,6 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
             </div>
           </div>
 
-          {/* Load Details */}
           <div className={`${themeClasses.section} p-4 rounded`}>
             <h3 className="font-semibold mb-2">Load Details</h3>
             <div className="grid md:grid-cols-3 gap-4">
@@ -133,7 +214,6 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
             </div>
           </div>
 
-          {/* Charges */}
           <div className={`${themeClasses.section} p-4 rounded`}>
             <h3 className="font-semibold mb-4">Charges</h3>
             <div className="space-y-2">
@@ -170,7 +250,6 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="text-sm">
             <p>
               <strong>Payment Terms:</strong> {invoice.paymentTerms}
@@ -181,22 +260,25 @@ export function InvoiceDetail({ invoice, theme, onClose }: InvoiceDetailProps) {
           </div>
         </div>
 
-        {/* Add Payment Section with null check */}
         {!invoice.paymentStatus?.isPaid && (
           <PaymentSection
-            invoice={{
-              ...invoice,
-              paymentStatus: invoice.paymentStatus || {
-                carrierInfoConfirmed: false,
-                taxInfoConfirmed: false,
-                disclaimerAccepted: false,
-                isPaid: false,
-              },
-            }}
+            invoice={invoice}
             theme={theme}
             onPaymentInfoUpdate={handlePaymentInfoUpdate}
             onPaymentSubmit={handlePaymentSubmit}
+            onClose={onClose}
           />
+        )}
+
+        {(invoice.status === "paid" || invoice.paymentStatus?.isPaid) && (
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setShowReceipt(true)}
+              className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-md font-medium transition-colors duration-300"
+            >
+              View Receipt
+            </button>
+          </div>
         )}
       </div>
     </div>
