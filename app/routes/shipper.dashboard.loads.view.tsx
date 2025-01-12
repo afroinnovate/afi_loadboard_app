@@ -32,6 +32,7 @@ import {
   DocumentTextIcon,
 } from "@heroicons/react/20/solid";
 import { LoadStatusBadge } from "~/components/statusBadge";
+import type { Invoice } from "~/api/mocks/invoiceData";
 
 export const meta: MetaFunction = () => {
   return [
@@ -307,9 +308,68 @@ export default function ViewLoads() {
     return sortConfig.direction === "ascending" ? "↑" : "↓";
   };
 
-  const handleInvoiceAction = (load: any) => {
-    // Navigate to the invoices dashboard
-    navigate(`/shipper/dashboard/invoices`);
+  const handleInvoiceAction = (load: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Invoice button clicked"); // Debug log
+
+    const partialInvoice: Partial<Invoice> = {
+      id: `INV-${load.loadId}`,
+      invoiceNumber: `INV/${new Date().getFullYear()}/${load.loadId
+        .toString()
+        .padStart(3, "0")}`,
+      loadId: load.loadId.toString(),
+      issuedDate: new Date().toISOString().split("T")[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      status: "pending",
+      shipper: {
+        name: load.shipper?.name || "Shipper Name Pending",
+        companyName: load.shipper?.companyName || "Company Name Pending",
+        address: load.shipper?.address || "Address pending",
+        taxId: load.shipper?.taxId || "Tax ID pending",
+        email: load.shipper?.email || "Email pending",
+      },
+      carrier: {
+        name: load.carrier?.name || "Pending Assignment",
+        companyName: load.carrier?.companyName || "Pending Assignment",
+        address: load.carrier?.address || "Address pending",
+        taxId: load.carrier?.taxId || "Tax ID pending",
+        email: load.carrier?.email || "Email pending",
+      },
+      load: {
+        origin: load.origin,
+        destination: load.destination,
+        deliveryDate: load.deliveryDate,
+        commodity: load.commodity,
+        weight: load.weight,
+      },
+      charges: {
+        baseRate: Number(load.offerAmount),
+        additionalServices: [],
+        subtotal: Number(load.offerAmount),
+        taxes: {
+          VAT: Number(load.offerAmount) * 0.15,
+          withholding: Number(load.offerAmount) * 0.02,
+        },
+        total: Number(load.offerAmount) * 1.17,
+      },
+      paymentTerms: "Net 30",
+      notes: `Invoice for load ${load.loadId} - ${load.commodity} shipment from ${load.origin} to ${load.destination}`,
+    };
+
+    try {
+      // Store in sessionStorage
+      sessionStorage.setItem("draftInvoice", JSON.stringify(partialInvoice));
+      console.log("Invoice stored in session"); // Debug log
+
+      // Navigate to invoices page
+      navigate("/shipper/dashboard/invoices");
+    } catch (error) {
+      console.error("Error handling invoice action:", error);
+    }
   };
 
   return (
@@ -477,7 +537,8 @@ export default function ViewLoads() {
                         <div className="mt-4 flex justify-end space-x-2">
                           {load.loadStatus === "delivered" && (
                             <button
-                              onClick={() => handleInvoiceAction(load)}
+                              type="button"
+                              onClick={(e) => handleInvoiceAction(load, e)}
                               className={`flex items-center px-4 py-2 rounded border-2 
                                 ${
                                   theme === "dark"

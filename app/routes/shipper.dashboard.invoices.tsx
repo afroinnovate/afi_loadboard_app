@@ -1,85 +1,183 @@
-import { json, type LoaderFunction } from "@remix-run/node";
-import { useLoaderData, useOutletContext } from "@remix-run/react";
+import { useState, useEffect } from "react";
+import { InvoiceCard } from "~/components/invoice/InvoiceCard";
+import { InvoiceDetail } from "~/components/invoice/InvoiceDetail";
+import { mockInvoices, type Invoice } from "~/api/mocks/invoiceData";
+import { useOutletContext, useLoaderData } from "@remix-run/react";
+import type { LoaderFunction } from "@remix-run/node";
 import { authenticator } from "~/api/services/auth.server";
-import { getSession } from "~/api/services/session";
-import { useState } from "react";
-import {
-  DocumentArrowDownIcon,
-} from "@heroicons/react/24/outline";
+import { getUserInfo } from "~/api/services/user.service";
+
+// Constants for tax calculations
+const TAX_RATES = {
+  VAT: 0.15, // 15% VAT
+  WITHHOLDING: 0.02, // 2% Withholding tax
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get(authenticator.sessionKey);
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
 
-  // TODO: Add API call to fetch invoices
-  const invoices = []; // Placeholder for invoice data
+  // Get detailed user info
+  const userInfo = await getUserInfo(user.user.id, user.token);
 
-  return json({ invoices });
+  return { userInfo, user };
 };
 
 export default function Invoices() {
-  const { invoices } = useLoaderData<typeof loader>();
-  const { theme } = useOutletContext<{ theme: "light" | "dark" }>();
+  const { theme, loads } = useOutletContext<{
+    theme: "light" | "dark";
+    loads: any[];
+  }>();
+  const { userInfo, user } = useLoaderData<typeof loader>();
   const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
+
+  useEffect(() => {
+    // Initialize with mock data
+    setLocalInvoices(mockInvoices);
+
+    // Check for draft invoice in sessionStorage
+    const draftInvoice = sessionStorage.getItem("draftInvoice");
+    if (draftInvoice) {
+      try {
+        const parsedInvoice = JSON.parse(draftInvoice);
+        const loadData = loads?.find(
+          (load) => load.loadId.toString() === parsedInvoice.loadId
+        );
+
+        // Enhance invoice with user and load data
+        const enhancedInvoice: Invoice = {
+          ...parsedInvoice,
+          shipper: {
+            name: `${userInfo.firstName} ${userInfo.lastName}`,
+            companyName: userInfo.businessProfile.companyName,
+            address: userInfo.businessProfile.address || "Address pending",
+            taxId:
+              userInfo.businessProfile.businessRegistrationNumber ||
+              "Tax ID pending",
+            email: userInfo.email,
+          },
+          carrier: {
+            name: loadData?.carrier?.name || "Pending Assignment",
+            companyName: loadData?.carrier?.companyName || "Pending Assignment",
+            address: loadData?.carrier?.address || "Address pending",
+            taxId: loadData?.carrier?.taxId || "Tax ID pending",
+            email: loadData?.carrier?.email || "Email pending",
+          },
+          load: {
+            origin: loadData?.origin || parsedInvoice.load.origin,
+            destination:
+              loadData?.destination || parsedInvoice.load.destination,
+            deliveryDate:
+              loadData?.deliveryDate || parsedInvoice.load.deliveryDate,
+            commodity: loadData?.commodity || parsedInvoice.load.commodity,
+            weight: loadData?.weight || parsedInvoice.load.weight,
+          },
+          charges: {
+            baseRate: Number(
+              loadData?.offerAmount || parsedInvoice.charges.baseRate
+            ),
+            additionalServices: parsedInvoice.charges.additionalServices || [],
+            subtotal: Number(
+              loadData?.offerAmount || parsedInvoice.charges.baseRate
+            ),
+            taxes: {
+              VAT:
+                Number(
+                  loadData?.offerAmount || parsedInvoice.charges.baseRate
+                ) * TAX_RATES.VAT,
+              withholding:
+                Number(
+                  loadData?.offerAmount || parsedInvoice.charges.baseRate
+                ) * TAX_RATES.WITHHOLDING,
+            },
+            total: calculateTotal(
+              Number(loadData?.offerAmount || parsedInvoice.charges.baseRate)
+            ),
+          },
+        };
+
+        // Update local invoices with the enhanced invoice
+        setLocalInvoices((prevInvoices) => {
+          const filteredInvoices = prevInvoices.filter(
+            (inv) => inv.id !== enhancedInvoice.id
+          );
+          return [enhancedInvoice, ...filteredInvoices];
+        });
+
+        // Automatically select the new invoice for display
+        setSelectedInvoice(enhancedInvoice);
+
+        // Clear the draft from sessionStorage
+        sessionStorage.removeItem("draftInvoice");
+      } catch (error) {
+        console.error("Error processing draft invoice:", error);
+      }
+    }
+  }, [loads, userInfo]); // Dependencies updated to include loads and userInfo
+
+  // Helper function to calculate total with taxes
+  const calculateTotal = (baseAmount: number) => {
+    const subtotal = baseAmount;
+    const vat = subtotal * TAX_RATES.VAT;
+    const withholding = subtotal * TAX_RATES.WITHHOLDING;
+    return subtotal + vat + withholding;
+  };
 
   const themeClasses = {
     container:
       theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900",
     header: theme === "dark" ? "text-white" : "text-gray-900",
-    card: theme === "dark" ? "bg-gray-800" : "bg-white",
-    border: theme === "dark" ? "border-gray-700" : "border-gray-200",
-    button: {
-      primary:
-        theme === "dark"
-          ? "bg-blue-600 hover:bg-blue-700 text-white"
-          : "bg-blue-500 hover:bg-blue-600 text-white",
-      secondary:
-        theme === "dark"
-          ? "bg-gray-600 hover:bg-gray-700 text-white"
-          : "bg-gray-500 hover:bg-gray-600 text-white",
-    },
+    select:
+      theme === "dark"
+        ? "bg-gray-800 text-white border-gray-700"
+        : "bg-white text-gray-900 border-gray-200",
   };
+
+  const filteredInvoices =
+    filterStatus === "all"
+      ? localInvoices
+      : localInvoices.filter((invoice) => invoice.status === filterStatus);
 
   return (
     <div className={`container mx-auto px-4 py-8 ${themeClasses.container}`}>
-      <h1 className={`text-2xl font-bold mb-6 ${themeClasses.header}`}>
-        Invoices
-      </h1>
-
-      <div className="mb-4 flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className={`text-2xl font-bold ${themeClasses.header}`}>
+          Invoices
+        </h1>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className={`p-2 rounded border ${themeClasses.border}`}
+          className={`p-2 rounded border ${themeClasses.select}`}
         >
           <option value="all">All Invoices</option>
-          <option value="generated">Generated</option>
+          <option value="paid">Paid</option>
           <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
 
-      <div className="grid gap-4">
-        {invoices.map((invoice) => (
-          <div
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredInvoices.map((invoice) => (
+          <InvoiceCard
             key={invoice.id}
-            className={`${themeClasses.card} border ${themeClasses.border} rounded-lg p-4`}
-          >
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">Invoice #{invoice.number}</h3>
-                <p className="text-sm">Load: {invoice.loadId}</p>
-                <p className="text-sm">Amount: ${invoice.amount}</p>
-              </div>
-              <button
-                className={`${themeClasses.button.primary} px-4 py-2 rounded-lg flex items-center`}
-              >
-                <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
-                Download Invoice
-              </button>
-            </div>
-          </div>
+            invoice={invoice}
+            theme={theme}
+            onClick={() => setSelectedInvoice(invoice)}
+          />
         ))}
       </div>
+
+      {selectedInvoice && (
+        <InvoiceDetail
+          invoice={selectedInvoice}
+          theme={theme}
+          onClose={() => setSelectedInvoice(null)}
+        />
+      )}
     </div>
   );
 }
