@@ -13,6 +13,7 @@ import {
   useSubmit,
   useSearchParams,
   useOutletContext,
+  useNavigate,
 } from "@remix-run/react";
 import { DeleteLoad, UpdateLoad } from "~/api/services/load.service";
 import { Disclosure, Transition } from "@headlessui/react";
@@ -27,7 +28,8 @@ import {
   PencilIcon,
   ArrowRightIcon,
   CameraIcon,
-  ChevronUpDownIcon
+  ChevronUpDownIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/20/solid";
 import { LoadStatusBadge } from "~/components/statusBadge";
 
@@ -187,13 +189,17 @@ export default function ViewLoads() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLoad, setSelectedLoad]: any = useState(null);
   const navigation = useNavigation();
+  const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState(searchParams.get("status") || "all");
   const [localLoads, setLocalLoads] = useState(loads);
 
   // Modify sortConfig to handle a single sort field
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: "ascending" | "descending";
+  }>({ key: null, direction: "ascending" });
 
   useEffect(() => {
     let filteredLoads = loads;
@@ -268,21 +274,24 @@ export default function ViewLoads() {
   const handleSort = useCallback((key: string) => {
     setSortConfig((prevConfig) => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'ascending' ? 'descending' : 'ascending',
+      direction:
+        prevConfig.key === key && prevConfig.direction === "ascending"
+          ? "descending"
+          : "ascending",
     }));
   }, []);
 
   // Modify sortedAndFilteredLoads to handle single sort field and filtering
   const sortedAndFilteredLoads = useMemo(() => {
     let filteredLoads = localLoads;
-    
+
     if (sortConfig.key) {
       filteredLoads.sort((a: any, b: any) => {
         if (a[sortConfig.key!] < b[sortConfig.key!]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
+          return sortConfig.direction === "ascending" ? -1 : 1;
         }
         if (a[sortConfig.key!] > b[sortConfig.key!]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
+          return sortConfig.direction === "ascending" ? 1 : -1;
         }
         return 0;
       });
@@ -293,23 +302,34 @@ export default function ViewLoads() {
 
   // Modify the getSortIcon function
   const getSortIcon = (key: string) => {
-    if (sortConfig.key !== key) return <ChevronUpDownIcon className="w-4 h-4 inline-block ml-1" />;
-    return sortConfig.direction === 'ascending' ? '↑' : '↓';
+    if (sortConfig.key !== key)
+      return <ChevronUpDownIcon className="w-4 h-4 inline-block ml-1" />;
+    return sortConfig.direction === "ascending" ? "↑" : "↓";
+  };
+
+  const handleInvoiceAction = (load: any) => {
+    // Navigate to the invoices dashboard
+    navigate(`/shipper/dashboard/invoices`);
   };
 
   return (
     <div className={`container mx-auto px-4 py-2 ${themeClasses.container}`}>
-      <h1 className={`text-3xl font-bold mb-8 text-center ${themeClasses.heading}`}>
+      <h1
+        className={`text-3xl font-bold mb-8 text-center ${themeClasses.heading}`}
+      >
         Manage Your Loads
       </h1>
 
       {!hasAccess && (
-        <NavLink to="/shipper/dashboard/account/profile" className={`block w-full max-w-md mx-auto border px-6 py-3 rounded-lg text-center font-medium
+        <NavLink
+          to="/shipper/dashboard/account/profile"
+          className={`block w-full max-w-md mx-auto border px-6 py-3 rounded-lg text-center font-medium
             ${
               theme === "light"
                 ? "border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
                 : "border-green-200 text-white hover:bg-green-700 hover:text-white"
-            } hover:animate-pulse hover:transition hover:duration-300`}>
+            } hover:animate-pulse hover:transition hover:duration-300`}
+        >
           Complete your profile to manage loads
         </NavLink>
       )}
@@ -318,7 +338,9 @@ export default function ViewLoads() {
         <>
           <div className="mb-4 flex flex-wrap items-center space-y-2 md:space-y-0 md:space-x-4">
             <div className="flex items-center w-full md:w-auto">
-              <CameraIcon className={`w-5 h-5 mr-2 ${themeClasses.cameraIcon}`} />
+              <CameraIcon
+                className={`w-5 h-5 mr-2 ${themeClasses.cameraIcon}`}
+              />
               <select
                 value={status}
                 onChange={handleFilterChange}
@@ -331,32 +353,32 @@ export default function ViewLoads() {
                 <option value="completed">Completed</option>
               </select>
             </div>
-            <button 
-              onClick={() => handleSort("origin")} 
+            <button
+              onClick={() => handleSort("origin")}
               className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
             >
-              <span className="mr-2">Origin</span> 
+              <span className="mr-2">Origin</span>
               <span>{getSortIcon("origin")}</span>
             </button>
-            <button 
-              onClick={() => handleSort("destination")} 
+            <button
+              onClick={() => handleSort("destination")}
               className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
             >
-              <span className="mr-2">Destination</span> 
+              <span className="mr-2">Destination</span>
               <span>{getSortIcon("destination")}</span>
             </button>
-            <button 
-              onClick={() => handleSort("offerAmount")} 
+            <button
+              onClick={() => handleSort("offerAmount")}
               className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
             >
-              <span className="mr-2">Amount</span> 
+              <span className="mr-2">Amount</span>
               <span>{getSortIcon("offerAmount")}</span>
             </button>
-            <button 
-              onClick={() => handleSort("pickupDate")} 
+            <button
+              onClick={() => handleSort("pickupDate")}
               className={`${themeClasses.input} px-4 py-2 rounded flex items-center justify-between w-full sm:w-auto border-2 transition-colors duration-200`}
             >
-              <span className="mr-2">Date</span> 
+              <span className="mr-2">Date</span>
               <span>{getSortIcon("pickupDate")}</span>
             </button>
             <button
@@ -453,6 +475,20 @@ export default function ViewLoads() {
                           />
                         </div>
                         <div className="mt-4 flex justify-end space-x-2">
+                          {load.loadStatus === "delivered" && (
+                            <button
+                              onClick={() => handleInvoiceAction(load)}
+                              className={`flex items-center px-4 py-2 rounded border-2 
+                                ${
+                                  theme === "dark"
+                                    ? "border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
+                                    : "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                                } transition-colors duration-200`}
+                            >
+                              <DocumentTextIcon className="w-5 h-5 mr-2" />
+                              View Invoice
+                            </button>
+                          )}
                           <ActionButton
                             type="edit"
                             loadId={load.loadId}
@@ -477,10 +513,7 @@ export default function ViewLoads() {
       )}
 
       {isUpdateModalOpen && selectedLoad && (
-        <UpdateLoadView
-          {...selectedLoad}
-          onClose={handleCloseUpdateModal}
-        />
+        <UpdateLoadView {...selectedLoad} onClose={handleCloseUpdateModal} />
       )}
 
       {actionData?.status === "confirmation" && (
