@@ -110,4 +110,48 @@ export async function getInvoiceById(token: string, invoiceId: string) {
         });
     }
   }
+}
+
+export async function generateInvoiceAfterDelivery(token: string, loadId: number) {
+  try {
+    const response = await fetch(`${baseUrl}invoices/generate-after-delivery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ loadId }),
+    });
+
+    if (response.status !== 201) {
+      throw response;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "Load not found",
+            status: 404,
+          },
+        });
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Invalid request - Load not in delivered status",
+            status: 400,
+          },
+        });
+      default:
+        throw JSON.stringify({
+          data: {
+            message: "An error occurred",
+            status: 500,
+          },
+        });
+    }
+  }
 } 

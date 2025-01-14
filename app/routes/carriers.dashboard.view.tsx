@@ -20,6 +20,7 @@ import {
   ArrowRightIcon,
   CurrencyDollarIcon,
   ChatBubbleLeftIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/20/solid";
 import AccessDenied from "~/components/accessdenied";
 import BidAdjustmentView from "~/components/bidadjustmentview";
@@ -213,10 +214,86 @@ export const action: ActionFunction = async ({ request }) => {
 interface OutletContext {
   loads: any[];
   bids: any[];
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   timezone: string;
   toggleTheme: () => void;
 }
+
+const handleInvoiceGeneration = (
+  load: any,
+  carrierProfile: any,
+  e: React.MouseEvent
+) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const currentDate = new Date();
+  const dueDate = new Date(currentDate);
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  const partialInvoice = {
+    id: `INV-${load.loadId}`,
+    invoiceNumber: `INV/${currentDate.getFullYear()}/${load.loadId
+      .toString()
+      .padStart(3, "0")}`,
+    loadId: load.loadId.toString(),
+    issuedDate: currentDate.toISOString().split("T")[0],
+    dueDate: dueDate.toISOString().split("T")[0],
+    createdAt: currentDate.toISOString(),
+    status: "pending",
+    shipper: {
+      name: `${load.createdBy.firstName} ${load.createdBy.lastName}`,
+      companyName:
+        load.createdBy.businessProfile?.companyName || "Company Name Pending",
+      address: load.createdBy.businessProfile?.address || "Address pending",
+      taxId:
+        load.createdBy.businessProfile?.businessRegistrationNumber ||
+        "Tax ID pending",
+      email: load.createdBy.email,
+    },
+    carrier: {
+      name: `${carrierProfile.user.firstName} ${carrierProfile.user.lastName}`,
+      companyName:
+        carrierProfile.user.businessProfile?.companyName ||
+        "Company Name Pending",
+      address:
+        carrierProfile.user.businessProfile?.address || "Address pending",
+      taxId:
+        carrierProfile.user.businessProfile?.businessRegistrationNumber ||
+        "Tax ID pending",
+      email: carrierProfile.user.email,
+    },
+    load: {
+      origin: load.origin,
+      destination: load.destination,
+      deliveryDate: load.deliveryDate,
+      commodity: load.commodity,
+      weight: load.weight,
+      statusChangeDate: currentDate.toISOString(),
+    },
+    charges: {
+      baseRate: Number(load.offerAmount),
+      additionalServices: [],
+      subtotal: Number(load.offerAmount),
+      taxes: {
+        VAT: Number(load.offerAmount) * 0.15,
+        withholding: Number(load.offerAmount) * 0.02,
+      },
+      total: Number(load.offerAmount) * 1.17, // Base + VAT + Withholding
+    },
+    paymentTerms: "Net 30",
+    notes: `Invoice for load ${load.loadId} - ${load.commodity} shipment from ${
+      load.origin
+    } to ${load.destination}. Generated on ${currentDate.toLocaleDateString()}`,
+  };
+
+  try {
+    sessionStorage.setItem("draftInvoice", JSON.stringify(partialInvoice));
+    window.location.href = "/carriers/dashboard/invoices";
+  } catch (error) {
+    console.error("Error handling invoice generation:", error);
+  }
+};
 
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
@@ -224,8 +301,9 @@ export default function CarrierViewLoads() {
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
-  const { theme } = useOutletContext<OutletContext>();
-  
+  const { theme, loads } = useOutletContext<OutletContext>();
+
+  console.log("carrier context loads: ", loads);
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
     let errorMsg = "";
@@ -258,29 +336,20 @@ export default function CarrierViewLoads() {
     return { error: errorMsg, info: infoMsg };
   }, [loaderData, actionData]);
 
-  // Memoize the loads and carrier profile
-  const { loads, carrierProfile, additionalInfo } = useMemo(() => {
-    let loadsData = loaderData?.loads || [];
+  // Update the memoized values to use context loads
+  const { carrierProfile, additionalInfo } = useMemo(() => {
     let carrierProfileData: any = loaderData?.carrierProfile || {};
     let additionalInfoMsg = "";
 
-    if (loaderData && !error) {
-      loadsData = loaderData.loads;
-    } else {
-      additionalInfoMsg =
-        "No loads found or something went wrong. Please try again later or contact support.";
-    }
-
-    if (Object.keys(loadsData).length === 0) {
+    if (!loads || loads.length === 0) {
       additionalInfoMsg = "No loads posted, please check back later";
     }
 
     return {
-      loads: loadsData,
       carrierProfile: carrierProfileData,
       additionalInfo: additionalInfoMsg,
     };
-  }, [loaderData, error]);
+  }, [loaderData, loads]);
 
   const carrierHasAccess =
     carrierProfile.user.userType === "carrier" &&
@@ -323,6 +392,7 @@ export default function CarrierViewLoads() {
   // Memoize the status styles function
   const getStatusStyles = useMemo(
     () => (status: string) => {
+      // Convert status to lowercase for consistent comparison
       switch (status.toLowerCase()) {
         case "open":
           return `bg-green-600 text-white`;
@@ -330,7 +400,7 @@ export default function CarrierViewLoads() {
           return `bg-gray-500 text-white`;
         case "enroute":
           return `bg-red-500 text-white`;
-        case "completed":
+        case "delivered":
           return `bg-blue-500 text-white`;
         default:
           return `bg-orange-500 text-white`;
@@ -352,18 +422,28 @@ export default function CarrierViewLoads() {
   const currency = "ETB";
 
   const themeClasses = {
-    container: theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
-    card: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100',
+    container:
+      theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
+    card: theme === "dark" ? "bg-gray-700" : "bg-gray-100",
     button: {
-      primary: theme === 'dark' ? 'bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white' : 'bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white',
-      secondary: theme === 'dark' ? 'bg-white border border-green-400 text-green-500 hover:bg-gray-700' : 'bg-white border border-green-400 text-green-500 hover:bg-gray-400',
-      danger: theme === 'dark' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
+      primary:
+        theme === "dark"
+          ? "bg-white border border-orange-400 text-blue-500 hover:bg-orange-500 hover:text-white"
+          : "bg-white border border-blue-500 text-blue-500 hover:bg-orange-500 hover:text-white",
+      secondary:
+        theme === "dark"
+          ? "bg-white border border-green-400 text-green-500 hover:bg-gray-700"
+          : "bg-white border border-green-400 text-green-500 hover:bg-gray-400",
+      danger:
+        theme === "dark"
+          ? "bg-red-600 hover:bg-red-700"
+          : "bg-red-500 hover:bg-red-600",
     },
     text: {
-      primary: theme === 'dark' ? 'text-white' : 'text-gray-900',
-      secondary: theme === 'dark' ? 'text-gray-300' : 'text-gray-600',
+      primary: theme === "dark" ? "text-white" : "text-gray-900",
+      secondary: theme === "dark" ? "text-gray-300" : "text-gray-600",
     },
-    heading: theme === 'dark' ? 'text-white' : 'text-green-800',
+    heading: theme === "dark" ? "text-white" : "text-green-800",
   };
 
   return (
@@ -374,7 +454,9 @@ export default function CarrierViewLoads() {
         </div>
       )}
       <div className="flex justify-center items-center shadow-md mb-3">
-        <h1 className={`text-2xl font-serif mb-4 p-3 text-center ${themeClasses.heading}`}>
+        <h1
+          className={`text-2xl font-serif mb-4 p-3 text-center ${themeClasses.heading}`}
+        >
           Pick your Load and Hit the Road
         </h1>
       </div>
@@ -410,7 +492,9 @@ export default function CarrierViewLoads() {
                   />
                 )}
 
-                <Disclosure.Button className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium ${themeClasses.text.primary} hover:bg-opacity-80`}>
+                <Disclosure.Button
+                  className={`flex flex-wrap justify-between items-center w-full p-4 text-left text-sm font-medium ${themeClasses.text.primary} hover:bg-opacity-80`}
+                >
                   <div className="w-full sm:w-auto flex flex-wrap items-center space-x-2 mb-2 sm:mb-0">
                     <h2 className="text-sm sm:text-base font-medium">
                       {load.origin}
@@ -447,7 +531,9 @@ export default function CarrierViewLoads() {
                   </div>
                 </Disclosure.Button>
 
-                <Disclosure.Panel className={`p-2 pl-4 text-sm ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}>
+                <Disclosure.Panel
+                  className={`p-2 pl-4 text-sm ${themeClasses.text.secondary} ${themeClasses.card} bg-opacity-50`}
+                >
                   <div className="grid grid-cols-1 gap-2">
                     <p className="flex flex-wrap">
                       <span className="w-full sm:w-auto sm:mr-2 font-medium">
@@ -505,6 +591,7 @@ export default function CarrierViewLoads() {
 
                     {carrierHasAccess && (
                       <>
+                        {/* Message Shipper button - always visible */}
                         <form method="post" className="w-full sm:w-auto">
                           <input
                             type="hidden"
@@ -532,41 +619,47 @@ export default function CarrierViewLoads() {
                             Message Shipper
                           </button>
                         </form>
-                        <form method="post" className="w-full sm:w-auto">
-                          <input
-                            type="hidden"
-                            name="bidLoadId"
-                            value={load.loadId}
-                          />
-                          <input
-                            type="hidden"
-                            name="offerAmount"
-                            value={load.offerAmount}
-                          />
+
+                        {/* Generate Invoice button - only for delivered loads */}
+                        {load.loadStatus.toLowerCase() === "delivered" && (
                           <button
-                            disabled={
-                              load.loadStatus === "enroute" ||
-                              load.loadStatus === "accepted" ||
-                              load.loadStatus === "rejected" ||
-                              load.loadStatus === "closed"
+                            type="button"
+                            onClick={(e) =>
+                              handleInvoiceGeneration(load, carrierProfile, e)
                             }
-                            type="submit"
-                            name="_action"
-                            value="bid"
-                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-orange-500 hover:text-white focus:outline-none ${
-                              load.loadStatus === "enroute" ||
-                              load.loadStatus === "accepted" ||
-                              load.loadStatus === "rejected" ||
-                              load.loadStatus === "closed"
-                                ? "cursor-not-allowed"
-                                : ""
-                            }`}
-                            aria-label="Place Bid"
+                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`}
+                            aria-label="Generate Invoice"
                           >
-                            <CurrencyDollarIcon className="w-5 h-5 mr-2" />
-                            Place a Bid
+                            <DocumentTextIcon className="w-5 h-5 mr-2" />
+                            Generate Invoice
                           </button>
-                        </form>
+                        )}
+
+                        {/* Place Bid button - only for open loads */}
+                        {load.loadStatus.toLowerCase() === "open" && (
+                          <form method="post" className="w-full sm:w-auto">
+                            <input
+                              type="hidden"
+                              name="bidLoadId"
+                              value={load.loadId}
+                            />
+                            <input
+                              type="hidden"
+                              name="offerAmount"
+                              value={load.offerAmount}
+                            />
+                            <button
+                              type="submit"
+                              name="_action"
+                              value="bid"
+                              className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-orange-500 hover:text-white focus:outline-none`}
+                              aria-label="Place Bid"
+                            >
+                              <CurrencyDollarIcon className="w-5 h-5 mr-2" />
+                              Place a Bid
+                            </button>
+                          </form>
+                        )}
                       </>
                     )}
                   </div>

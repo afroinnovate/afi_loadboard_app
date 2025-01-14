@@ -3,19 +3,27 @@ export interface Invoice {
   loadId: number;
   number: string;
   amount: number;
-  status: "generated" | "pending";
+  status: "pending_approval" | "approved" | "paid" | "disputed";
   createdAt: string;
-  pdfUrl?: string;
-
-  // Additional fields that might be useful
-  shipperId: string;
-  carrierId?: string;
-  loadDetails?: {
-    origin: string;
-    destination: string;
-    pickupDate: string;
-    deliveryDate: string;
-    commodity: string;
-    weight: number;
+  approvedAt?: string;
+  paidAt?: string;
+  serviceFees: {
+    total: number;
+    shipperFee: number;  // 2% of total
+    carrierFee: number;  // 1% of total
   };
+  finalAmounts: {
+    shipperTotal: number;  // amount + shipperFee
+    carrierReceives: number;  // amount - carrierFee
+  };
+  approvalStatus: {
+    shipperApproved: boolean;
+    carrierApproved: boolean;
+  };
+  paymentDetails?: {
+    method: "bank" | "mobile_money";
+    bankDetails?: BankDetails;
+    mobileMoneyDetails?: MobileMoneyDetails;
+  };
+  disputeMessages?: Message[];
 } 

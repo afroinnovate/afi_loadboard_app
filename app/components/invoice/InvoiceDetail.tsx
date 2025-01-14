@@ -162,7 +162,6 @@ export function InvoiceDetail({
               </p>
             </div>
           </div>
-
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold mb-2">From</h3>
@@ -174,7 +173,9 @@ export function InvoiceDetail({
                 <p className={themeClasses.subtext}>
                   Tax ID: {invoice.shipper.taxId}
                 </p>
-                <p className={themeClasses.subtext}>{invoice.shipper.email}</p>
+                <p className={themeClasses.subtext}>
+                  {invoice.shipper.email}
+                </p>
               </div>
             </div>
             <div>
@@ -187,11 +188,12 @@ export function InvoiceDetail({
                 <p className={themeClasses.subtext}>
                   Tax ID: {invoice.carrier.taxId}
                 </p>
-                <p className={themeClasses.subtext}>{invoice.carrier.email}</p>
+                <p className={themeClasses.subtext}>
+                  {invoice.carrier.email}
+                </p>
               </div>
             </div>
           </div>
-
           <div className={`${themeClasses.section} p-4 rounded`}>
             <h3 className="font-semibold mb-2">Load Details</h3>
             <div className="grid md:grid-cols-3 gap-4">
@@ -249,7 +251,6 @@ export function InvoiceDetail({
               </div>
             </div>
           </div>
-
           <div className="text-sm">
             <p>
               <strong>Payment Terms:</strong> {invoice.paymentTerms}

@@ -125,7 +125,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     // Fetch loads and bids
     const loads = await GetLoads(user?.token);
     const bids = await GetBidsByCarrierId(user?.token, carrierProfile.id);
-
+    console.log("loads: ", loads);
     return json(
       { 
         user: carrierProfile,
