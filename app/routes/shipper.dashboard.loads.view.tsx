@@ -33,6 +33,19 @@ import {
 } from "@heroicons/react/20/solid";
 import { LoadStatusBadge } from "~/components/statusBadge";
 import type { Invoice } from "~/api/mocks/invoiceData";
+import { ShipperInvoiceDetail } from "~/components/invoice/ShipperInvoiceDetail";
+import { mockInvoices } from "~/api/mocks/invoiceData";
+import { Message } from "~/components/message";
+import ContactShipperView from "~/components/contactshipper";
+import { Alert } from "~/components/Alert";
+import ChatWindow from "~/components/ChatWindow";
+
+interface Message {
+  id: string;
+  text: string;
+  sender: string;
+  timestamp: Date;
+}
 
 export const meta: MetaFunction = () => {
   return [
@@ -202,6 +215,15 @@ export default function ViewLoads() {
     direction: "ascending" | "descending";
   }>({ key: null, direction: "ascending" });
 
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [showMessage, setShowMessage] = useState(false);
+  const [selectedCarrier, setSelectedCarrier] = useState(null);
+  const [showContact, setShowContact] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [showChatWindow, setShowChatWindow] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+
   useEffect(() => {
     let filteredLoads = loads;
     if (status && status !== "all") {
@@ -211,6 +233,15 @@ export default function ViewLoads() {
     }
     setLocalLoads(filteredLoads);
   }, [loads, status]);
+
+  useEffect(() => {
+    if (actionData && actionData.newMessage) {
+      setChatMessages((prevMessages) => [
+        ...prevMessages,
+        actionData.newMessage,
+      ]);
+    }
+  }, [actionData]);
 
   const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setStatus(event.target.value);
@@ -308,79 +339,22 @@ export default function ViewLoads() {
     return sortConfig.direction === "ascending" ? "↑" : "↓";
   };
 
-  const handleInvoiceAction = (load: any, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleViewInvoice = (load: any) => {
+    const existingInvoice = mockInvoices.find(
+      (inv) => inv.loadId === load.loadId.toString()
+    );
 
-    const currentDate = new Date();
-    const dueDate = new Date(currentDate);
-    dueDate.setDate(dueDate.getDate() + 30); // 30 days from now
-
-    const partialInvoice: Partial<Invoice> = {
-      id: `INV-${load.loadId}`,
-      invoiceNumber: `INV/${currentDate.getFullYear()}/${load.loadId
-        .toString()
-        .padStart(3, "0")}`,
-      loadId: load.loadId.toString(),
-      issuedDate: currentDate.toISOString().split("T")[0],
-      dueDate: dueDate.toISOString().split("T")[0],
-      createdAt: currentDate.toISOString(), // Add creation timestamp
-      status: "pending",
-      shipper: {
-        name: load.shipper?.name || "Shipper Name Pending",
-        companyName: load.shipper?.companyName || "Company Name Pending",
-        address: load.shipper?.address || "Address pending",
-        taxId: load.shipper?.taxId || "Tax ID pending",
-        email: load.shipper?.email || "Email pending",
-      },
-      carrier: {
-        name: load.carrier?.name || "Pending Assignment",
-        companyName: load.carrier?.companyName || "Pending Assignment",
-        address: load.carrier?.address || "Address pending",
-        taxId: load.carrier?.taxId || "Tax ID pending",
-        email: load.carrier?.email || "Email pending",
-      },
-      load: {
-        origin: load.origin,
-        destination: load.destination,
-        deliveryDate: load.deliveryDate,
-        commodity: load.commodity,
-        weight: load.weight,
-        statusChangeDate: currentDate.toISOString(), // Add status change date
-      },
-      charges: {
-        baseRate: Number(load.offerAmount),
-        additionalServices: [
-          {
-            description: "Loading Fee",
-            amount: Number(load.offerAmount) * 0.05, // 5% of base rate
-          },
-          {
-            description: "Insurance",
-            amount: Number(load.offerAmount) * 0.03, // 3% of base rate
-          },
-        ],
-        subtotal: Number(load.offerAmount) * 1.08, // Base + Loading + Insurance
-        taxes: {
-          VAT: Number(load.offerAmount) * 0.15,
-          withholding: Number(load.offerAmount) * 0.02,
-        },
-        total: Number(load.offerAmount) * 1.25, // Including all charges and taxes
-      },
-      paymentTerms: "Net 30",
-      notes: `Invoice for load ${load.loadId} - ${
-        load.commodity
-      } shipment from ${load.origin} to ${
-        load.destination
-      }. Generated on ${currentDate.toLocaleDateString()}`,
-    };
-
-    try {
-      sessionStorage.setItem("draftInvoice", JSON.stringify(partialInvoice));
-      navigate("/shipper/dashboard/invoices");
-    } catch (error) {
-      console.error("Error handling invoice action:", error);
+    if (existingInvoice) {
+      setSelectedInvoice(existingInvoice);
+      setShowInvoice(true);
+    } else {
+      setShowAlert(true);
     }
+  };
+
+  const handleOpenChat = (carrier: any) => {
+    setSelectedCarrier(carrier);
+    setShowChatWindow(true);
   };
 
   return (
@@ -549,13 +523,8 @@ export default function ViewLoads() {
                           {load.loadStatus === "delivered" && (
                             <button
                               type="button"
-                              onClick={(e) => handleInvoiceAction(load, e)}
-                              className={`flex items-center px-4 py-2 rounded border-2 
-                                ${
-                                  theme === "dark"
-                                    ? "border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
-                                    : "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-                                } transition-colors duration-200`}
+                              onClick={() => handleViewInvoice(load)}
+                              className={`${themeClasses.button.secondary} flex items-center`}
                             >
                               <DocumentTextIcon className="w-5 h-5 mr-2" />
                               View Invoice
@@ -590,6 +559,44 @@ export default function ViewLoads() {
 
       {actionData?.status === "confirmation" && (
         <DeleteConfirmationModal loadId={actionData?.loadId} theme={theme} />
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoice && selectedInvoice && (
+        <ShipperInvoiceDetail
+          invoice={selectedInvoice}
+          theme={theme}
+          onClose={() => setShowInvoice(false)}
+          onMessageCarrier={handleOpenChat}
+        />
+      )}
+
+      {/* Chat Window */}
+      <ChatWindow
+        isOpen={showChatWindow}
+        onClose={() => setShowChatWindow(false)}
+        recipientName={
+          selectedCarrier
+            ? `${selectedCarrier.firstName || "Unknown"} ${
+                selectedCarrier.lastName || "Carrier"
+              }`
+            : "Carrier"
+        }
+        messages={chatMessages}
+      />
+
+      {/* Alert Modal */}
+      {showAlert && (
+        <Alert
+          message="No invoice found for this load. Please wait for the carrier to generate one."
+          type="warning"
+          theme={theme}
+          onClose={() => {
+            setShowAlert(false);
+            navigate("/shipper/dashboard/invoices");
+          }}
+          autoClose={false}
+        />
       )}
     </div>
   );

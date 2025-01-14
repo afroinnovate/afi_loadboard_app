@@ -1,6 +1,7 @@
 export const FEES_AND_TAXES = {
   // Platform fees
-  SERVICE_FEE_RATE: 0.01, // 1% platform service fee
+  SERVICE_FEE_RATE: 0.01, // 1% platform service fee for carriers
+  SHIPPER_SERVICE_FEE_RATE: 0.02, // 2% platform service fee for shippers
 
   // Government taxes
   VAT_RATE: 0.15, // 15% VAT
