@@ -77,7 +77,7 @@ export const mockInvoices: Invoice[] = [
     loadId: "LOAD-001",
     issuedDate: "2024-03-15",
     dueDate: "2024-04-14",
-    status: "paid",
+    status: "pending",
     shipper: {
       name: "John Doe",
       companyName: "ABC Logistics Ltd",

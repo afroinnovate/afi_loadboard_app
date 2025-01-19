@@ -340,15 +340,20 @@ export default function ViewLoads() {
   };
 
   const handleViewInvoice = (load: any) => {
-    const existingInvoice = mockInvoices.find(
-      (inv) => inv.loadId === load.loadId.toString()
-    );
+    console.log("Handling view invoice for load:", load);
+    try {
+      const existingInvoice = mockInvoices.find(
+        (inv) => inv.loadId === load.loadId.toString()
+      );
 
-    if (existingInvoice) {
-      setSelectedInvoice(existingInvoice);
-      setShowInvoice(true);
-    } else {
-      setShowAlert(true);
+      if (existingInvoice) {
+        setSelectedInvoice(existingInvoice);
+        setShowInvoice(true);
+      } else {
+        setShowAlert(true);
+      }
+    } catch (error) {
+      console.error("Error handling invoice view:", error);
     }
   };
 
@@ -519,12 +524,21 @@ export default function ViewLoads() {
                             value={load.loadDetails}
                           />
                         </div>
-                        <div className="mt-4 flex justify-end space-x-2">
-                          {load.loadStatus === "delivered" && (
+                        <div
+                          className="mt-4 flex justify-end space-x-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {load.loadStatus.toLowerCase() === "delivered" && (
                             <button
                               type="button"
-                              onClick={() => handleViewInvoice(load)}
-                              className={`${themeClasses.button.secondary} flex items-center`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log("View Invoice button clicked");
+                                handleViewInvoice(load);
+                              }}
+                              className={`${themeClasses.button.secondary} flex items-center px-4 py-2 rounded-md`}
+                              style={{ zIndex: 10 }}
                             >
                               <DocumentTextIcon className="w-5 h-5 mr-2" />
                               View Invoice
