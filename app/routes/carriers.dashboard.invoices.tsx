@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useLoaderData } from "@remix-run/react";
 import type { LoaderFunction } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import type { Invoice } from "~/api/models/invoice";
 import { mockInvoices } from "~/api/mocks/invoiceData";
-import { getSession } from "~/api/services/session";
+import { destroySession, getSession } from "~/api/services/session";
 import { CarrierInvoiceDetail } from "~/components/invoice/CarrierInvoiceDetail";
+import { authenticator } from "~/api/services/auth.server";
+import { getCarrierInvoices } from "~/api/services/invoice.service";
+import type { Load } from "~/api/models/load";
+import type { Shipper } from "~/api/models/shipper";
+import type { Carrier } from "~/api/models/carrier";
 
 interface OutletContext {
   theme: "light" | "dark";
   loads: any[];
   bids: any[];
+}
+
+interface InvoiceInfo {
+  load: Load;
+  shipper: Shipper;
+  carrier: Carrier;
+  invoice: Invoice;
 }
 
 const calculateTotal = (baseAmount: number) => {
@@ -22,9 +34,36 @@ const calculateTotal = (baseAmount: number) => {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  const carrierProfile = session.get("carrier");
-  return json({ carrierProfile });
+  try {
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
+    const carrierProfile = session.get("carrier");
+
+    if (!user) {
+      return redirect("/logout/");
+    }
+
+    if (user?.user.userType === "shipper") {
+      return redirect("/shipper/dashboard/");
+    }
+
+    const invoices = await getCarrierInvoices(user.token, carrierProfile.id);
+
+    return json({
+      carrierProfile,
+      invoices: invoices || [],
+    });
+  } catch (error: any) {
+    if (JSON.parse(error).data.status === 401) {
+      const session = await getSession(request.headers.get("Cookie"));
+      return redirect("/login/", {
+        headers: {
+          "Set-Cookie": await destroySession(session),
+        },
+      });
+    }
+    throw error;
+  }
 };
 
 export default function CarrierInvoices() {
@@ -33,6 +72,7 @@ export default function CarrierInvoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
+  const [invoiceInfo, setInvoiceInfo] = useState<InvoiceInfo | null>(null);
 
   const themeClasses = {
     container:
@@ -57,36 +97,68 @@ export default function CarrierInvoices() {
           (load) => load.loadId.toString() === parsedInvoice.loadId
         );
 
-        const enhancedInvoice: Invoice = {
-          ...parsedInvoice,
-          carrier: {
-            name: `${carrierProfile.user.firstName} ${carrierProfile.user.lastName}`,
-            companyName: carrierProfile.user.businessProfile.companyName,
-            address:
-              carrierProfile.user.businessProfile.address || "Address pending",
-            taxId:
-              carrierProfile.user.businessProfile.businessRegistrationNumber ||
-              "Tax ID pending",
-            email: carrierProfile.user.email,
-          },
-          shipper: parsedInvoice.shipper,
-          load: parsedInvoice.load,
-          charges: parsedInvoice.charges,
-        };
+        if (loadData) {
+          const invoiceInfo: InvoiceInfo = {
+            load: loadData,
+            shipper: {
+              id: loadData.shipperId,
+              name: parsedInvoice.shipper.name,
+              companyName: parsedInvoice.shipper.companyName,
+              address: parsedInvoice.shipper.address,
+              taxId: parsedInvoice.shipper.taxId,
+              email: parsedInvoice.shipper.email,
+            },
+            carrier: {
+              id: carrierProfile.id,
+              name: `${carrierProfile.user.firstName} ${carrierProfile.user.lastName}`,
+              companyName: carrierProfile.user.businessProfile.companyName,
+              phoneNumber:
+                carrierProfile.user.phoneNumber || "Phone number pending",
+              taxId:
+                carrierProfile.user.businessProfile
+                  .businessRegistrationNumber || "Tax ID pending",
+              email: carrierProfile.user.email,
+            },
+            invoice: {
+              id: parsedInvoice.id,
+              loadId: loadData.loadId,
+              number:
+                parsedInvoice.invoiceNumber ||
+                `INV-${loadData.loadId}-${Date.now()}`,
+              amount: loadData.agreedRate || loadData.rate,
+              status: "pending",
+              issueDate: new Date().toISOString(),
+              dueDate: new Date(
+                Date.now() + 30 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              shipperId: loadData.shipperId,
+              totalAmount: 0, // Will be calculated in CarrierInvoiceDetail
+              totalVat: 0,
+              withHolding: 0,
+              serviceFees: 0,
+              notes: "",
+              transactionId: "",
+              paymentMethod: {
+                method: "bank",
+                type: "",
+                bankName: "",
+                bankAccount: "",
+                accountHolderName: "",
+                phoneNumber: "",
+                cardMethod: "",
+                cardType: "",
+                lastFourDigits: "",
+                billingAddress: "",
+              },
+            },
+          };
 
-        setSelectedInvoice(enhancedInvoice);
-        setShowInvoiceDetail(true);
+          setInvoiceInfo(invoiceInfo);
+          setShowInvoiceDetail(true);
 
-        // Add to local invoices
-        setLocalInvoices((prevInvoices) => {
-          const filteredInvoices = prevInvoices.filter(
-            (inv) => inv.id !== enhancedInvoice.id
-          );
-          return [enhancedInvoice, ...filteredInvoices];
-        });
-
-        // Clear the draft from sessionStorage
-        sessionStorage.removeItem("draftInvoice");
+          // Clear the draft from sessionStorage
+          sessionStorage.removeItem("draftInvoice");
+        }
       } catch (error) {
         console.error("Error processing draft invoice:", error);
       }
@@ -108,9 +180,9 @@ export default function CarrierInvoices() {
       <h1 className="text-2xl font-bold mb-6">Invoices</h1>
 
       {/* Show Invoice Detail Modal */}
-      {showInvoiceDetail && selectedInvoice && (
+      {showInvoiceDetail && invoiceInfo && (
         <CarrierInvoiceDetail
-          invoice={selectedInvoice}
+          invoiceInfo={invoiceInfo}
           theme={theme}
           onClose={handleCloseInvoice}
         />

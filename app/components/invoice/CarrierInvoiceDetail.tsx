@@ -1,5 +1,8 @@
 import { useState } from "react";
-import type { Invoice } from "~/api/mocks/invoiceData";
+import type { Load } from "~/api/models/load";
+import type { Shipper } from "~/api/models/shipper";
+import type { Carrier } from "~/api/models/carrier";
+import type { Invoice } from "~/api/models/invoice";
 import {
   XMarkIcon,
   PrinterIcon,
@@ -7,37 +10,42 @@ import {
 } from "@heroicons/react/24/outline";
 import { FEES_AND_TAXES, calculateCarrierDeductions } from "~/utils/constants";
 
-interface CarrierInvoiceDetailProps {
+interface InvoiceInfo {
+  load: Load;
+  shipper: Shipper;
+  carrier: Carrier;
   invoice: Invoice;
+}
+
+interface CarrierInvoiceDetailProps {
+  invoiceInfo: InvoiceInfo;
   theme: "light" | "dark";
   onClose: () => void;
 }
 
 export function CarrierInvoiceDetail({
-  invoice: initialInvoice,
+  invoiceInfo: initialInvoiceInfo,
   theme,
   onClose,
 }: CarrierInvoiceDetailProps) {
-  const [invoice, setInvoice] = useState(initialInvoice);
+  const [invoice, setInvoice] = useState(initialInvoiceInfo.invoice);
   const [taxInfoConfirmed, setTaxInfoConfirmed] = useState(false);
   const [serviceFeesConfirmed, setServiceFeesConfirmed] = useState(false);
   const [carrierInfoConfirmed, setCarrierInfoConfirmed] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState({
-    preferredMethod: invoice.carrier.paymentInfo?.preferredMethod || "bank",
+    preferredMethod: initialInvoiceInfo.invoice.paymentMethod?.method || "bank",
     bankDetails: {
-      bankName: invoice.carrier.paymentInfo?.bankDetails?.bankName || "",
+      bankName: initialInvoiceInfo.invoice.paymentMethod?.bankName || "",
       accountNumber:
-        invoice.carrier.paymentInfo?.bankDetails?.accountNumber || "",
+        initialInvoiceInfo.invoice.paymentMethod?.bankAccount || "",
       accountHolderName:
-        invoice.carrier.paymentInfo?.bankDetails?.accountHolderName || "",
+        initialInvoiceInfo.invoice.paymentMethod?.accountHolderName || "",
     },
     mobileMoneyDetails: {
-      provider:
-        invoice.carrier.paymentInfo?.mobileMoneyDetails?.provider || "TeleBirr",
-      phoneNumber:
-        invoice.carrier.paymentInfo?.mobileMoneyDetails?.phoneNumber || "",
-      accountName:
-        invoice.carrier.paymentInfo?.mobileMoneyDetails?.accountName || "",
+      provider: initialInvoiceInfo.invoice.paymentMethod?.type || "TeleBirr",
+      phoneNumber: initialInvoiceInfo.invoice.paymentMethod?.phoneNumber || "",
+      accountHolderName:
+        initialInvoiceInfo.invoice.paymentMethod?.accountHolderName || "",
     },
   });
   const [savePaymentInfo, setSavePaymentInfo] = useState(false);
@@ -67,14 +75,16 @@ export function CarrierInvoiceDetail({
     console.log("Invoice sent to shipper:", {
       ...invoice,
       carrier: {
-        ...invoice.carrier,
+        ...initialInvoiceInfo.carrier,
         paymentInfo,
       },
     });
     onClose();
   };
 
-  const deductions = calculateCarrierDeductions(invoice.charges.baseRate);
+  const deductions = calculateCarrierDeductions(
+    initialInvoiceInfo.load.offerAmount
+  );
 
   const isPaymentInfoComplete = () => {
     if (paymentInfo.preferredMethod === "bank") {
@@ -125,21 +135,21 @@ export function CarrierInvoiceDetail({
             <div>
               <h3 className="font-semibold mb-2">From (Carrier):</h3>
               <div className={`${themeClasses.section} p-4 rounded`}>
-                <p>{invoice.carrier.name}</p>
-                <p>{invoice.carrier.companyName}</p>
-                <p>{invoice.carrier.address}</p>
-                <p>Tax ID: {invoice.carrier.taxId}</p>
-                <p>{invoice.carrier.email}</p>
+                <p>{initialInvoiceInfo.carrier.name}</p>
+                <p>{initialInvoiceInfo.carrier.companyName}</p>
+                <p>{initialInvoiceInfo.carrier.address}</p>
+                <p>Tax ID: {initialInvoiceInfo.carrier.taxId}</p>
+                <p>{initialInvoiceInfo.carrier.email}</p>
               </div>
             </div>
             <div>
               <h3 className="font-semibold mb-2">To (Shipper):</h3>
               <div className={`${themeClasses.section} p-4 rounded`}>
-                <p>{invoice.shipper.name}</p>
-                <p>{invoice.shipper.companyName}</p>
-                <p>{invoice.shipper.address}</p>
-                <p>Tax ID: {invoice.shipper.taxId}</p>
-                <p>{invoice.shipper.email}</p>
+                <p>{initialInvoiceInfo.shipper.name}</p>
+                <p>{initialInvoiceInfo.shipper.companyName}</p>
+                <p>{initialInvoiceInfo.shipper.address}</p>
+                <p>Tax ID: {initialInvoiceInfo.shipper.taxId}</p>
+                <p>{initialInvoiceInfo.shipper.email}</p>
               </div>
             </div>
           </div>
@@ -299,13 +309,54 @@ export function CarrierInvoiceDetail({
             </div>
           </div>
 
-          {/* Charges Section */}
+          {/* Add Load Details Section */}
+          <div className={`${themeClasses.section} p-4 rounded mt-4`}>
+            <h3 className="font-semibold mb-4">Load Details</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className={themeClasses.subtext}>Origin</p>
+                <p>{initialInvoiceInfo.load.origin}</p>
+              </div>
+              <div>
+                <p className={themeClasses.subtext}>Destination</p>
+                <p>{initialInvoiceInfo.load.destination}</p>
+              </div>
+              <div>
+                <p className={themeClasses.subtext}>Pickup Date</p>
+                <p>
+                  {new Date(
+                    initialInvoiceInfo.load.pickupDate
+                  ).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <p className={themeClasses.subtext}>Delivery Date</p>
+                <p>
+                  {new Date(
+                    initialInvoiceInfo.load.deliveryDate
+                  ).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <p className={themeClasses.subtext}>Commodity</p>
+                <p>{initialInvoiceInfo.load.commodity}</p>
+              </div>
+              <div>
+                <p className={themeClasses.subtext}>Weight</p>
+                <p>{initialInvoiceInfo.load.weight} kg</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Update Charges Section */}
           <div className={`${themeClasses.section} p-4 rounded`}>
             <h3 className="font-semibold mb-4">Payment Breakdown</h3>
             <div className="space-y-2">
               <div className="flex justify-between font-semibold">
                 <p>Base Rate</p>
-                <p>ETB {invoice.charges.baseRate.toLocaleString()}</p>
+                <p>
+                  ETB {initialInvoiceInfo.load.offerAmount.toLocaleString()}
+                </p>
               </div>
 
               {/* Deductions Section */}
