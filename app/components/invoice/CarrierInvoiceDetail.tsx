@@ -1,95 +1,120 @@
 import { useState } from "react";
-import type { Invoice } from "~/api/mocks/invoiceData";
+import type { Invoice } from "~/api/models/invoice";
+import type { PaymentMethod } from "~/api/models/PaymentMethod";
 import {
-  XMarkIcon,
   PrinterIcon,
   ArrowDownTrayIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { FEES_AND_TAXES, calculateCarrierDeductions } from "~/utils/constants";
 
 interface CarrierInvoiceDetailProps {
-  invoice: Invoice;
+  loadData: {
+    id: number;
+    origin: string;
+    destination: string;
+    weight: number;
+    commodity: string;
+    offerAmount: number;
+    estimatedDistance: number;
+    createdBy: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      businessProfile: {
+        companyName: string;
+        address: string;
+        taxId: string;
+      };
+    };
+  };
+  userInfo: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    businessProfile: {
+      companyName: string;
+      address: string;
+      businessRegistrationNumber: string;
+    };
+  };
   theme: "light" | "dark";
   onClose: () => void;
+  onSave: (invoice: Invoice) => void;
 }
 
 export function CarrierInvoiceDetail({
-  invoice: initialInvoice,
+  loadData,
+  userInfo,
   theme,
   onClose,
+  onSave,
 }: CarrierInvoiceDetailProps) {
-  const [invoice, setInvoice] = useState(initialInvoice);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>({
+    method: "bank_transfer",
+    type: "bank",
+    bankName: "",
+    bankAccount: "",
+    accountHolderName: "",
+    phoneNumber: "",
+    cardMethod: "",
+    cardType: "",
+    lastFourDigits: "",
+    billingAddress: "",
+  });
+
   const [taxInfoConfirmed, setTaxInfoConfirmed] = useState(false);
   const [serviceFeesConfirmed, setServiceFeesConfirmed] = useState(false);
   const [carrierInfoConfirmed, setCarrierInfoConfirmed] = useState(false);
-  const [paymentInfo, setPaymentInfo] = useState({
-    preferredMethod: invoice.carrier.paymentInfo?.preferredMethod || "bank",
-    bankDetails: {
-      bankName: invoice.carrier.paymentInfo?.bankDetails?.bankName || "",
-      accountNumber:
-        invoice.carrier.paymentInfo?.bankDetails?.accountNumber || "",
-      accountHolderName:
-        invoice.carrier.paymentInfo?.bankDetails?.accountHolderName || "",
-    },
-    mobileMoneyDetails: {
-      provider:
-        invoice.carrier.paymentInfo?.mobileMoneyDetails?.provider || "TeleBirr",
-      phoneNumber:
-        invoice.carrier.paymentInfo?.mobileMoneyDetails?.phoneNumber || "",
-      accountName:
-        invoice.carrier.paymentInfo?.mobileMoneyDetails?.accountName || "",
-    },
-  });
-  const [savePaymentInfo, setSavePaymentInfo] = useState(false);
+
+  const baseAmount = loadData?.offerAmount || 0;
+  const deductions = calculateCarrierDeductions(baseAmount);
+
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentMethod((prev) => ({
+      ...prev,
+      method,
+      type: method === "bank_transfer" ? "bank" : "mobile",
+    }));
+  };
+
+  const handleSaveInvoice = () => {
+    const invoice: Invoice = {
+      loadId: loadData.id,
+      number: `INV-${Date.now()}`, // Generate invoice number
+      amount: baseAmount,
+      status: "pending",
+      issueDate: new Date().toISOString(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+      shipperId: loadData.createdBy.id,
+      totalAmount: deductions.finalAmount,
+      totalVat: deductions.vat,
+      withHolding: deductions.withholding,
+      serviceFees: deductions.serviceFee,
+      notes: "",
+      transactionId: "", // Will be filled when payment is processed
+      paymentMethod,
+    };
+
+    onSave(invoice);
+  };
 
   const themeClasses = {
     modal:
       theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
-    section: theme === "dark" ? "bg-gray-700" : "bg-gray-50",
-    border: theme === "dark" ? "border-gray-700" : "border-gray-200",
-    subtext: theme === "dark" ? "text-gray-400" : "text-gray-600",
+    label: theme === "dark" ? "text-gray-300" : "text-gray-700",
     input:
       theme === "dark"
-        ? "bg-gray-700 text-white border-gray-600 focus:border-blue-500"
-        : "bg-white text-gray-900 border-gray-300 focus:border-blue-500",
-  };
-
-  const handlePaymentMethodChange = (method: "bank" | "mobile_money") => {
-    setPaymentInfo((prev) => ({
-      ...prev,
-      preferredMethod: method,
-    }));
-  };
-
-  const handleSendInvoice = () => {
-    // Here we'll add the API call to send the invoice to the shipper
-    // For now, just close the modal
-    console.log("Invoice sent to shipper:", {
-      ...invoice,
-      carrier: {
-        ...invoice.carrier,
-        paymentInfo,
-      },
-    });
-    onClose();
-  };
-
-  const deductions = calculateCarrierDeductions(invoice.charges.baseRate);
-
-  const isPaymentInfoComplete = () => {
-    if (paymentInfo.preferredMethod === "bank") {
-      return (
-        paymentInfo.bankDetails.bankName &&
-        paymentInfo.bankDetails.accountNumber &&
-        paymentInfo.bankDetails.accountHolderName
-      );
-    } else {
-      return (
-        paymentInfo.mobileMoneyDetails.provider &&
-        paymentInfo.mobileMoneyDetails.phoneNumber &&
-        paymentInfo.mobileMoneyDetails.accountName
-      );
-    }
+        ? "bg-gray-700 border-gray-600 text-white"
+        : "bg-white border-gray-300 text-gray-900",
+    select:
+      theme === "dark"
+        ? "bg-gray-700 border-gray-600 text-white"
+        : "bg-white border-gray-300 text-gray-900",
   };
 
   return (
@@ -99,9 +124,7 @@ export function CarrierInvoiceDetail({
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold">
-            Invoice {invoice.invoiceNumber}
-          </h2>
+          <h2 className="text-2xl font-bold">Generate Invoice</h2>
           <div className="flex space-x-2">
             <button className="p-2 hover:bg-gray-100 rounded-full">
               <PrinterIcon className="w-6 h-6" />
@@ -120,63 +143,206 @@ export function CarrierInvoiceDetail({
 
         {/* Invoice Content */}
         <div className="p-6 space-y-6">
-          {/* From (Carrier) and To (Shipper) sections */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold mb-2">From (Carrier):</h3>
-              <div className={`${themeClasses.section} p-4 rounded`}>
-                <p>{invoice.carrier.name}</p>
-                <p>{invoice.carrier.companyName}</p>
-                <p>{invoice.carrier.address}</p>
-                <p>Tax ID: {invoice.carrier.taxId}</p>
-                <p>{invoice.carrier.email}</p>
+          {/* From (Carrier) Section */}
+          <div className="border-b pb-4">
+            <h3 className="font-semibold mb-3">From (Carrier)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={userInfo.businessProfile.companyName}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
               </div>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">To (Shipper):</h3>
-              <div className={`${themeClasses.section} p-4 rounded`}>
-                <p>{invoice.shipper.name}</p>
-                <p>{invoice.shipper.companyName}</p>
-                <p>{invoice.shipper.address}</p>
-                <p>Tax ID: {invoice.shipper.taxId}</p>
-                <p>{invoice.shipper.email}</p>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Tax ID
+                </label>
+                <input
+                  type="text"
+                  value={userInfo.businessProfile.businessRegistrationNumber}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Contact Person
+                </label>
+                <input
+                  type="text"
+                  value={`${userInfo.firstName} ${userInfo.lastName}`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Contact Info
+                </label>
+                <input
+                  type="text"
+                  value={`${userInfo.phone} | ${userInfo.email}`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
               </div>
             </div>
           </div>
 
-          {/* Payment Information Section */}
-          <div className={`${themeClasses.section} p-4 rounded`}>
-            <h3 className="font-semibold mb-4">Payment Information</h3>
-            <div className="space-y-4">
+          {/* Load Details Section */}
+          <div className="border-b pb-4">
+            <h3 className="font-semibold mb-3">Load Details</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block mb-2">Payment Method</label>
-                <select
-                  value={paymentInfo.preferredMethod}
-                  onChange={(e) =>
-                    handlePaymentMethodChange(
-                      e.target.value as "bank" | "mobile_money"
-                    )
-                  }
-                  className={`w-full p-2 rounded ${themeClasses.input}`}
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
                 >
-                  <option value="bank">Bank Transfer</option>
-                  <option value="mobile_money">Mobile Money</option>
-                </select>
+                  Route
+                </label>
+                <input
+                  type="text"
+                  value={`${loadData.origin} → ${loadData.destination}`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
               </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Distance
+                </label>
+                <input
+                  type="text"
+                  value={`${loadData.estimatedDistance} km`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Commodity
+                </label>
+                <input
+                  type="text"
+                  value={loadData.commodity}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Weight
+                </label>
+                <input
+                  type="text"
+                  value={`${loadData.weight} kg`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+            </div>
+          </div>
 
-              {paymentInfo.preferredMethod === "bank" ? (
+          {/* To (Shipper) Section */}
+          <div className="border-b pb-4">
+            <h3 className="font-semibold mb-3">To (Shipper)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={loadData.createdBy.businessProfile.companyName}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Tax ID
+                </label>
+                <input
+                  type="text"
+                  value={loadData.createdBy.businessProfile.taxId}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Contact Person
+                </label>
+                <input
+                  type="text"
+                  value={`${loadData.createdBy.firstName} ${loadData.createdBy.lastName}`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${themeClasses.label}`}
+                >
+                  Contact Info
+                </label>
+                <input
+                  type="text"
+                  value={`${loadData.createdBy.phone} | ${loadData.createdBy.email}`}
+                  readOnly
+                  className={`w-full p-2 rounded border ${themeClasses.input} bg-gray-100`}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Method Section */}
+          <div className={`${themeClasses.section} p-4 rounded`}>
+            <h3 className="font-semibold mb-4">Payment Method</h3>
+            <div className="space-y-4">
+              <select
+                value={paymentMethod.method}
+                onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                className={`w-full p-2 rounded ${themeClasses.input}`}
+              >
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="mobile_money">Mobile Money</option>
+              </select>
+
+              {paymentMethod.method === "bank_transfer" ? (
                 <div className="space-y-2">
                   <input
                     type="text"
                     placeholder="Bank Name"
-                    value={paymentInfo.bankDetails.bankName}
+                    value={paymentMethod.bankName}
                     onChange={(e) =>
-                      setPaymentInfo((prev) => ({
+                      setPaymentMethod((prev) => ({
                         ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails,
-                          bankName: e.target.value,
-                        },
+                        bankName: e.target.value,
                       }))
                     }
                     className={`w-full p-2 rounded ${themeClasses.input}`}
@@ -184,14 +350,11 @@ export function CarrierInvoiceDetail({
                   <input
                     type="text"
                     placeholder="Account Number"
-                    value={paymentInfo.bankDetails.accountNumber}
+                    value={paymentMethod.bankAccount}
                     onChange={(e) =>
-                      setPaymentInfo((prev) => ({
+                      setPaymentMethod((prev) => ({
                         ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails,
-                          accountNumber: e.target.value,
-                        },
+                        bankAccount: e.target.value,
                       }))
                     }
                     className={`w-full p-2 rounded ${themeClasses.input}`}
@@ -199,14 +362,11 @@ export function CarrierInvoiceDetail({
                   <input
                     type="text"
                     placeholder="Account Holder Name"
-                    value={paymentInfo.bankDetails.accountHolderName}
+                    value={paymentMethod.accountHolderName}
                     onChange={(e) =>
-                      setPaymentInfo((prev) => ({
+                      setPaymentMethod((prev) => ({
                         ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails,
-                          accountHolderName: e.target.value,
-                        },
+                        accountHolderName: e.target.value,
                       }))
                     }
                     className={`w-full p-2 rounded ${themeClasses.input}`}
@@ -214,86 +374,18 @@ export function CarrierInvoiceDetail({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <select
-                    value={paymentInfo.mobileMoneyDetails.provider}
-                    onChange={(e) =>
-                      setPaymentInfo((prev) => ({
-                        ...prev,
-                        mobileMoneyDetails: {
-                          ...prev.mobileMoneyDetails,
-                          provider: e.target.value as any,
-                        },
-                      }))
-                    }
-                    className={`w-full p-2 rounded ${themeClasses.input}`}
-                  >
-                    <option value="TeleBirr">TeleBirr</option>
-                    <option value="CBEBirr">CBE Birr</option>
-                    <option value="HelloCash">HelloCash</option>
-                    <option value="AmolePay">Amole Pay</option>
-                  </select>
                   <input
                     type="text"
                     placeholder="Phone Number"
-                    value={paymentInfo.mobileMoneyDetails.phoneNumber}
+                    value={paymentMethod.phoneNumber}
                     onChange={(e) =>
-                      setPaymentInfo((prev) => ({
+                      setPaymentMethod((prev) => ({
                         ...prev,
-                        mobileMoneyDetails: {
-                          ...prev.mobileMoneyDetails,
-                          phoneNumber: e.target.value,
-                        },
+                        phoneNumber: e.target.value,
                       }))
                     }
                     className={`w-full p-2 rounded ${themeClasses.input}`}
                   />
-                  <input
-                    type="text"
-                    placeholder="Account Name"
-                    value={paymentInfo.mobileMoneyDetails.accountName}
-                    onChange={(e) =>
-                      setPaymentInfo((prev) => ({
-                        ...prev,
-                        mobileMoneyDetails: {
-                          ...prev.mobileMoneyDetails,
-                          accountName: e.target.value,
-                        },
-                      }))
-                    }
-                    className={`w-full p-2 rounded ${themeClasses.input}`}
-                  />
-                </div>
-              )}
-
-              {/* Save Payment Info Option */}
-              {isPaymentInfoComplete() && (
-                <div className="mt-4 space-y-4">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={savePaymentInfo}
-                      onChange={(e) => setSavePaymentInfo(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">
-                      Save this payment method for future use
-                    </span>
-                  </label>
-
-                  {savePaymentInfo && (
-                    <button
-                      onClick={() => {
-                        // Here we'll add the API call to save the payment info
-                        console.log("Saving payment info:", paymentInfo);
-                        // Show success message
-                        alert("Payment information saved successfully!");
-                        setSavePaymentInfo(false);
-                      }}
-                      className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium transition-colors duration-300"
-                    >
-                      Save Payment Information
-                    </button>
-                  )}
                 </div>
               )}
             </div>
@@ -304,18 +396,17 @@ export function CarrierInvoiceDetail({
             <h3 className="font-semibold mb-4">Payment Breakdown</h3>
             <div className="space-y-2">
               <div className="flex justify-between font-semibold">
-                <p>Base Rate</p>
-                <p>ETB {invoice.charges.baseRate.toLocaleString()}</p>
+                <p>Base Amount</p>
+                <p>ETB {baseAmount.toLocaleString()}</p>
               </div>
 
-              {/* Deductions Section */}
+              {/* Deductions */}
               <div className="border-t border-b py-2 my-2">
                 <h4 className="font-medium text-red-500 mb-2">Deductions:</h4>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-red-500">
                     <p>
-                      Platform Service Fee (
-                      {FEES_AND_TAXES.SERVICE_FEE_RATE * 100}%)
+                      Service Fee ({FEES_AND_TAXES.SERVICE_FEE_RATE * 100}%)
                     </p>
                     <p>- ETB {deductions.serviceFee.toLocaleString()}</p>
                   </div>
@@ -325,27 +416,22 @@ export function CarrierInvoiceDetail({
                   </div>
                   <div className="flex justify-between text-red-500">
                     <p>
-                      Withholding Tax (
-                      {FEES_AND_TAXES.WITHHOLDING_TAX_RATE * 100}%)
+                      Withholding ({FEES_AND_TAXES.WITHHOLDING_TAX_RATE * 100}%)
                     </p>
                     <p>- ETB {deductions.withholding.toLocaleString()}</p>
-                  </div>
-                  <div className="flex justify-between font-medium text-red-500 border-t border-red-200 pt-2">
-                    <p>Total Deductions</p>
-                    <p>- ETB {deductions.totalDeductions.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
 
               {/* Final Amount */}
               <div className="flex justify-between font-bold text-lg pt-2">
-                <p>You Will Receive</p>
+                <p>Final Amount</p>
                 <p>ETB {deductions.finalAmount.toLocaleString()}</p>
               </div>
             </div>
           </div>
 
-          {/* Updated Confirmations */}
+          {/* Confirmations */}
           <div className="space-y-4">
             <label className="flex items-start space-x-2">
               <input
@@ -355,7 +441,7 @@ export function CarrierInvoiceDetail({
                 className="mt-1"
               />
               <span className="text-sm">
-                I confirm that my payment information is correct and complete
+                I confirm that my payment information is correct
               </span>
             </label>
 
@@ -367,9 +453,7 @@ export function CarrierInvoiceDetail({
                 className="mt-1"
               />
               <span className="text-sm">
-                I understand that ETB {deductions.vat.toLocaleString()} (VAT)
-                and ETB {deductions.withholding.toLocaleString()} (Withholding
-                Tax) will be automatically deducted and paid to the government
+                I understand and agree to the tax deductions
               </span>
             </label>
 
@@ -381,29 +465,35 @@ export function CarrierInvoiceDetail({
                 className="mt-1"
               />
               <span className="text-sm">
-                I agree to the {FEES_AND_TAXES.SERVICE_FEE_RATE * 100}% platform
-                service fee of ETB {deductions.serviceFee.toLocaleString()}
+                I agree to the platform service fee
               </span>
             </label>
           </div>
 
-          {/* Send Button */}
-          <button
-            onClick={handleSendInvoice}
-            disabled={
-              !carrierInfoConfirmed ||
-              !taxInfoConfirmed ||
-              !serviceFeesConfirmed
-            }
-            className={`w-full py-2 px-4 rounded-md font-medium transition-colors duration-300
-              ${
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border rounded hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveInvoice}
+              disabled={
+                !carrierInfoConfirmed ||
+                !taxInfoConfirmed ||
+                !serviceFeesConfirmed
+              }
+              className={`px-4 py-2 rounded ${
                 carrierInfoConfirmed && taxInfoConfirmed && serviceFeesConfirmed
                   ? "bg-orange-500 hover:bg-orange-600 text-white"
-                  : "bg-gray-300 cursor-not-allowed text-gray-500"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
-          >
-            Send Invoice to Shipper
-          </button>
+            >
+              Generate Invoice
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
 import { InvoiceCard } from "~/components/invoice/InvoiceCard";
 import { InvoiceDetail } from "~/components/invoice/InvoiceDetail";
-import { mockInvoices, type Invoice } from "~/api/mocks/invoiceData";
 import { useOutletContext, useLoaderData } from "@remix-run/react";
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, ActionFunction } from "@remix-run/node";
 import { authenticator } from "~/api/services/auth.server";
 import { getUserInfo } from "~/api/services/user.service";
-
-// Constants for tax calculations
-const TAX_RATES = {
-  VAT: 0.15, // 15% VAT
-  WITHHOLDING: 0.02, // 2% Withholding tax
-};
+import {
+  getShipperInvoices,
+  updateInvoice,
+  deleteInvoice,
+} from "~/api/services/invoice.service";
+import type { Invoice } from "~/api/models/invoice";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request, {
@@ -21,7 +20,46 @@ export const loader: LoaderFunction = async ({ request }) => {
   // Get detailed user info
   const userInfo = await getUserInfo(user.user.id, user.token);
 
-  return { userInfo, user };
+  // Get shipper's invoices
+  const invoices = await getShipperInvoices(user.token, userInfo.id);
+
+  return { userInfo, user, invoices };
+};
+
+export const action: ActionFunction = async ({ request }) => {
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  const formData = await request.formData();
+  const action = formData.get("action");
+  const invoiceId = formData.get("invoiceId") as string;
+
+  try {
+    switch (action) {
+      case "approve":
+        await updateInvoice(user.token, invoiceId, {
+          status: "approved",
+        });
+        break;
+      case "dispute":
+        await updateInvoice(user.token, invoiceId, {
+          status: "disputed",
+        });
+        break;
+      case "delete":
+        await deleteInvoice(user.token, invoiceId);
+        break;
+      default:
+        return json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    // Fetch updated invoices after action
+    const updatedInvoices = await getShipperInvoices(user.token, user.user.id);
+    return json({ success: true, invoices: updatedInvoices });
+  } catch (error) {
+    return json({ error: "Operation failed" }, { status: 500 });
+  }
 };
 
 export default function Invoices() {
@@ -29,101 +67,37 @@ export default function Invoices() {
     theme: "light" | "dark";
     loads: any[];
   }>();
-  const { userInfo, user } = useLoaderData<typeof loader>();
+  const {
+    userInfo,
+    user,
+    invoices: initialInvoices,
+  } = useLoaderData<typeof loader>();
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices || []);
 
-  useEffect(() => {
-    // Initialize with mock data
-    setLocalInvoices(mockInvoices);
+  const handleInvoiceAction = async (action: string, invoiceId: string) => {
+    const formData = new FormData();
+    formData.append("action", action);
+    formData.append("invoiceId", invoiceId);
 
-    // Check for draft invoice in sessionStorage
-    const draftInvoice = sessionStorage.getItem("draftInvoice");
-    if (draftInvoice) {
-      try {
-        const parsedInvoice = JSON.parse(draftInvoice);
-        const loadData = loads?.find(
-          (load) => load.loadId.toString() === parsedInvoice.loadId
-        );
+    try {
+      const response = await fetch("/shipper/dashboard/invoices", {
+        method: "POST",
+        body: formData,
+      });
 
-        // Enhance invoice with user and load data
-        const enhancedInvoice: Invoice = {
-          ...parsedInvoice,
-          shipper: {
-            name: `${userInfo.firstName} ${userInfo.lastName}`,
-            companyName: userInfo.businessProfile.companyName,
-            address: userInfo.businessProfile.address || "Address pending",
-            taxId:
-              userInfo.businessProfile.businessRegistrationNumber ||
-              "Tax ID pending",
-            email: userInfo.email,
-          },
-          carrier: {
-            name: loadData?.carrier?.name || "Pending Assignment",
-            companyName: loadData?.carrier?.companyName || "Pending Assignment",
-            address: loadData?.carrier?.address || "Address pending",
-            taxId: loadData?.carrier?.taxId || "Tax ID pending",
-            email: loadData?.carrier?.email || "Email pending",
-          },
-          load: {
-            origin: loadData?.origin || parsedInvoice.load.origin,
-            destination:
-              loadData?.destination || parsedInvoice.load.destination,
-            deliveryDate:
-              loadData?.deliveryDate || parsedInvoice.load.deliveryDate,
-            commodity: loadData?.commodity || parsedInvoice.load.commodity,
-            weight: loadData?.weight || parsedInvoice.load.weight,
-          },
-          charges: {
-            baseRate: Number(
-              loadData?.offerAmount || parsedInvoice.charges.baseRate
-            ),
-            additionalServices: parsedInvoice.charges.additionalServices || [],
-            subtotal: Number(
-              loadData?.offerAmount || parsedInvoice.charges.baseRate
-            ),
-            taxes: {
-              VAT:
-                Number(
-                  loadData?.offerAmount || parsedInvoice.charges.baseRate
-                ) * TAX_RATES.VAT,
-              withholding:
-                Number(
-                  loadData?.offerAmount || parsedInvoice.charges.baseRate
-                ) * TAX_RATES.WITHHOLDING,
-            },
-            total: calculateTotal(
-              Number(loadData?.offerAmount || parsedInvoice.charges.baseRate)
-            ),
-          },
-        };
-
-        // Update local invoices with the enhanced invoice
-        setLocalInvoices((prevInvoices) => {
-          const filteredInvoices = prevInvoices.filter(
-            (inv) => inv.id !== enhancedInvoice.id
-          );
-          return [enhancedInvoice, ...filteredInvoices];
-        });
-
-        // Automatically select the new invoice for display
-        setSelectedInvoice(enhancedInvoice);
-
-        // Clear the draft from sessionStorage
-        sessionStorage.removeItem("draftInvoice");
-      } catch (error) {
-        console.error("Error processing draft invoice:", error);
+      const result = await response.json();
+      if (result.success) {
+        setInvoices(result.invoices);
+        setSelectedInvoice(null);
+      } else {
+        // Handle error (show notification, etc.)
+        console.error("Operation failed:", result.error);
       }
+    } catch (error) {
+      console.error("Failed to perform action:", error);
     }
-  }, [loads, userInfo]); // Dependencies updated to include loads and userInfo
-
-  // Helper function to calculate total with taxes
-  const calculateTotal = (baseAmount: number) => {
-    const subtotal = baseAmount;
-    const vat = subtotal * TAX_RATES.VAT;
-    const withholding = subtotal * TAX_RATES.WITHHOLDING;
-    return subtotal + vat + withholding;
   };
 
   const themeClasses = {
@@ -138,8 +112,8 @@ export default function Invoices() {
 
   const filteredInvoices =
     filterStatus === "all"
-      ? localInvoices
-      : localInvoices.filter((invoice) => invoice.status === filterStatus);
+      ? invoices
+      : invoices.filter((invoice) => invoice.status === filterStatus);
 
   return (
     <div className={`container mx-auto px-4 py-8 ${themeClasses.container}`}>
@@ -147,35 +121,65 @@ export default function Invoices() {
         <h1 className={`text-2xl font-bold ${themeClasses.header}`}>
           Invoices
         </h1>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className={`p-2 rounded border ${themeClasses.select}`}
-        >
-          <option value="all">All Invoices</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        {invoices.length > 0 && (
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className={`p-2 rounded border ${themeClasses.select}`}
+          >
+            <option value="all">All Invoices</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="disputed">Disputed</option>
+            <option value="paid">Paid</option>
+          </select>
+        )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredInvoices.map((invoice) => (
-          <InvoiceCard
-            key={invoice.id}
-            invoice={invoice}
-            theme={theme}
-            onClick={() => setSelectedInvoice(invoice)}
-          />
-        ))}
-      </div>
+      {invoices.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className={`text-lg ${themeClasses.header} mb-4`}>
+            No invoices found
+          </p>
+          <p className={`${themeClasses.select} text-sm`}>
+            When you have invoices, they will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredInvoices.map((invoice) => (
+            <InvoiceCard
+              key={invoice.id}
+              invoice={invoice}
+              theme={theme}
+              onClick={() => setSelectedInvoice(invoice)}
+            />
+          ))}
+        </div>
+      )}
+
+      {filteredInvoices.length === 0 && filterStatus !== "all" && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className={`text-lg ${themeClasses.header} mb-4`}>
+            No {filterStatus} invoices found
+          </p>
+          <button
+            onClick={() => setFilterStatus("all")}
+            className="text-orange-500 hover:text-orange-600"
+          >
+            View all invoices
+          </button>
+        </div>
+      )}
 
       {selectedInvoice && (
         <InvoiceDetail
           invoice={selectedInvoice}
           theme={theme}
           onClose={() => setSelectedInvoice(null)}
+          onApprove={() => handleInvoiceAction("approve", selectedInvoice.id)}
+          onDispute={() => handleInvoiceAction("dispute", selectedInvoice.id)}
+          onDelete={() => handleInvoiceAction("delete", selectedInvoice.id)}
         />
       )}
     </div>
