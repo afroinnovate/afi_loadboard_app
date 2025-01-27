@@ -131,7 +131,7 @@ export const action: ActionFunction = async ({ request }) => {
     const bidLoadId = formData.get("bidLoadId");
     const shipper = JSON.parse(formData.get("shipper") as string); // Parse the shipper info
     const contactLoad = JSON.parse(formData.get("load") as string); // Parse the shipper info
-    console.log("bidLoadId", bidLoadId, "actionType", actionType);
+    // console.log("bidLoadId", bidLoadId, "actionType", actionType);
     switch (actionType) {
       case "contact":
         return json({
@@ -289,7 +289,7 @@ const handleInvoiceGeneration = (
 
   try {
     sessionStorage.setItem("draftInvoice", JSON.stringify(partialInvoice));
-    window.location.href = "/carriers/dashboard/invoices";
+    window.location.href = `/carriers/dashboard/invoice/${load.loadId}`;
   } catch (error) {
     console.error("Error handling invoice generation:", error);
   }
@@ -303,7 +303,7 @@ export default function CarrierViewLoads() {
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
   const { theme, loads } = useOutletContext<OutletContext>();
 
-  console.log("carrier context loads: ", loads);
+  // console.log("carrier context loads: ", loads);
   // Memoize the error and info messages
   const { error, info } = useMemo(() => {
     let errorMsg = "";

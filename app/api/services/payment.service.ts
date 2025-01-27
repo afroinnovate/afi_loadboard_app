@@ -1,6 +1,6 @@
 import { type PaymentMethod } from "../models/paymentMethod";
 
-const baseUrl = "https://api.frieght.afroinnovate.com/";
+const baseUrl = "https://api.frieght.afroinnovate.com/api/";
 
 export async function savePaymentMethod(token: string, paymentMethod: PaymentMethod) {
   try {
@@ -12,6 +12,8 @@ export async function savePaymentMethod(token: string, paymentMethod: PaymentMet
       },
       body: JSON.stringify(paymentMethod),
     });
+
+    console.log(response)
 
     if (response.status !== 201) {
       throw response;
@@ -29,9 +31,9 @@ export async function savePaymentMethod(token: string, paymentMethod: PaymentMet
   }
 }
 
-export async function getPaymentMethods(token: string, shipperId: string) {
+export async function getPaymentMethods(token: string, carrierId: string) {
   try {
-    const response = await fetch(`${baseUrl}payment-methods/${shipperId}`, {
+    const response = await fetch(`${baseUrl}payment-methods/${carrierId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

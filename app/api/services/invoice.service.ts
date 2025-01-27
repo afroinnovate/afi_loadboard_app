@@ -1,44 +1,63 @@
-import type { Invoice } from "../models/invoice";
+import type { Invoice, InvoiceRequest } from "../models/invoice";
 import { calculateCarrierDeductions } from "~/utils/constants";
 
-const baseUrl = "https://api.frieght.afroinnovate.com/";
+const baseUrl = "https://api.frieght.afroinnovate.com/api/";
 
-export async function generateInvoice(token: string, invoice: Invoice) {
-  console.log("invoice", invoice);
+const defaultPaymentMethod = {
+  method: "bank",
+  type: "",
+  bankName: "",
+  bankAccount: "",
+  accountHolderName: "",
+  phoneNumber: "",
+  cardMethod: "",
+  cardType: "",
+  lastFourDigits: "",
+  billingAddress: "",
+};
+
+export async function generateInvoice(token: string, invoice: InvoiceRequest) {
+  console.log("Generating invoice:", invoice);
   try {
+    const today = new Date();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const invoiceNumber = `INV-${invoice.loadId}-${month}${day}`;
+
     const response = await fetch(`${baseUrl}invoices`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ invoice }),
+      body: JSON.stringify({
+        invoiceNumber,
+        loadId: invoice.loadId,
+        issueDate: invoice.issueDate,
+        dueDate: invoice.dueDate,
+        status: invoice.status,
+        shipperId: invoice.shipperId,
+        amountDue: invoice.amountDue,
+        totalAmount: invoice.totalAmount,
+        totalVat: invoice.totalVat,
+        withholding: invoice.withholding,
+        serviceFees: invoice.serviceFees,
+        note: invoice.note,
+        transactionId: invoice.transactionId,
+        paymentMethod: invoice.paymentMethod,
+      }),
     });
 
+    console.log("Response:", response);
     if (response.status !== 201) {
-      throw response;
+      const error = await response.json();
+      throw new Error(error.message || "Failed to generate invoice");
     }
 
-    const data = await response.json();
-    return data as Invoice;
+    return await response.json();
   } catch (error: any) {
-    switch (error.status) {
-      case 404:
-        throw JSON.stringify({
-          data: {
-            message: "Load not found",
-            status: 404,
-          },
-        });
-      // ... existing code ...
-      default:
-        throw JSON.stringify({
-          data: {
-            message: "An error occurred",
-            status: 500,
-          },
-        });
-    }
+    console.error("Error in generateInvoice:", error);
+    throw error;
   }
 }
 
@@ -56,9 +75,17 @@ export async function getInvoices(token: string) {
       throw response;
     }
 
+    if (response.status !== 200 && response.status === 404) {
+      return {
+        invoices: [],
+        message: "No invoices found"
+      };
+    }
+
     const data = await response.json();
     return data as Invoice[];
   } catch (error: any) {
+    console.error("Error in getInvoices:", error);
     switch (error.status) {
       case 404:
         throw JSON.stringify({
@@ -261,35 +288,61 @@ export async function deleteInvoice(token: string, invoiceId: string) {
 export async function getCarrierInvoices(token: string, carrierId: string) {
   try {
     const response = await fetch(`${baseUrl}invoices/carrier/${carrierId}`, {
-      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (response.status === 404) {
-      return {
-        invoices: [],
-        message: "No invoices generated yet"
-      };
+      return { invoices: [], message: "No invoices found" };
     }
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw response;
     }
 
-    const data = await response.json();
-    return {
-      invoices: data,
-      message: null
-    };
-  } catch (error) {
+    return await response.json();
+  } catch (error: any) {
     console.error("Error fetching carrier invoices:", error);
-    return {
-      invoices: [],
-      message: "Failed to fetch invoices"
-    };
+    throw error;
+  }
+}
+
+export async function getInvoiceByLoadId(token: string, loadId: string) {
+  try {
+    const response = await fetch(`${baseUrl}invoices/load/${loadId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw response;
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error("Error fetching invoice by load:", error);
+    throw error;
+  }
+}
+
+export async function getInvoiceByNumber(token: string, invoiceNumber: string) {
+  try {
+    const response = await fetch(`${baseUrl}invoices/number/${invoiceNumber}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw response;
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error("Error fetching invoice by number:", error);
+    throw error;
   }
 }
 
@@ -309,7 +362,6 @@ export async function generateInvoiceFromLoad(token: string, loadId: number, car
       serviceFee,
       vat,
       withholding,
-      totalDeductions,
       finalAmount
     } = calculateCarrierDeductions(baseAmount);
 
@@ -323,7 +375,8 @@ export async function generateInvoiceFromLoad(token: string, loadId: number, car
       amount: baseAmount,
       status: "pending",
       issueDate: new Date().toISOString(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+      // TODO: Change due date to starting now
+      dueDate: new Date(Date.now()).toISOString(), // 30 days from now
       shipperId: loadData.shipperId,
       totalAmount: finalAmount,
       totalVat: vat,
@@ -331,7 +384,7 @@ export async function generateInvoiceFromLoad(token: string, loadId: number, car
       serviceFees: serviceFee,
       notes: "",
       transactionId: "", // Will be filled when paid
-      paymentMethod: null // Will be selected during payment
+      paymentMethod: defaultPaymentMethod, // Use the default payment method
     };
 
     // Create the invoice in the database

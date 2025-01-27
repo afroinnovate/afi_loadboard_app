@@ -1,19 +1,38 @@
 import { type PaymentMethod } from "./paymentMethod";
 
+export type InvoiceStatus = "pending" | "paid" | "overdue" | "cancelled";
+
 export interface Invoice {
-  id: string;
+  id: number;
+  invoiceNumber: string;
   loadId: number;
-  number: string;
-  amount: number;
-  status: "pending" | "paid" | "overdue";
   issueDate: string;
   dueDate: string;
+  status: InvoiceStatus;
   shipperId: string;
+  amountDue: number;
   totalAmount: number;
   totalVat: number;
-  withHolding: number;
+  withholding: number;
   serviceFees: number;
-  notes: string;
+  createdAt: string;
+  note: string;
+  transactionId: string;
+  paymentMethod: PaymentMethod;
+}
+
+export interface InvoiceRequest {
+  loadId: number;
+  issueDate: string;
+  dueDate: string;
+  status: string;
+  shipperId: string;
+  amountDue: number;
+  totalAmount: number;
+  totalVat: number;
+  withholding: number;
+  serviceFees: number;
+  note: string;
   transactionId: string;
   paymentMethod: PaymentMethod;
 }

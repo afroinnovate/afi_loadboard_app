@@ -45,7 +45,7 @@ export function InvoiceCard({ invoice, theme, onClick }: InvoiceCardProps) {
             </h3>
           </div>
           <p className={`${themeClasses.subtext} text-sm mt-1`}>
-            {invoice.load.origin} → {invoice.load.destination}
+            Load ID: {invoice.loadId}
           </p>
         </div>
         <span
@@ -61,7 +61,7 @@ export function InvoiceCard({ invoice, theme, onClick }: InvoiceCardProps) {
         <div>
           <p className={`${themeClasses.subtext} text-sm`}>Issue Date</p>
           <p className={`${themeClasses.text}`}>
-            {new Date(invoice.issuedDate).toLocaleDateString()}
+            {new Date(invoice.issueDate).toLocaleDateString()}
           </p>
         </div>
         <div>
@@ -74,9 +74,9 @@ export function InvoiceCard({ invoice, theme, onClick }: InvoiceCardProps) {
 
       <div className="flex justify-between items-center">
         <div>
-          <p className={`${themeClasses.subtext} text-sm`}>Amount</p>
+          <p className={`${themeClasses.subtext} text-sm`}>Amount Due</p>
           <p className={`${themeClasses.text} font-semibold`}>
-            ETB {invoice.charges.total.toLocaleString()}
+            ETB {invoice.amountDue.toLocaleString()}
           </p>
         </div>
         <ArrowTopRightOnSquareIcon className="h-5 w-5" />

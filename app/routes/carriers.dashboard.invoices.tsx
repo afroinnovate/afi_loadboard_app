@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useLoaderData } from "@remix-run/react";
-import type { LoaderFunction } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import type { Invoice } from "~/api/models/invoice";
 import { mockInvoices } from "~/api/mocks/invoiceData";
