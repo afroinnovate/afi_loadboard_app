@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Load } from "~/api/models/load";
 import type { Shipper } from "~/api/models/shipper";
 import type { Carrier } from "~/api/models/carrier";
@@ -9,10 +9,11 @@ import {
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import { FEES_AND_TAXES, calculateCarrierDeductions } from "~/utils/constants";
-import { Form, useNavigate } from "@remix-run/react";
+import { Form, useNavigate, useNavigation } from "@remix-run/react";
 import { generateInvoice } from "~/api/services/invoice.service";
 import { savePaymentMethod } from "~/api/services/payment.service";
 import { type PaymentMethod } from "~/api/models/paymentMethod";
+import { Loader } from "~/components/loader";
 
 interface InvoiceInfo {
   load: Load;
@@ -114,6 +115,7 @@ export function CarrierInvoiceDetail({
   actionData,
 }: CarrierInvoiceDetailProps) {
   const navigate = useNavigate();
+  const navigation = useNavigation();
   const [invoice, setInvoice] = useState(initialInvoiceInfo.invoice);
   const [taxInfoConfirmed, setTaxInfoConfirmed] = useState(false);
   const [serviceFeesConfirmed, setServiceFeesConfirmed] = useState(false);
@@ -135,7 +137,6 @@ export function CarrierInvoiceDetail({
     },
   });
   const [savePaymentInfo, setSavePaymentInfo] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackMessage | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
@@ -305,14 +306,11 @@ export function CarrierInvoiceDetail({
   };
 
   const handlePublishInvoice = async () => {
-    console.log("handlePublishInvoice triggered");
     if (!validatePaymentInfo()) {
       return;
     }
 
     try {
-      setIsPublishing(true);
-
       const invoiceRequest: InvoiceRequest = {
         loadId: initialInvoiceInfo.load.loadId,
         issueDate: new Date().toISOString(),
@@ -358,8 +356,6 @@ export function CarrierInvoiceDetail({
         type: "error",
         message: error.message || "Failed to publish invoice",
       });
-    } finally {
-      setIsPublishing(false);
     }
   };
 
@@ -413,15 +409,13 @@ export function CarrierInvoiceDetail({
     }));
   }, [initialInvoiceInfo.carrier.name]);
 
-  // Fix the isPublishing state by removing the duplicate declaration
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // Update the button's disabled condition
-  const isButtonDisabled =
-    !carrierInfoConfirmed ||
-    !taxInfoConfirmed ||
-    !serviceFeesConfirmed ||
-    !isPaymentInfoComplete() ||
-    isPublishing;
+  // Single isPublishing declaration using navigation state
+  const isPublishing =
+    navigation.state === "submitting" &&
+    navigation.formData?.get("_action") === "publish_invoice";
+
+  // Add ref for payment section
+  const paymentSectionRef = useRef<HTMLDivElement>(null);
 
   const FeedbackModal = () => {
     if (!feedback) return null;
@@ -506,7 +500,10 @@ export function CarrierInvoiceDetail({
           </div>
 
           {/* Payment Information Section */}
-          <div className={`${themeClasses.section} p-4 rounded`}>
+          <div
+            ref={paymentSectionRef}
+            className={`${themeClasses.section} p-4 rounded`}
+          >
             <h3 className="font-semibold mb-4">Payment Information</h3>
             <div className="space-y-4">
               <div>
@@ -819,7 +816,50 @@ export function CarrierInvoiceDetail({
           </div>
 
           {/* Send Button Section */}
-          <Form method="post">
+          <Form
+            method="post"
+            onSubmit={(e) => {
+              if (!isPaymentInfoComplete()) {
+                e.preventDefault();
+
+                // Highlight missing fields
+                const errors: FormErrors = {};
+                if (paymentInfo.preferredMethod === "bank") {
+                  if (!paymentInfo.bankDetails.bankName) {
+                    errors.bankName = "Please enter your bank name";
+                  }
+                  if (!paymentInfo.bankDetails.accountNumber) {
+                    errors.accountNumber = "Please enter your account number";
+                  }
+                  if (!paymentInfo.bankDetails.accountHolderName) {
+                    errors.accountHolderName =
+                      "Please enter account holder name";
+                  }
+                } else {
+                  if (!paymentInfo.mobileMoneyDetails.provider) {
+                    errors.provider =
+                      "Please select your mobile money provider";
+                  }
+                  if (!paymentInfo.mobileMoneyDetails.phoneNumber) {
+                    errors.phoneNumber = "Please enter your phone number";
+                  }
+                  if (!paymentInfo.mobileMoneyDetails.accountHolderName) {
+                    errors.accountHolderName =
+                      "Please enter account holder name";
+                  }
+                }
+                setFormErrors(errors);
+
+                // Scroll to payment section
+                paymentSectionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+
+                return;
+              }
+            }}
+          >
             <input type="hidden" name="_action" value="publish_invoice" />
             <input
               type="hidden"
@@ -867,7 +907,7 @@ export function CarrierInvoiceDetail({
                 !serviceFeesConfirmed ||
                 isPublishing
               }
-              className={`w-full py-2 px-4 rounded-md font-medium transition-colors duration-300
+              className={`w-full py-2 px-4 rounded-md font-medium transition-colors duration-300 flex items-center justify-center
                 ${
                   carrierInfoConfirmed &&
                   taxInfoConfirmed &&
@@ -877,7 +917,14 @@ export function CarrierInvoiceDetail({
                     : "bg-gray-300 cursor-not-allowed text-gray-500"
                 }`}
             >
-              {isPublishing ? "Publishing..." : "Publish Invoice"}
+              {isPublishing ? (
+                <>
+                  <Loader size={20} className="mr-2" />
+                  Publishing...
+                </>
+              ) : (
+                "Publish Invoice"
+              )}
             </button>
           </Form>
         </div>
