@@ -32,6 +32,7 @@ interface CarrierInvoiceDetailProps {
     invoice?: Invoice;
     paymentMethod?: PaymentMethod;
   };
+  onClose?: () => void;
 }
 
 interface FeedbackMessage {
@@ -115,6 +116,7 @@ export function CarrierInvoiceDetail({
   token,
   theme,
   actionData,
+  onClose,
 }: CarrierInvoiceDetailProps) {
   const navigate = useNavigate();
   const navigation = useNavigation();
@@ -430,7 +432,8 @@ export function CarrierInvoiceDetail({
               <button
                 onClick={() => {
                   setFeedback(null);
-                  navigate("/carriers/dashboard/invoices");
+                  if (onClose) onClose();
+                  navigate("/carriers/dashboard/invoices", { replace: true });
                 }}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
               >
@@ -468,7 +471,10 @@ export function CarrierInvoiceDetail({
               <ArrowDownTrayIcon className="w-6 h-6" />
             </button>
             <button
-              onClick={() => navigate("/carriers/dashboard/invoices")}
+              onClick={() => {
+                if (onClose) onClose();
+                navigate("/carriers/dashboard/invoices", { replace: true });
+              }}
               className="p-2 hover:bg-gray-100 rounded-full"
             >
               <XMarkIcon className="w-6 h-6" />

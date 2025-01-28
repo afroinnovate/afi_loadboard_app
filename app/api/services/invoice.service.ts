@@ -1,8 +1,8 @@
 import type { Invoice, InvoiceRequest } from "../models/invoice";
 import { calculateCarrierDeductions } from "~/utils/constants";
 
-const baseUrl = "https://api.frieght.afroinnovate.com/api/";
-// const baseUrl = "http://localhost:7070/api/";
+// const baseUrl = "https://api.frieght.afroinnovate.com/api/";
+const baseUrl = "http://localhost:7070/api/";
 
 const defaultPaymentMethod = {
   method: "bank",
