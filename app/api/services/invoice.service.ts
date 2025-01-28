@@ -2,6 +2,7 @@ import type { Invoice, InvoiceRequest } from "../models/invoice";
 import { calculateCarrierDeductions } from "~/utils/constants";
 
 const baseUrl = "https://api.frieght.afroinnovate.com/api/";
+// const baseUrl = "http://localhost:7070/api/";
 
 const defaultPaymentMethod = {
   method: "bank",
@@ -19,45 +20,41 @@ const defaultPaymentMethod = {
 export async function generateInvoice(token: string, invoice: InvoiceRequest) {
   console.log("Generating invoice:", invoice);
   try {
-    const today = new Date();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    const invoiceNumber = `INV-${invoice.loadId}-${month}${day}`;
-
     const response = await fetch(`${baseUrl}invoices`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        invoiceNumber,
-        loadId: invoice.loadId,
-        issueDate: invoice.issueDate,
-        dueDate: invoice.dueDate,
-        status: invoice.status,
-        shipperId: invoice.shipperId,
-        amountDue: invoice.amountDue,
-        totalAmount: invoice.totalAmount,
-        totalVat: invoice.totalVat,
-        withholding: invoice.withholding,
-        serviceFees: invoice.serviceFees,
-        note: invoice.note,
-        transactionId: invoice.transactionId,
-        paymentMethod: invoice.paymentMethod,
-      }),
+      body: JSON.stringify(invoice),
     });
 
-    console.log("Response:", response);
+    if (response.status === 201) {
+      return await response.json();
+    }
+
     if (response.status !== 201) {
       const error = await response.json();
       throw new Error(error.message || "Failed to generate invoice");
     }
-
-    return await response.json();
   } catch (error: any) {
     console.error("Error in generateInvoice:", error);
-    throw error;
+    switch (error.status) {
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Invalid request",
+            status: 400,
+          },
+        });
+      default:  
+        throw JSON.stringify({
+          data: {
+            message: "Failed to generate invoice",
+            status: error.status || 500,
+          },
+        });
+    }
   }
 }
 

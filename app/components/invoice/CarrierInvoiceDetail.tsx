@@ -40,21 +40,23 @@ interface FeedbackMessage {
 }
 
 interface InvoiceRequest {
+  id: number;
   loadId: number;
   issueDate: string;
   dueDate: string;
   status: string;
-  shipperId: string;
+  carrierId: string;
   amountDue: number;
   totalAmount: number;
   totalVat: number;
   withholding: number;
   serviceFees: number;
+  createdAt: string;
   note: string;
   transactionId: string;
   paymentMethod: {
-    method: string;
-    type: string;
+    paymentType: string;
+    carrierId: string;
     bankName: string;
     bankAccount: string;
     accountHolderName: string;
@@ -276,18 +278,18 @@ export function CarrierInvoiceDetail({
     if (!invoice.loadId) {
       return { isValid: false, error: "Load information is missing" };
     }
-    if (!invoice.shipperId) {
+    if (!invoice.carrierId) {
       console.log("invoice details", invoice);
       return {
         isValid: false,
-        error: "Shipper info is missing" + invoice.loadId,
+        error: "Carrier info is missing" + invoice.loadId,
       };
     }
-    if (!invoice.paymentMethod.method) {
+    if (!invoice.paymentMethod.paymentType) {
       return { isValid: false, error: "Payment method is required" };
     }
     if (
-      invoice.paymentMethod.method === "bank" &&
+      invoice.paymentMethod.paymentType === "bank" &&
       (!invoice.paymentMethod.bankName ||
         !invoice.paymentMethod.bankAccount ||
         !invoice.paymentMethod.accountHolderName)
@@ -295,7 +297,7 @@ export function CarrierInvoiceDetail({
       return { isValid: false, error: "Bank details are incomplete" };
     }
     if (
-      invoice.paymentMethod.method === "mobile_money" &&
+      invoice.paymentMethod.paymentType === "mobile_money" &&
       (!invoice.paymentMethod.type ||
         !invoice.paymentMethod.phoneNumber ||
         !invoice.paymentMethod.accountHolderName)
@@ -312,11 +314,13 @@ export function CarrierInvoiceDetail({
 
     try {
       const invoiceRequest: InvoiceRequest = {
+        id: 2,
         loadId: initialInvoiceInfo.load.loadId,
         issueDate: new Date().toISOString(),
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: "pending",
-        shipperId: initialInvoiceInfo.shipper.id,
+        carrierId: initialInvoiceInfo.carrier.id,
+        createdAt: new Date().toISOString(),
         amountDue: initialInvoiceInfo.load.offerAmount,
         totalAmount: deductions.finalAmount,
         totalVat: deductions.vat,
@@ -344,11 +348,6 @@ export function CarrierInvoiceDetail({
           type: "success",
           message: "Invoice published successfully!",
         });
-
-        // Redirect after success
-        setTimeout(() => {
-          navigate("/carriers/dashboard/invoices");
-        }, 2000);
       }
     } catch (error: any) {
       console.error("Error publishing invoice:", error);
@@ -381,10 +380,6 @@ export function CarrierInvoiceDetail({
             type: "success",
             message: "Invoice published successfully!",
           });
-          // Redirect after success
-          setTimeout(() => {
-            navigate("/carriers/dashboard/invoices");
-          }, 2000);
         } else if (actionData.paymentMethod) {
           alert("Payment information saved successfully!");
           setSavePaymentInfo(false);
@@ -431,11 +426,19 @@ export function CarrierInvoiceDetail({
             }`}
           >
             <p className="text-lg font-semibold mb-4">{feedback.message}</p>
-            {feedback.type === "error" && (
+            {feedback.type === "success" ? (
               <button
                 onClick={() => {
-                  setFeedback(null); // Just clear the feedback
+                  setFeedback(null);
+                  navigate("/carriers/dashboard/invoices");
                 }}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              >
+                OK
+              </button>
+            ) : (
+              <button
+                onClick={() => setFeedback(null)}
                 className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
               >
                 OK
@@ -868,11 +871,6 @@ export function CarrierInvoiceDetail({
             />
             <input
               type="hidden"
-              name="shipperId"
-              value={initialInvoiceInfo.shipper.id}
-            />
-            <input
-              type="hidden"
               name="amountDue"
               value={initialInvoiceInfo.load.offerAmount}
             />
@@ -896,7 +894,33 @@ export function CarrierInvoiceDetail({
             <input
               type="hidden"
               name="paymentMethod"
-              value={JSON.stringify(formatPaymentMethodForApi(paymentInfo))}
+              value={JSON.stringify({
+                paymentType: paymentInfo.preferredMethod,
+                carrierId: initialInvoiceInfo.carrier.id,
+                bankName: paymentInfo.bankDetails.bankName,
+                bankAccount: paymentInfo.bankDetails.accountNumber,
+                accountHolderName: paymentInfo.bankDetails.accountHolderName,
+                phoneNumber: "",
+                cardMethod: "",
+                cardType: "",
+                lastFourDigits: "",
+                billingAddress: "",
+              })}
+            />
+            <input
+              type="hidden"
+              name="commodity"
+              value={initialInvoiceInfo.load.commodity}
+            />
+            <input
+              type="hidden"
+              name="origin"
+              value={initialInvoiceInfo.load.origin}
+            />
+            <input
+              type="hidden"
+              name="destination"
+              value={initialInvoiceInfo.load.destination}
             />
 
             <button

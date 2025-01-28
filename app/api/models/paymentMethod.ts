@@ -1,6 +1,6 @@
 export interface PaymentMethod {
-  method: string;
-  type: string;
+  paymentType: string;
+  carrierId: string;
   bankName: string;
   bankAccount: string;
   accountHolderName: string;

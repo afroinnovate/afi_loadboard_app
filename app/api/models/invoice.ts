@@ -9,7 +9,7 @@ export interface Invoice {
   issueDate: string;
   dueDate: string;
   status: InvoiceStatus;
-  shipperId: string;
+  carrierId: string;
   amountDue: number;
   totalAmount: number;
   totalVat: number;
@@ -22,17 +22,31 @@ export interface Invoice {
 }
 
 export interface InvoiceRequest {
+  id: number;
+  invoiceNumber: string;
   loadId: number;
   issueDate: string;
   dueDate: string;
   status: string;
-  shipperId: string;
+  carrierId: string;
   amountDue: number;
   totalAmount: number;
   totalVat: number;
   withholding: number;
   serviceFees: number;
+  createdAt: string;
   note: string;
   transactionId: string;
-  paymentMethod: PaymentMethod;
+  paymentMethod: {
+    paymentType: string;
+    carrierId: string;
+    bankName: string;
+    bankAccount: string;
+    accountHolderName: string;
+    phoneNumber: string;
+    cardMethod: string;
+    cardType: string;
+    lastFourDigits: string;
+    billingAddress: string;
+  };
 }

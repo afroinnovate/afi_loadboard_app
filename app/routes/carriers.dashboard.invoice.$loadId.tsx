@@ -70,6 +70,7 @@ export const action: ActionFunction = async ({ request }) => {
   console.log("Action triggered");
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get(authenticator.sessionKey);
+  const carrierProfile = session.get("carrier");
 
   if (!user) {
     return redirect("/logout/");
@@ -84,26 +85,69 @@ export const action: ActionFunction = async ({ request }) => {
       case "publish_invoice": {
         // Get invoice data from form
         const invoiceRequest = {
+          id: 0, // Default to 0 for new invoices
+          invoiceNumber: `INV-${formData.get("loadId")}-${Date.now()}`, // Added invoiceNumber
           loadId: Number(formData.get("loadId")),
           issueDate: new Date().toISOString(),
           dueDate: new Date(
             Date.now() + 30 * 24 * 60 * 60 * 1000
           ).toISOString(),
           status: "pending",
-          shipperId: formData.get("shipperId") as string,
-          totalAmount: Number(formData.get("amountDue")), // This is the original load amount
-          amountDue: Number(formData.get("totalAmount")), // This is the final amount after deductions
+          carrierId: carrierProfile.id,
+          amountDue: Number(formData.get("amountDue")),
+          totalAmount: Number(formData.get("totalAmount")),
           totalVat: Number(formData.get("totalVat")),
           withholding: Number(formData.get("withholding")),
           serviceFees: Number(formData.get("serviceFees")),
-          note: (formData.get("note") as string) || "",
+          createdAt: new Date().toISOString(),
+          note: `This invoice is for transportation of ${formData.get(
+            "commodity"
+          )} from ${formData.get("origin")} to ${formData.get("destination")}`,
           transactionId: "",
-          paymentMethod: JSON.parse(formData.get("paymentMethod") as string),
+          paymentMethod: {
+            paymentType: JSON.parse(formData.get("paymentMethod") as string)
+              .paymentType,
+            carrierId: carrierProfile.id,
+            bankName: JSON.parse(formData.get("paymentMethod") as string)
+              .bankName,
+            bankAccount: JSON.parse(formData.get("paymentMethod") as string)
+              .bankAccount,
+            accountHolderName: JSON.parse(
+              formData.get("paymentMethod") as string
+            ).accountHolderName,
+            phoneNumber:
+              JSON.parse(formData.get("paymentMethod") as string).phoneNumber ||
+              "",
+            cardMethod:
+              JSON.parse(formData.get("paymentMethod") as string).cardMethod ||
+              "",
+            cardType:
+              JSON.parse(formData.get("paymentMethod") as string).cardType ||
+              "",
+            lastFourDigits:
+              JSON.parse(formData.get("paymentMethod") as string)
+                .lastFourDigits || "",
+            billingAddress:
+              JSON.parse(formData.get("paymentMethod") as string)
+                .billingAddress || "",
+          },
         };
 
-        console.log("Publishing invoice:", invoiceRequest);
+        const today = new Date();
+        const month = (today.getMonth() + 1).toString().padStart(2, "0");
+        const day = today.getDate().toString().padStart(2, "0");
+        const invoiceNumber = `INV-${invoiceRequest.loadId}-${month}${day}`;
+
+        invoiceRequest.invoiceNumber = invoiceNumber;
+
+        console.log("Invoice request:", invoiceRequest);
         const invoice = await generateInvoice(user.token, invoiceRequest);
-        return json({ success: true, invoice });
+      
+        if (invoice && invoice.invoiceNumber !== "") {
+          return json({ success: true, invoice });
+        } else {
+          return json({ error: "Failed to publish invoice" }, { status: 400 });
+        }
       }
 
       case "save-payment": {
