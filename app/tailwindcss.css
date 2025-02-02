@@ -1345,6 +1345,10 @@ input[type="range"]::-ms-fill-lower {
   width: 2.5rem;
 }
 
+.w-16 {
+  width: 4rem;
+}
+
 .w-2\/3 {
   width: 66.666667%;
 }
@@ -1395,6 +1399,10 @@ input[type="range"]::-ms-fill-lower {
 
 .max-w-2xl {
   max-width: 42rem;
+}
+
+.max-w-3xl {
+  max-width: 48rem;
 }
 
 .max-w-4xl {
@@ -1530,6 +1538,10 @@ input[type="range"]::-ms-fill-lower {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.cursor-wait {
+  cursor: wait;
 }
 
 .resize {
