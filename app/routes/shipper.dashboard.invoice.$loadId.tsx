@@ -5,14 +5,13 @@ import { getSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
 import { ShipperInvoiceDetail } from "~/components/invoice/ShipperInvoiceDetail";
 import { Alert } from "~/components/Alert";
-import { useState } from "react";
 import type { Invoice } from "~/api/models/invoice";
+import type { Load } from "~/api/models/load";
 
 interface LoaderData {
   invoice: Invoice | null;
+  currentUser: any;
   error?: string;
-  user: any;
-  loadDetails?: any;
 }
 
 export const loader: LoaderFunction = async ({ request, params }) => {
@@ -26,38 +25,54 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   if (!params.loadId) {
     return json({
       invoice: null,
+      currentUser: user,
       error: "Load ID is required",
-      user,
     });
   }
 
   try {
     const invoice = await getInvoiceByLoadId(user.token, Number(params.loadId));
-    console.log("Invoice:", invoice);
-    return json({ invoice, user });
+    if (!invoice) {
+      throw new Error("Invoice not found");
+    }
+
+    // Get shipper info from session
+    const shipperInfo = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      businessProfile: user.businessProfile || {
+        companyName: "Not provided",
+        address: "Not provided",
+        taxId: "Not provided",
+      },
+    };
+
+    return json({
+      invoice,
+      currentUser: shipperInfo,
+    });
   } catch (error) {
-    console.error("Error fetching invoice:", error);
+    console.error("Error fetching invoice data:", error);
     return json({
       invoice: null,
-      error: "Invoice not found",
-      user,
+      currentUser: user,
+      error: "Failed to fetch invoice details",
     });
   }
 };
 
 export default function InvoiceLoadView() {
-  const { invoice, error, user } = useLoaderData<LoaderData>();
+  const { invoice, currentUser, error } = useLoaderData<LoaderData>();
   const location = useLocation();
   const navigate = useNavigate();
   const loadDetails = location.state?.loadDetails;
 
-  if (error || !invoice) {
+  if (error || !invoice || !loadDetails) {
     return (
       <Alert
-        message={
-          error ||
-          "No invoice found for this load. Please wait for the carrier to generate one."
-        }
+        message={error || "Failed to load invoice details. Please try again."}
         type="warning"
         theme="light"
         onClose={() => navigate("/shipper/dashboard/loads/view")}
@@ -70,7 +85,8 @@ export default function InvoiceLoadView() {
     <div className="container mx-auto px-4 py-8">
       <ShipperInvoiceDetail
         invoice={invoice}
-        loadDetails={loadDetails}
+        load={loadDetails}
+        currentUser={currentUser}
         theme="light"
         onClose={() => navigate("/shipper/dashboard/loads/view")}
       />

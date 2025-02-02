@@ -342,10 +342,6 @@ export default function ViewLoads() {
   };
 
   const handleViewInvoice = (load: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Navigate to invoice view with both load ID and load details
     navigate(`/shipper/dashboard/invoice/${load.loadId}`, {
       state: { loadDetails: load },
     });
