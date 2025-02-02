@@ -10,22 +10,21 @@ import { FEES_AND_TAXES, calculateShipperCharges } from "~/utils/constants";
 
 interface ShipperInvoiceDetailProps {
   invoice: Invoice;
+  loadDetails?: any;
   theme: "light" | "dark";
   onClose: () => void;
-  onMessageCarrier: (carrierId: string) => void;
 }
 
 export function ShipperInvoiceDetail({
-  invoice: initialInvoice,
+  invoice,
+  loadDetails,
   theme,
   onClose,
-  onMessageCarrier,
 }: ShipperInvoiceDetailProps) {
-  const [invoice] = useState(initialInvoice);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [serviceFeesAccepted, setServiceFeesAccepted] = useState(false);
 
-  const charges = calculateShipperCharges(invoice.charges.baseRate);
+  const charges = calculateShipperCharges(invoice.amountDue);
 
   const themeClasses = {
     modal:
@@ -41,7 +40,7 @@ export function ShipperInvoiceDetail({
     try {
       // Here we'll add the payment processing logic
       console.log("Processing payment:", {
-        totalAmount: charges.finalAmount,
+        totalAmount: invoice.totalAmount,
         invoiceId: invoice.id,
       });
 
@@ -53,9 +52,9 @@ export function ShipperInvoiceDetail({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div
-        className={`${themeClasses.modal} w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg shadow-xl`}
+        className={`${themeClasses.modal} w-full max-w-4xl rounded-lg shadow-xl`}
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -64,8 +63,7 @@ export function ShipperInvoiceDetail({
           </h2>
           <div className="flex space-x-2">
             <button
-              onClick={() => onMessageCarrier(invoice.carrier.id)}
-              className="p-2 hover:bg-gray-100 rounded-full text-blue-500"
+              className="p-2 hover:bg-gray-100 rounded-full"
               title="Message Carrier"
             >
               <ChatBubbleLeftIcon className="w-6 h-6" />
@@ -85,44 +83,45 @@ export function ShipperInvoiceDetail({
           </div>
         </div>
 
-        {/* Invoice Content */}
+        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* From (Carrier) and To (Shipper) sections */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold mb-2">From (Carrier):</h3>
-              <div className={`${themeClasses.section} p-4 rounded`}>
-                <p>{invoice.carrier.name}</p>
-                <p>{invoice.carrier.companyName}</p>
-                <p>{invoice.carrier.address}</p>
-                <p>Tax ID: {invoice.carrier.taxId}</p>
-                <p>{invoice.carrier.email}</p>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">To (Shipper):</h3>
-              <div className={`${themeClasses.section} p-4 rounded`}>
-                <p>{invoice.shipper.name}</p>
-                <p>{invoice.shipper.companyName}</p>
-                <p>{invoice.shipper.address}</p>
-                <p>Tax ID: {invoice.shipper.taxId}</p>
-                <p>{invoice.shipper.email}</p>
-              </div>
-            </div>
-          </div>
-
           {/* Load Details */}
+          {loadDetails && (
+            <div className={`${themeClasses.section} p-4 rounded`}>
+              <h3 className="font-semibold mb-2">Load Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <p>Origin: {loadDetails.origin}</p>
+                <p>Destination: {loadDetails.destination}</p>
+                <p>Commodity: {loadDetails.commodity}</p>
+                <p>Weight: {loadDetails.weight} kg</p>
+              </div>
+            </div>
+          )}
+
+          {/* Invoice Details */}
           <div className={`${themeClasses.section} p-4 rounded`}>
-            <h3 className="font-semibold mb-2">Load Details</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <p>Origin: {invoice.load.origin}</p>
-              <p>Destination: {invoice.load.destination}</p>
-              <p>Commodity: {invoice.load.commodity}</p>
-              <p>Weight: {invoice.load.weight} kg</p>
-              <p>
-                Delivery Date:{" "}
-                {new Date(invoice.load.deliveryDate).toLocaleDateString()}
-              </p>
+            <h3 className="font-semibold mb-2">Payment Details</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <p>Amount Due:</p>
+                <p>ETB {invoice.amountDue.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>VAT (15%):</p>
+                <p>ETB {invoice.totalVat.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>Withholding (2%):</p>
+                <p>ETB {invoice.withholding.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>Service Fees:</p>
+                <p>ETB {invoice.serviceFees.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between font-bold pt-2 border-t border-gray-200">
+                <p>Total Amount:</p>
+                <p>ETB {invoice.totalAmount.toLocaleString()}</p>
+              </div>
             </div>
           </div>
 
@@ -132,7 +131,7 @@ export function ShipperInvoiceDetail({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <p>Base Rate</p>
-                <p>ETB {invoice.charges.baseRate.toLocaleString()}</p>
+                <p>ETB {invoice.amountDue.toLocaleString()}</p>
               </div>
 
               {/* Additional Charges */}
@@ -159,7 +158,7 @@ export function ShipperInvoiceDetail({
                     <p>
                       + ETB{" "}
                       {(
-                        invoice.charges.baseRate *
+                        invoice.amountDue *
                         FEES_AND_TAXES.SHIPPER_SERVICE_FEE_RATE
                       ).toLocaleString()}
                     </p>
@@ -170,14 +169,14 @@ export function ShipperInvoiceDetail({
               {/* Final Amount */}
               <div className="flex justify-between font-bold text-lg pt-2">
                 <p>Total Payment Required</p>
-                <p>ETB {charges.finalAmount.toLocaleString()}</p>
+                <p>ETB {invoice.totalAmount.toLocaleString()}</p>
               </div>
 
               {/* Carrier Payment Info */}
               <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Amount to be received by carrier: ETB{" "}
-                  {(invoice.charges.baseRate * 0.82).toLocaleString()}
+                  {(invoice.amountDue * 0.82).toLocaleString()}
                   <br />
                   <span className="text-xs">
                     (After deduction of VAT, Withholding Tax, and Carrier
@@ -188,36 +187,28 @@ export function ShipperInvoiceDetail({
             </div>
           </div>
 
-          {/* Confirmations */}
+          {/* Terms and Conditions */}
           <div className="space-y-4">
-            <label className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                checked={serviceFeesAccepted}
-                onChange={(e) => setServiceFeesAccepted(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-sm">
-                I agree to the {FEES_AND_TAXES.SHIPPER_SERVICE_FEE_RATE * 100}%
-                platform service fee (ETB{" "}
-                {(
-                  invoice.charges.baseRate *
-                  FEES_AND_TAXES.SHIPPER_SERVICE_FEE_RATE
-                ).toLocaleString()}
-                )
-              </span>
-            </label>
-
-            <label className="flex items-start space-x-2">
+            <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-1"
+                className="rounded border-gray-300"
               />
               <span className="text-sm">
-                I understand that this payment is final and cannot be reversed
-                once processed
+                I accept the terms and conditions of payment
+              </span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={serviceFeesAccepted}
+                onChange={(e) => setServiceFeesAccepted(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm">
+                I understand and agree to the service fees
               </span>
             </label>
           </div>
@@ -233,7 +224,7 @@ export function ShipperInvoiceDetail({
                   : "bg-gray-300 cursor-not-allowed text-gray-500"
               }`}
           >
-            Pay ETB {charges.finalAmount.toLocaleString()}
+            Pay ETB {invoice.totalAmount.toLocaleString()}
           </button>
         </div>
       </div>

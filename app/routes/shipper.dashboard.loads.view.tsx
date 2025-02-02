@@ -39,6 +39,8 @@ import { Message } from "~/components/message";
 import ContactShipperView from "~/components/contactshipper";
 import { Alert } from "~/components/Alert";
 import ChatWindow from "~/components/ChatWindow";
+import { InvoiceDetailView } from "~/components/invoice/InvoiceDetailView";
+import { getInvoiceByLoadId } from "~/api/services/invoice.service";
 
 interface Message {
   id: string;
@@ -340,21 +342,13 @@ export default function ViewLoads() {
   };
 
   const handleViewInvoice = (load: any) => {
-    console.log("Handling view invoice for load:", load);
-    try {
-      const existingInvoice = mockInvoices.find(
-        (inv) => inv.loadId === load.loadId.toString()
-      );
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (existingInvoice) {
-        setSelectedInvoice(existingInvoice);
-        setShowInvoice(true);
-      } else {
-        setShowAlert(true);
-      }
-    } catch (error) {
-      console.error("Error handling invoice view:", error);
-    }
+    // Navigate to invoice view with both load ID and load details
+    navigate(`/shipper/dashboard/invoice/${load.loadId}`, {
+      state: { loadDetails: load },
+    });
   };
 
   const handleOpenChat = (carrier: any) => {
@@ -531,12 +525,7 @@ export default function ViewLoads() {
                           {load.loadStatus.toLowerCase() === "delivered" && (
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log("View Invoice button clicked");
-                                handleViewInvoice(load);
-                              }}
+                              onClick={() => handleViewInvoice(load)}
                               className={`${themeClasses.button.secondary} flex items-center px-4 py-2 rounded-md`}
                               style={{ zIndex: 10 }}
                             >
@@ -577,11 +566,21 @@ export default function ViewLoads() {
 
       {/* Invoice Modal */}
       {showInvoice && selectedInvoice && (
-        <ShipperInvoiceDetail
+        <InvoiceDetailView
           invoice={selectedInvoice}
           theme={theme}
+          userType="shipper"
           onClose={() => setShowInvoice(false)}
-          onMessageCarrier={handleOpenChat}
+          onPay={(invoiceId) => {
+            // Handle payment logic
+            console.log("Processing payment for invoice:", invoiceId);
+            // You can navigate to payment page or show payment modal
+          }}
+          onMessageParty={(carrierId) => {
+            setSelectedCarrier(carrierId);
+            setShowContact(true);
+            setShowInvoice(false);
+          }}
         />
       )}
 

@@ -305,19 +305,31 @@ export async function getCarrierInvoices(token: string, carrierId: string) {
   }
 }
 
-export async function getInvoiceByLoadId(token: string, loadId: string) {
+export async function getInvoiceByLoadId(token: string, loadId: number): Promise<Invoice | null> {
   try {
     const response = await fetch(`${baseUrl}invoices/load/${loadId}`, {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
-
-    if (!response.ok) {
-      throw response;
+    console.log("Response:", response);
+    if (response.status !== 200) {
+      if (response.status === 404) {
+        return null;
+      }
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch invoice');
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log("Data:", data);
+    if (!data) {
+      return null;
+    }
+
+    return data;
   } catch (error: any) {
     console.error("Error fetching invoice by load:", error);
     throw error;

@@ -1,3 +1,5 @@
+import { Invoice, InvoiceStatus } from "../models/invoice";
+
 export interface PaymentInfo {
   preferredMethod: 'bank' | 'mobile_money';
   bankDetails?: {
