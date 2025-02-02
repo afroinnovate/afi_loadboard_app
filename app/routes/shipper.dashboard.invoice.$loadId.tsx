@@ -1,5 +1,10 @@
 import { json, LoaderFunction, redirect } from "@remix-run/node";
-import { useLoaderData, useNavigate, useLocation } from "@remix-run/react";
+import {
+  useLoaderData,
+  useNavigate,
+  useLocation,
+  useOutletContext,
+} from "@remix-run/react";
 import { getInvoiceByLoadId } from "~/api/services/invoice.service";
 import { getSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
@@ -7,6 +12,7 @@ import { ShipperInvoiceDetail } from "~/components/invoice/ShipperInvoiceDetail"
 import { Alert } from "~/components/Alert";
 import type { Invoice } from "~/api/models/invoice";
 import type { Load } from "~/api/models/load";
+import type { OutletContext } from "~/routes/shipper.dashboard";
 
 interface LoaderData {
   invoice: Invoice | null;
@@ -68,13 +74,14 @@ export default function InvoiceLoadView() {
   const location = useLocation();
   const navigate = useNavigate();
   const loadDetails = location.state?.loadDetails;
+  const { theme } = useOutletContext<OutletContext>();
 
   if (error || !invoice || !loadDetails) {
     return (
       <Alert
         message={error || "Failed to load invoice details. Please try again."}
         type="warning"
-        theme="light"
+        theme={theme}
         onClose={() => navigate("/shipper/dashboard/loads/view")}
         autoClose={false}
       />
@@ -87,7 +94,7 @@ export default function InvoiceLoadView() {
         invoice={invoice}
         load={loadDetails}
         currentUser={currentUser}
-        theme="light"
+        theme={theme}
         onClose={() => navigate("/shipper/dashboard/loads/view")}
       />
     </div>

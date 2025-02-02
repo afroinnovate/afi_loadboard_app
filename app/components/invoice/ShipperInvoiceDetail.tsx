@@ -52,6 +52,14 @@ const PaymentInfoSection = ({
     section: theme === "dark" ? "bg-gray-700" : "bg-gray-50",
     border: theme === "dark" ? "border-gray-700" : "border-gray-200",
     subtext: theme === "dark" ? "text-gray-400" : "text-gray-600",
+    warning:
+      theme === "dark"
+        ? "bg-yellow-900/30 text-yellow-200"
+        : "bg-yellow-50 text-yellow-800",
+    success:
+      theme === "dark"
+        ? "bg-green-900/30 text-green-200"
+        : "bg-green-100 text-green-800",
   };
 
   const hasPaymentInfo = invoice.paymentMethod || invoice.paymentMethodId;
@@ -65,11 +73,15 @@ const PaymentInfoSection = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Payment Information</h3>
         {hasPaymentInfo ? (
-          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${themeClasses.success}`}
+          >
             Payment Info Available
           </span>
         ) : (
-          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${themeClasses.warning}`}
+          >
             Payment Info Required
           </span>
         )}
@@ -111,15 +123,18 @@ const PaymentInfoSection = ({
           )}
         </div>
       ) : (
-        <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded">
-          <p className="text-yellow-800 dark:text-yellow-200">
+        <div className={`${themeClasses.warning} p-4 rounded`}>
+          <p>
             Payment information is required to process this invoice. Please
             contact the carrier to provide their payment details.
           </p>
           <button
-            className="mt-2 text-sm font-medium text-yellow-800 dark:text-yellow-200 hover:text-yellow-900 dark:hover:text-yellow-100"
+            className={`mt-2 text-sm font-medium ${
+              theme === "dark"
+                ? "text-yellow-200 hover:text-yellow-100"
+                : "text-yellow-800 hover:text-yellow-900"
+            }`}
             onClick={() => {
-              // Implement contact carrier logic
               console.log("Contact carrier for payment info");
             }}
           >
@@ -152,6 +167,14 @@ export function ShipperInvoiceDetail({
       theme === "dark"
         ? "hover:bg-gray-700 text-gray-200"
         : "hover:bg-gray-100 text-gray-700",
+    input:
+      theme === "dark"
+        ? "bg-gray-700 border-gray-600"
+        : "bg-white border-gray-300",
+    checkbox:
+      theme === "dark"
+        ? "bg-gray-700 border-gray-600 checked:bg-green-500"
+        : "bg-white border-gray-300 checked:bg-green-500",
   };
 
   const handlePrint = () => {
@@ -509,7 +532,7 @@ export function ShipperInvoiceDetail({
                   type="checkbox"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-1 rounded border-gray-300"
+                  className={`mt-1 rounded ${themeClasses.checkbox}`}
                 />
                 <span className="text-sm">
                   I confirm that all the information provided is correct and I
@@ -521,7 +544,7 @@ export function ShipperInvoiceDetail({
                   type="checkbox"
                   checked={serviceFeesAccepted}
                   onChange={(e) => setServiceFeesAccepted(e.target.checked)}
-                  className="mt-1 rounded border-gray-300"
+                  className={`mt-1 rounded ${themeClasses.checkbox}`}
                 />
                 <span className="text-sm">
                   I understand and agree to the service fees, VAT, and
@@ -532,7 +555,9 @@ export function ShipperInvoiceDetail({
           </div>
         </div>
 
-        <div className="border-t border-gray-200 p-4 sm:p-6 sticky bottom-0 bg-inherit">
+        <div
+          className={`border-t ${themeClasses.border} p-4 sm:p-6 sticky bottom-0 ${themeClasses.modal}`}
+        >
           <button
             onClick={handlePayment}
             disabled={
@@ -541,7 +566,13 @@ export function ShipperInvoiceDetail({
             className={`w-full py-2 sm:py-3 px-4 rounded-md font-medium transition-colors duration-300 ${
               termsAccepted && serviceFeesAccepted && invoice.paymentMethod
                 ? "bg-green-500 hover:bg-green-600 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : theme === "dark"
+                ? "bg-gray-700 text-gray-500"
+                : "bg-gray-300 text-gray-500"
+            } ${
+              !termsAccepted || !serviceFeesAccepted || !invoice.paymentMethod
+                ? "cursor-not-allowed"
+                : ""
             }`}
           >
             {!invoice.paymentMethod
