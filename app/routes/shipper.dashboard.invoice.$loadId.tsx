@@ -1,9 +1,16 @@
-import { json, LoaderFunction, redirect } from "@remix-run/node";
+import {
+  json,
+  LoaderFunction,
+  redirect,
+  ActionFunction,
+} from "@remix-run/node";
 import {
   useLoaderData,
   useNavigate,
   useLocation,
   useOutletContext,
+  useSubmit,
+  useActionData,
 } from "@remix-run/react";
 import { getInvoiceByLoadId } from "~/api/services/invoice.service";
 import { getSession } from "~/api/services/session";
@@ -13,6 +20,10 @@ import { Alert } from "~/components/Alert";
 import type { Invoice } from "~/api/models/invoice";
 import type { Load } from "~/api/models/load";
 import type { OutletContext } from "~/routes/shipper.dashboard";
+import { processPayment } from "~/api/services/payment.service";
+import { useState, useEffect } from "react";
+import { Receipt } from "~/components/invoice/Receipt";
+import Popup from "~/components/popup";
 
 interface LoaderData {
   invoice: Invoice | null;
@@ -44,15 +55,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
     // Get shipper info from session
     const shipperInfo = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      businessProfile: user.businessProfile || {
-        companyName: "Not provided",
-        address: "Not provided",
-        taxId: "Not provided",
-      },
+      firstName: user.user.firstName,
+      middleName: user.user.middleName,
+      lastName: user.user.lastName,
+      email: user.user.email,
+      phone: user.user.phoneNumber,
     };
 
     return json({
@@ -69,33 +76,108 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   }
 };
 
+export const action: ActionFunction = async ({ request, params }) => {
+  try {
+    const session = await getSession(request.headers.get("Cookie"));
+    const user = session.get(authenticator.sessionKey);
+
+    if (!user) {
+      return json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    const formData = await request.formData();
+    const buttonType = formData.get("_action");
+
+    switch (buttonType) {
+      case "Pay":
+        const invoiceData = JSON.parse(formData.get("invoice") as string);
+        const updatedInvoice = await processPayment(user.token, invoiceData);
+        return json({
+          success: true,
+          message:
+            "Payment processed successfully! Your receipt has been generated.",
+          invoice: updatedInvoice,
+        });
+
+      case "showReceipt":
+        return redirect(`/shipper/dashboard/receipt/${params.loadId}`);
+
+      case "close":
+        return redirect("/shipper/dashboard/loads/view");
+
+      default:
+        return json(
+          {
+            success: false,
+            error: "Invalid action type",
+          },
+          { status: 400 }
+        );
+    }
+  } catch (error: any) {
+    return json(
+      {
+        success: false,
+        error: error.message || "Payment failed. Please try again.",
+      },
+      { status: 500 }
+    );
+  }
+};
+
 export default function InvoiceLoadView() {
   const { invoice, currentUser, error } = useLoaderData<LoaderData>();
   const location = useLocation();
   const navigate = useNavigate();
   const loadDetails = location.state?.loadDetails;
   const { theme } = useOutletContext<OutletContext>();
+  const actionData = useActionData();
+
+  if (actionData?.success) {
+    return (
+      <Popup
+        title="Success"
+        message={actionData.message}
+        type="success"
+        theme={theme}
+        buttonText="Show Receipt"
+        actionValue="showReceipt"
+      />
+    );
+  }
 
   if (error || !invoice || !loadDetails) {
     return (
-      <Alert
+      <Popup
+        title="Warning"
         message={error || "Failed to load invoice details. Please try again."}
         type="warning"
         theme={theme}
-        onClose={() => navigate("/shipper/dashboard/loads/view")}
-        autoClose={false}
+        buttonText="Close"
+        actionValue="close"
       />
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {actionData?.error && (
+        <Popup
+          title="Error"
+          message={actionData.error}
+          type="error"
+          theme={theme}
+          actionValue="close"
+        />
+      )}
       <ShipperInvoiceDetail
         invoice={invoice}
         load={loadDetails}
         currentUser={currentUser}
         theme={theme}
-        onClose={() => navigate("/shipper/dashboard/loads/view")}
       />
     </div>
   );

@@ -7,6 +7,7 @@ interface AlertProps {
   onClose?: () => void;
   autoClose?: boolean;
   duration?: number;
+  buttonText?: string;
 }
 
 export function Alert({
@@ -14,18 +15,29 @@ export function Alert({
   type = "info",
   theme = "light",
   onClose,
-  autoClose = true,
+  autoClose = false,
   duration = 5000,
+  buttonText,
 }: AlertProps) {
+  console.log("Rendering Alert:", { message, type, theme, buttonText });
+
+  if (!message) {
+    console.warn("Alert rendered without message");
+    return null;
+  }
+
   return (
-    <Popup
-      title={type.charAt(0).toUpperCase() + type.slice(1)}
-      message={message}
-      type={type}
-      theme={theme}
-      onClose={onClose}
-      autoClose={autoClose}
-      duration={duration}
-    />
+    <div className="fixed inset-0 z-[100]">
+      <Popup
+        title={type.charAt(0).toUpperCase() + type.slice(1)}
+        message={message}
+        type={type}
+        theme={theme}
+        onClose={onClose}
+        autoClose={autoClose}
+        duration={duration}
+        buttonText={buttonText}
+      />
+    </div>
   );
 }

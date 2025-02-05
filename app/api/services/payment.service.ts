@@ -1,4 +1,6 @@
 import { type PaymentMethod } from "../models/paymentMethod";
+import type { Invoice } from "~/api/models/invoice";
+import { json } from '@remix-run/node';
 
 const baseUrl = "https://api.frieght.afroinnovate.com/api/";
 
@@ -79,5 +81,60 @@ export async function deletePaymentMethod(token: string, paymentMethodId: string
         status: error.status || 500,
       },
     });
+  }
+}
+
+export async function processPayment(token: string, invoice: Invoice) {
+  const transactionId = `TR-${invoice.id}-${invoice.invoiceNumber}`;
+  invoice.transactionId = transactionId;
+  invoice.status = "paid";
+  console.log("invoice ", invoice);
+
+  try {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Create payment request body
+    const paymentData = {
+      ...invoice,
+      status: "paid",
+      transactionId,
+      paymentDate: new Date().toISOString()
+    };
+
+    // In real implementation, this would be an API call to your payment gateway
+    // const response = await fetch(`${baseUrl}payments`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     Authorization: `Bearer ${token}`,
+    //   },
+    //   body: JSON.stringify(paymentData),
+    // });
+
+    // Mock successful payment response
+    const updatedInvoice: Invoice = {
+      ...invoice,
+      ...paymentData
+    };
+
+    // If the response.status of update works
+    // if (response.status === 200) {
+    //   return {
+    //     ...updatedInvoice,
+    //     message: "Payment processed successfully! Your receipt has been generated.",
+    //   };
+    // }
+
+    // In real implementation, make API call to update invoice status
+    // await updateInvoiceStatus(token, invoice.id, updatedInvoice);
+
+    return {
+      ...updatedInvoice,
+      message: "Payment processed successfully! Your receipt has been generated."
+    };
+  } catch (error) {
+    console.error("Payment processing failed:", error);
+    throw new Error("Payment processing failed");
   }
 } 

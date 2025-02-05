@@ -314,7 +314,6 @@ export async function getInvoiceByLoadId(token: string, loadId: number): Promise
         'Content-Type': 'application/json',
       },
     });
-    console.log("Response:", response);
     if (response.status !== 200) {
       if (response.status === 404) {
         return null;
@@ -324,7 +323,6 @@ export async function getInvoiceByLoadId(token: string, loadId: number): Promise
     }
 
     const data = await response.json();
-    console.log("Data:", data);
     if (!data) {
       return null;
     }
