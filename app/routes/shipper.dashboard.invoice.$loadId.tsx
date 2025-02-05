@@ -13,7 +13,7 @@ import {
   useActionData,
 } from "@remix-run/react";
 import { getInvoiceByLoadId } from "~/api/services/invoice.service";
-import { getSession } from "~/api/services/session";
+import { getSession, commitSession } from '~/api/services/session';
 import { authenticator } from "~/api/services/auth.server";
 import { ShipperInvoiceDetail } from "~/components/invoice/ShipperInvoiceDetail";
 import { Alert } from "~/components/Alert";
@@ -103,7 +103,11 @@ export const action: ActionFunction = async ({ request, params }) => {
         });
 
       case "showReceipt":
-        return redirect(`/shipper/dashboard/receipt/${params.loadId}`);
+        return redirect(`/shipper/dashboard/receipt/${params.loadId}`, {
+          headers: {
+            "Set-Cookie": await commitSession(session),
+          },
+        });
 
       case "close":
         return redirect("/shipper/dashboard/loads/view");
