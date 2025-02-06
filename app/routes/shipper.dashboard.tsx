@@ -192,11 +192,14 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function Dashboard() {
   const { user, loads, bidsDict, error } = useLoaderData<{
     user: ShipperUser;
-    loads: any;
+    loads: any[];
     bidsDict: BidObject[];
     error?: { message: string; status: number };
   }>();
   const { theme, timezone } = useOutletContext<OutletContext>();
+
+  // Add debug log
+  console.log("Dashboard loads:", loads);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
@@ -224,9 +227,13 @@ export default function Dashboard() {
   }
 
   const themeClasses = {
-    header: theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200",
+    header:
+      theme === "dark"
+        ? "bg-gray-800 border-gray-700"
+        : "bg-gray-100 border-gray-200",
     headerText: theme === "dark" ? "text-white" : "text-black",
-    headerHover: theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
+    headerHover:
+      theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
     activeLink: theme === "dark" ? "border-blue-400" : "border-blue-600",
     inactiveLink: theme === "dark" ? "text-gray-400" : "text-gray-500",
     welcomeText: theme === "dark" ? "text-green-400" : "text-green-800",
@@ -236,7 +243,9 @@ export default function Dashboard() {
   return (
     <>
       {/* Desktop view setup */}
-      <header className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}>
+      <header
+        className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}
+      >
         <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
@@ -282,11 +291,24 @@ export default function Dashboard() {
       </header>
       <div className="flex pt-16 mt-20">
         <div className="hidden lg:flex top-30">
-          {sidebarOpen && <Sidebar activeSection={activeSection} theme={theme} />}
+          {sidebarOpen && (
+            <Sidebar activeSection={activeSection} theme={theme} />
+          )}
         </div>
-        <main className={`w-full flex justify-center content-center p-3 shadow-lg mt-20 ${themeClasses.main}`}>
-          {location.pathname === "/shipper/dashboard/" && <Overview loads={loads} bidsDict={bidsDict} theme={theme} />}
-          <Outlet context={{ loads, bidsDict, theme, timezone }} />
+        <main
+          className={`w-full flex justify-center content-center p-3 shadow-lg mt-20 ${themeClasses.main}`}
+        >
+          {location.pathname === "/shipper/dashboard/" && (
+            <Overview loads={loads} bidsDict={bidsDict} theme={theme} />
+          )}
+          <Outlet
+            context={{
+              loads,
+              bidsDict,
+              theme,
+              timezone,
+            }}
+          />
         </main>
       </div>
     </>

@@ -266,10 +266,11 @@ const handleInvoiceGeneration = (
     load: {
       origin: load.origin,
       destination: load.destination,
-      deliveryDate: load.deliveryDate,
+      pickupDate: new Date(load.pickupDate).toLocaleDateString(),
+      deliveryDate: new Date(load.deliveryDate).toLocaleDateString(),
       commodity: load.commodity,
-      weight: load.weight,
-      statusChangeDate: currentDate.toISOString(),
+      weight: `${load.weight} kg`,
+      details: load.loadDetails,
     },
     charges: {
       baseRate: Number(load.offerAmount),
