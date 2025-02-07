@@ -40,7 +40,10 @@ import ContactShipperView from "~/components/contactshipper";
 import { Alert } from "~/components/Alert";
 import ChatWindow from "~/components/ChatWindow";
 import { InvoiceDetailView } from "~/components/invoice/InvoiceDetailView";
-import { getInvoiceByLoadId } from "~/api/services/invoice.service";
+import {
+  getInvoiceByLoadId,
+  getShipperInvoices,
+} from "~/api/services/invoice.service";
 
 interface Message {
   id: string;
@@ -74,22 +77,28 @@ export const loader = async ({ request }: any) => {
     }
 
     const shipperRole = shipperProfile.user.businessProfile.shipperRole;
-
     const hasAccess = [
       "independent_shipper",
       "corporate_shipper",
       "govt_shipper",
     ].includes(shipperRole);
 
+    const invoices = await getShipperInvoices(user.token, user.user.id);
+
     return json({
-      profile: shipperProfile,
       hasAccess,
+      profile: shipperProfile,
+      invoices: invoices || [],
     });
   } catch (error: any) {
     if (JSON.parse(error).data.status === 401) {
       return redirect("/logout/");
     }
-    throw error;
+    return json({
+      hasAccess: true,
+      profile: null,
+      invoices: [],
+    });
   }
 };
 
@@ -199,13 +208,16 @@ interface OutletContext {
 }
 
 export default function ViewLoads() {
-  const { hasAccess } = useLoaderData<typeof loader>();
-  const { loads, theme } = useOutletContext<OutletContext>();
+  const { hasAccess, invoices = [] } = useLoaderData<typeof loader>();
+  const { loads = [], theme } = useOutletContext<OutletContext>();
   const actionData = useActionData() as ActionData;
+  const navigate = useNavigate();
+
+  const { hasAccess: hasAccessOutlet, theme: themeOutlet } =
+    useOutletContext<OutletContext>();
+
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLoad, setSelectedLoad]: any = useState(null);
-  const navigation = useNavigation();
-  const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState(searchParams.get("status") || "all");
@@ -351,6 +363,26 @@ export default function ViewLoads() {
     setSelectedCarrier(carrier);
     setShowChatWindow(true);
   };
+
+  // Function to handle invoice/receipt view
+  const handleInvoiceAction = useCallback(
+    (load: any) => {
+      const invoice = invoices.find((inv) => inv.loadId === load.loadId);
+
+      if (!invoice) {
+        return;
+      }
+
+      if (invoice.status.toLowerCase() === "completed") {
+        navigate(`/shipper/dashboard/receipt/${load.loadId}`);
+      } else {
+        navigate(`/shipper/dashboard/invoice/${load.loadId}`, {
+          state: { loadDetails: load },
+        });
+      }
+    },
+    [invoices, navigate]
+  );
 
   return (
     <div className={`container mx-auto px-4 py-2 ${themeClasses.container}`}>
@@ -521,12 +553,16 @@ export default function ViewLoads() {
                           {load.loadStatus.toLowerCase() === "delivered" && (
                             <button
                               type="button"
-                              onClick={() => handleViewInvoice(load)}
+                              onClick={() => handleInvoiceAction(load)}
                               className={`${themeClasses.button.secondary} flex items-center px-4 py-2 rounded-md`}
                               style={{ zIndex: 10 }}
                             >
                               <DocumentTextIcon className="w-5 h-5 mr-2" />
-                              View Invoice
+                              {invoices
+                                .find((inv) => inv.loadId === load.loadId)
+                                ?.status?.toLowerCase() === "completed"
+                                ? "View Receipt"
+                                : "View Invoice"}
                             </button>
                           )}
                           <ActionButton

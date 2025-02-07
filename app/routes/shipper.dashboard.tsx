@@ -189,7 +189,9 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 };
 
-export default function Dashboard() {
+export default function ShipperDashboard() {
+  console.log("ShipperDashboard rendering"); // Debug log
+
   const { user, loads, bidsDict, error } = useLoaderData<{
     user: ShipperUser;
     loads: any[];
@@ -311,6 +313,7 @@ export default function Dashboard() {
           />
         </main>
       </div>
+      {console.log("ShipperDashboard rendered")} {/* Debug log */}
     </>
   );
 }

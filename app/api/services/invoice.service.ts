@@ -212,21 +212,32 @@ export async function createInvoice(token: string, invoice: Omit<Invoice, 'id'>)
 export async function getShipperInvoices(token: string, shipperId: string) {
   try {
     const response = await fetch(`${baseUrl}invoices/shipper/${shipperId}`, {
-      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
 
+    if (response.status === 404) {
+      return [];
+    }
+
     if (response.status !== 200) {
-      throw response;
+      const errorData = await response.json().catch(() => null);
+      throw {
+        status: response.status,
+        data: errorData || { message: "Failed to fetch shipper invoices" }
+      };
     }
 
     const data = await response.json();
     return data as Invoice[];
   } catch (error: any) {
-    // ... existing error handling ...
+    throw JSON.stringify({
+      data: {
+        message: error.data?.message || "Failed to fetch shipper invoices",
+        status: error.status || 500
+      }
+    });
   }
 }
 
