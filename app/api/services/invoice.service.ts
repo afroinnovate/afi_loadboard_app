@@ -321,23 +321,78 @@ export async function deleteInvoice(token: string, invoiceId: string) {
 export async function getCarrierInvoices(token: string, carrierId: string) {
   try {
     const response = await fetch(`${baseUrl}invoices/carrier/${carrierId}`, {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        'accept': '*/*',
+        'Authorization': `Bearer ${token}`
+      }
     });
 
+    // Handle 404 - No invoices found
     if (response.status === 404) {
-      return { invoices: [], message: "No invoices found" };
+      return [];
     }
 
+    // Handle unauthorized
+    if (response.status === 401) {
+      throw JSON.stringify({
+        data: {
+          message: "Unauthorized access. Please login again.",
+          status: 401
+        }
+      });
+    }
+
+    // Handle other non-200 responses
     if (!response.ok) {
-      throw response;
+      throw JSON.stringify({
+        data: {
+          message: "Failed to fetch carrier invoices",
+          status: response.status
+        }
+      });
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Ensure we return an array
+    if (!data) return [];
+
+    // If data is already an array, return it
+    if (Array.isArray(data)) return data;
+
+    // If data has an invoices property that's an array, return that
+    if (data.invoices && Array.isArray(data.invoices)) return data.invoices;
+
+    // If we get here, something unexpected happened
+    console.warn('Unexpected response format from carrier invoices:', data);
+    return [];
+
   } catch (error: any) {
     console.error("Error fetching carrier invoices:", error);
-    throw error;
+
+    // If the error is already formatted correctly, just rethrow it
+    if (typeof error === 'string') {
+      throw error;
+    }
+
+    // Handle network errors
+    if (error.name === 'TypeError' || error.code === 'ECONNREFUSED') {
+      throw JSON.stringify({
+        data: {
+          message: "Unable to connect to the server. Please check your connection.",
+          status: 503
+        }
+      });
+    }
+
+    // Handle any other errors
+    throw JSON.stringify({
+      data: {
+        message: "Failed to fetch carrier invoices",
+        status: 500
+      }
+    });
   }
 }
 

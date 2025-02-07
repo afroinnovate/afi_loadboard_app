@@ -33,6 +33,7 @@ interface CarrierInvoiceDetailProps {
     paymentMethod?: PaymentMethod;
   };
   onClose?: () => void;
+  readOnly?: boolean;
 }
 
 interface FeedbackMessage {
@@ -117,6 +118,7 @@ export function CarrierInvoiceDetail({
   theme,
   actionData,
   onClose,
+  readOnly = false,
 }: CarrierInvoiceDetailProps) {
   const navigate = useNavigate();
   const navigation = useNavigation();
@@ -783,180 +785,185 @@ export function CarrierInvoiceDetail({
           </div>
 
           {/* Updated Confirmations */}
-          <div className="space-y-4">
-            <label className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                checked={carrierInfoConfirmed}
-                onChange={(e) => setCarrierInfoConfirmed(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-sm">
-                I confirm that my payment information is correct and complete
-              </span>
-            </label>
+          {!readOnly && (
+            <div className="space-y-4">
+              <label className="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  checked={carrierInfoConfirmed}
+                  onChange={(e) => setCarrierInfoConfirmed(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-sm">
+                  I confirm that my payment information is correct and complete
+                </span>
+              </label>
 
-            <label className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                checked={taxInfoConfirmed}
-                onChange={(e) => setTaxInfoConfirmed(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-sm">
-                I understand that ETB {deductions.vat.toLocaleString()} (VAT)
-                and ETB {deductions.withholding.toLocaleString()} (Withholding
-                Tax) will be automatically deducted and paid to the government
-              </span>
-            </label>
+              <label className="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  checked={taxInfoConfirmed}
+                  onChange={(e) => setTaxInfoConfirmed(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-sm">
+                  I understand that ETB {deductions.vat.toLocaleString()} (VAT)
+                  and ETB {deductions.withholding.toLocaleString()} (Withholding
+                  Tax) will be automatically deducted and paid to the government
+                </span>
+              </label>
 
-            <label className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                checked={serviceFeesConfirmed}
-                onChange={(e) => setServiceFeesConfirmed(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-sm">
-                I agree to the {FEES_AND_TAXES.SERVICE_FEE_RATE * 100}% platform
-                service fee of ETB {deductions.serviceFee.toLocaleString()}
-              </span>
-            </label>
-          </div>
+              <label className="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  checked={serviceFeesConfirmed}
+                  onChange={(e) => setServiceFeesConfirmed(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-sm">
+                  I agree to the {FEES_AND_TAXES.SERVICE_FEE_RATE * 100}%
+                  platform service fee of ETB{" "}
+                  {deductions.serviceFee.toLocaleString()}
+                </span>
+              </label>
+            </div>
+          )}
 
           {/* Send Button Section */}
-          <Form
-            method="post"
-            onSubmit={(e) => {
-              if (!isPaymentInfoComplete()) {
-                e.preventDefault();
+          {!readOnly && (
+            <Form
+              method="post"
+              onSubmit={(e) => {
+                if (!isPaymentInfoComplete()) {
+                  e.preventDefault();
 
-                // Highlight missing fields
-                const errors: FormErrors = {};
-                if (paymentInfo.preferredMethod === "bank") {
-                  if (!paymentInfo.bankDetails.bankName) {
-                    errors.bankName = "Please enter your bank name";
+                  // Highlight missing fields
+                  const errors: FormErrors = {};
+                  if (paymentInfo.preferredMethod === "bank") {
+                    if (!paymentInfo.bankDetails.bankName) {
+                      errors.bankName = "Please enter your bank name";
+                    }
+                    if (!paymentInfo.bankDetails.accountNumber) {
+                      errors.accountNumber = "Please enter your account number";
+                    }
+                    if (!paymentInfo.bankDetails.accountHolderName) {
+                      errors.accountHolderName =
+                        "Please enter account holder name";
+                    }
+                  } else {
+                    if (!paymentInfo.mobileMoneyDetails.provider) {
+                      errors.provider =
+                        "Please select your mobile money provider";
+                    }
+                    if (!paymentInfo.mobileMoneyDetails.phoneNumber) {
+                      errors.phoneNumber = "Please enter your phone number";
+                    }
+                    if (!paymentInfo.mobileMoneyDetails.accountHolderName) {
+                      errors.accountHolderName =
+                        "Please enter account holder name";
+                    }
                   }
-                  if (!paymentInfo.bankDetails.accountNumber) {
-                    errors.accountNumber = "Please enter your account number";
-                  }
-                  if (!paymentInfo.bankDetails.accountHolderName) {
-                    errors.accountHolderName =
-                      "Please enter account holder name";
-                  }
-                } else {
-                  if (!paymentInfo.mobileMoneyDetails.provider) {
-                    errors.provider =
-                      "Please select your mobile money provider";
-                  }
-                  if (!paymentInfo.mobileMoneyDetails.phoneNumber) {
-                    errors.phoneNumber = "Please enter your phone number";
-                  }
-                  if (!paymentInfo.mobileMoneyDetails.accountHolderName) {
-                    errors.accountHolderName =
-                      "Please enter account holder name";
-                  }
+                  setFormErrors(errors);
+
+                  // Scroll to payment section
+                  paymentSectionRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+
+                  return;
                 }
-                setFormErrors(errors);
-
-                // Scroll to payment section
-                paymentSectionRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "center",
-                });
-
-                return;
-              }
-            }}
-          >
-            <input type="hidden" name="_action" value="publish_invoice" />
-            <input
-              type="hidden"
-              name="loadId"
-              value={initialInvoiceInfo.load.loadId}
-            />
-            <input
-              type="hidden"
-              name="amountDue"
-              value={initialInvoiceInfo.load.offerAmount}
-            />
-            <input
-              type="hidden"
-              name="totalAmount"
-              value={deductions.finalAmount}
-            />
-            <input type="hidden" name="totalVat" value={deductions.vat} />
-            <input
-              type="hidden"
-              name="withholding"
-              value={deductions.withholding}
-            />
-            <input
-              type="hidden"
-              name="serviceFees"
-              value={deductions.serviceFee}
-            />
-            <input type="hidden" name="note" value="" />
-            <input
-              type="hidden"
-              name="paymentMethod"
-              value={JSON.stringify({
-                paymentType: paymentInfo.preferredMethod,
-                carrierId: initialInvoiceInfo.carrier.id,
-                bankName: paymentInfo.bankDetails.bankName,
-                bankAccount: paymentInfo.bankDetails.accountNumber,
-                accountHolderName: paymentInfo.bankDetails.accountHolderName,
-                phoneNumber: "",
-                cardMethod: "",
-                cardType: "",
-                lastFourDigits: "",
-                billingAddress: "",
-              })}
-            />
-            <input
-              type="hidden"
-              name="commodity"
-              value={initialInvoiceInfo.load.commodity}
-            />
-            <input
-              type="hidden"
-              name="origin"
-              value={initialInvoiceInfo.load.origin}
-            />
-            <input
-              type="hidden"
-              name="destination"
-              value={initialInvoiceInfo.load.destination}
-            />
-
-            <button
-              type="submit"
-              disabled={
-                !carrierInfoConfirmed ||
-                !taxInfoConfirmed ||
-                !serviceFeesConfirmed ||
-                isPublishing
-              }
-              className={`w-full py-2 px-4 rounded-md font-medium transition-colors duration-300 flex items-center justify-center
-                ${
-                  carrierInfoConfirmed &&
-                  taxInfoConfirmed &&
-                  serviceFeesConfirmed &&
-                  !isPublishing
-                    ? "bg-orange-500 hover:bg-orange-600 text-white"
-                    : "bg-gray-300 cursor-not-allowed text-gray-500"
-                }`}
+              }}
             >
-              {isPublishing ? (
-                <>
-                  <Loader size={20} className="mr-2" />
-                  Publishing...
-                </>
-              ) : (
-                "Publish Invoice"
-              )}
-            </button>
-          </Form>
+              <input type="hidden" name="_action" value="publish_invoice" />
+              <input
+                type="hidden"
+                name="loadId"
+                value={initialInvoiceInfo.load.loadId}
+              />
+              <input
+                type="hidden"
+                name="amountDue"
+                value={initialInvoiceInfo.load.offerAmount}
+              />
+              <input
+                type="hidden"
+                name="totalAmount"
+                value={deductions.finalAmount}
+              />
+              <input type="hidden" name="totalVat" value={deductions.vat} />
+              <input
+                type="hidden"
+                name="withholding"
+                value={deductions.withholding}
+              />
+              <input
+                type="hidden"
+                name="serviceFees"
+                value={deductions.serviceFee}
+              />
+              <input type="hidden" name="note" value="" />
+              <input
+                type="hidden"
+                name="paymentMethod"
+                value={JSON.stringify({
+                  paymentType: paymentInfo.preferredMethod,
+                  carrierId: initialInvoiceInfo.carrier.id,
+                  bankName: paymentInfo.bankDetails.bankName,
+                  bankAccount: paymentInfo.bankDetails.accountNumber,
+                  accountHolderName: paymentInfo.bankDetails.accountHolderName,
+                  phoneNumber: "",
+                  cardMethod: "",
+                  cardType: "",
+                  lastFourDigits: "",
+                  billingAddress: "",
+                })}
+              />
+              <input
+                type="hidden"
+                name="commodity"
+                value={initialInvoiceInfo.load.commodity}
+              />
+              <input
+                type="hidden"
+                name="origin"
+                value={initialInvoiceInfo.load.origin}
+              />
+              <input
+                type="hidden"
+                name="destination"
+                value={initialInvoiceInfo.load.destination}
+              />
+
+              <button
+                type="submit"
+                disabled={
+                  !carrierInfoConfirmed ||
+                  !taxInfoConfirmed ||
+                  !serviceFeesConfirmed ||
+                  isPublishing
+                }
+                className={`w-full py-2 px-4 rounded-md font-medium transition-colors duration-300 flex items-center justify-center
+                  ${
+                    carrierInfoConfirmed &&
+                    taxInfoConfirmed &&
+                    serviceFeesConfirmed &&
+                    !isPublishing
+                      ? "bg-orange-500 hover:bg-orange-600 text-white"
+                      : "bg-gray-300 cursor-not-allowed text-gray-500"
+                  }`}
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader size={20} className="mr-2" />
+                    Publishing...
+                  </>
+                ) : (
+                  "Publish Invoice"
+                )}
+              </button>
+            </Form>
+          )}
         </div>
 
         {/* Add feedback modal */}

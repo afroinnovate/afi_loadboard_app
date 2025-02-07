@@ -12,6 +12,7 @@ import {
   useOutletContext,
 } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
+import { getCarrierInvoices } from "~/api/services/invoice.service";
 import { Disclosure } from "@headlessui/react";
 import { commitSession, destroySession, getSession } from "../api/services/session";
 import "flowbite";
@@ -21,6 +22,7 @@ import {
   CurrencyDollarIcon,
   ChatBubbleLeftIcon,
   DocumentTextIcon,
+  XMarkIcon,
 } from "@heroicons/react/20/solid";
 import AccessDenied from "~/components/accessdenied";
 import BidAdjustmentView from "~/components/bidadjustmentview";
@@ -32,6 +34,7 @@ import { ErrorBoundary } from "~/components/errorBoundary";
 import { LoadInfoDisplay } from "~/components/loadViewHelpers";
 import { useMemo, useState, useEffect } from "react";
 import ChatWindow from "~/components/ChatWindow";
+import { CarrierInvoiceDetail } from "~/components/invoice/CarrierInvoiceDetail";
 
 export const meta: MetaFunction = () => {
   return [
@@ -46,19 +49,26 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
-
     const carrierProfile: any = session.get("carrier");
-    const session_expiration: any = process.env.SESSION_EXPIRATION;
-    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
-    if (isNaN(EXPIRES_IN)) {
-      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
-    }
 
     if (!user) {
       return redirect("/logout/");
     }
 
-    const expires = new Date(Date.now() + EXPIRES_IN);
+    if (!carrierProfile) {
+      return json({ 
+        error: "Carrier profile not found",
+        loads: [],
+        invoices: [],
+        carrierProfile: null 
+      });
+    }
+
+    const session_expiration: any = process.env.SESSION_EXPIRATION;
+    const EXPIRES_IN = parseInt(session_expiration) * 1000; // Convert seconds to milliseconds
+    if (isNaN(EXPIRES_IN)) {
+      throw new Error("SESSION_EXPIRATION is not set or is not a valid number");
+    }
 
     if (user?.user.userType === "shipper") {
       return redirect("/shipper/dashboard/");
@@ -74,32 +84,48 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    // Get the loads
-    const response = await GetLoads(user.token);
+    // Get both loads and invoices
+    try {
+      const [loadsResponse, invoicesResponse] = await Promise.all([
+        GetLoads(user.token),
+        getCarrierInvoices(user.token, carrierProfile.id)
+      ]);
 
-    if (typeof response === "string") {
-      throw response;
+      return json({
+        loads: loadsResponse,
+        carrierProfile,
+        invoices: Array.isArray(invoicesResponse) ? invoicesResponse : [],
+        token: user.token,
+        error: null
+      });
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      return json({
+        loads: [],
+        carrierProfile,
+        invoices: [],
+        token: user.token,
+        error: "Failed to fetch data. Please try again."
+      });
     }
-
-    return json(
-      { loads: response, carrierProfile: carrierProfile },
-      {
-        headers: {
-          "Set-Cookie": await commitSession(session, { expires }),
-        },
-      }
-    );
   } catch (error: any) {
-    if (JSON.parse(error).data.status == 401) {
-      const session = await getSession(request.headers.get("Cookie"));
-
+    console.error("Loader error:", error);
+    const session = await getSession(request.headers.get("Cookie"));
+    
+    if (error.status === 401) {
       return redirect("/login/", {
         headers: {
           "Set-Cookie": await destroySession(session),
         },
       });
     }
-    throw error;
+
+    return json({ 
+      error: "An unexpected error occurred",
+      loads: [],
+      invoices: [],
+      carrierProfile: null 
+    });
   }
 };
 
@@ -114,38 +140,60 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     const session = await getSession(request.headers.get("Cookie"));
     const user = session.get(authenticator.sessionKey);
+    const carrierProfile = session.get("carrier");
 
     if (!user) {
-      return redirect("/login/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/login/");
     }
-
-    let carrierProfile: any = session.get("carrier");
-    carrierProfile.token = user.token;
 
     const formData = await request.formData();
     const actionType = formData.get("_action");
-    const bidLoadId = formData.get("bidLoadId");
-    const shipper = JSON.parse(formData.get("shipper") as string); // Parse the shipper info
-    const contactLoad = JSON.parse(formData.get("load") as string); // Parse the shipper info
-    // console.log("bidLoadId", bidLoadId, "actionType", actionType);
+
     switch (actionType) {
+      case "view_invoice": {
+        const invoiceId = formData.get("invoiceId");
+        const loadId = formData.get("loadId");
+        const load = JSON.parse(formData.get("load") as string);
+        const shipper = JSON.parse(formData.get("shipper") as string);
+        
+        // Construct the invoice info with all required data
+        return json({
+          success: true,
+          message: "viewMode",
+          invoiceData: {
+            load,
+            shipper: {
+              name: `${shipper.firstName} ${shipper.lastName}`,
+              companyName: shipper.businessProfile?.companyName || "Company Name Pending",
+              address: shipper.businessProfile?.address || "Address pending",
+              taxId: shipper.businessProfile?.businessRegistrationNumber || "Tax ID pending",
+              email: shipper.email,
+            },
+            carrier: {
+              name: `${carrierProfile.user.firstName} ${carrierProfile.user.lastName}`,
+              companyName: carrierProfile.user.businessProfile?.companyName || "Company Name Pending",
+              address: carrierProfile.user.businessProfile?.address || "Address pending",
+              taxId: carrierProfile.user.businessProfile?.businessRegistrationNumber || "Tax ID pending",
+              email: carrierProfile.user.email,
+            },
+            invoice: formData.get("invoice") ? JSON.parse(formData.get("invoice") as string) : null
+          }
+        });
+      }
+
       case "contact":
         return json({
           error: "",
           message: "contactMode",
-          contactLoadShipper: shipper,
-          contactLoad: contactLoad,
+          contactLoadShipper: formData.get("shipper"),
+          contactLoad: formData.get("load"),
         });
 
       case "bid":
         return json({
           error: "",
           message: "bidMode",
-          loadIdToBeBid: bidLoadId,
+          loadIdToBeBid: formData.get("bidLoadId"),
           offerAmount: formData.get("offerAmount"),
         });
 
@@ -153,7 +201,7 @@ export const action: ActionFunction = async ({ request }) => {
         const bidAmount = formData.get("bidAmount");
         const bidDetails = await manageBidProcess(
           carrierProfile,
-          Number(bidLoadId),
+          Number(formData.get("bidLoadId")),
           Number(bidAmount)
         );
         return json({
@@ -189,25 +237,14 @@ export const action: ActionFunction = async ({ request }) => {
       }
 
       default:
-        throw new Error("Invalid action");
+        return json({ error: "Invalid action" }, { status: 400 });
     }
-  } catch (error: any) {
-    let errorMessage = "Failed to process bid";
-    if (error instanceof SyntaxError) {
-      console.error("Syntax error:", error);
-    } else {
-      try {
-        const parsedError = JSON.parse(error);
-        if (parsedError.data.status == 401) {
-          return redirect("/logout/");
-        }
-        errorMessage = parsedError.message || errorMessage;
-      } catch (parseError) {
-        console.error("Error parsing JSON:", parseError);
-      }
-    }
-    console.error("Bid process error:", error);
-    return json({ error: errorMessage }, { status: 500 });
+  } catch (error) {
+    console.error("Action error:", error);
+    return json({ 
+      error: "Failed to process request",
+      details: error.message 
+    }, { status: 500 });
   }
 };
 
@@ -303,6 +340,26 @@ export default function CarrierViewLoads() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
   const { theme, loads } = useOutletContext<OutletContext>();
+  const { invoices, carrierProfile, error: loaderError } = loaderData;
+  const [showInvoiceView, setShowInvoiceView] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  // Early return if there's no carrier profile
+  if (!carrierProfile || !carrierProfile.user) {
+    return (
+      <div className="p-4 text-center">
+        <div className="p-4 mb-2 text-center text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-300">
+          {loaderError || "Unable to load carrier profile. Please try again later."}
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
 
   // console.log("carrier context loads: ", loads);
   // Memoize the error and info messages
@@ -338,8 +395,7 @@ export default function CarrierViewLoads() {
   }, [loaderData, actionData]);
 
   // Update the memoized values to use context loads
-  const { carrierProfile, additionalInfo } = useMemo(() => {
-    let carrierProfileData: any = loaderData?.carrierProfile || {};
+  const { additionalInfo } = useMemo(() => {
     let additionalInfoMsg = "";
 
     if (!loads || loads.length === 0) {
@@ -347,19 +403,15 @@ export default function CarrierViewLoads() {
     }
 
     return {
-      carrierProfile: carrierProfileData,
       additionalInfo: additionalInfoMsg,
     };
   }, [loaderData, loads]);
 
   const carrierHasAccess =
-    carrierProfile.user.userType === "carrier" &&
-    carrierProfile.user.businessProfile.carrierRole !== null
-      ? true
-      : false;
+    carrierProfile?.user?.userType === "carrier" &&
+    carrierProfile?.user?.businessProfile?.carrierRole !== null;
 
-  const carrierAccess =
-    carrierProfile.user.userType === "carrier" ? true : false;
+  const carrierAccess = carrierProfile?.user?.userType === "carrier";
 
   let contactMode =
     actionData && actionData.message === "contactMode"
@@ -410,8 +462,91 @@ export default function CarrierViewLoads() {
     []
   );
 
+  // Function to check if a load has an invoice
+  const getLoadInvoice = (loadId: number) => {
+    return invoices.find((invoice: any) => invoice.loadId === loadId);
+  };
+
+  // Handle invoice button click
+  const handleInvoiceAction = (load: any, existingInvoice: any) => {
+    const form = new FormData();
+    form.append("_action", "view_invoice");
+    form.append("loadId", load.loadId);
+    form.append("load", JSON.stringify(load));
+    form.append("shipper", JSON.stringify(load.createdBy));
+    
+    if (existingInvoice) {
+      form.append("invoice", JSON.stringify(existingInvoice));
+      form.append("invoiceId", existingInvoice.id);
+    }
+
+    submit(form, { method: "post" });
+  };
+
+  // Update the button rendering in the load card
+  const renderInvoiceButton = (load: any) => {
+    if (load.loadStatus.toLowerCase() !== "delivered") {
+      return null;
+    }
+
+    const existingInvoice = getLoadInvoice(load.loadId);
+    const buttonClass = `w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`;
+
+    return (
+      <button
+        type="button"
+        onClick={() => handleInvoiceAction(load, existingInvoice)}
+        className={buttonClass}
+        aria-label={existingInvoice ? "View Invoice" : "Generate Invoice"}
+      >
+        <DocumentTextIcon className="w-5 h-5 mr-2" />
+        {existingInvoice ? "View Invoice" : "Generate Invoice"}
+      </button>
+    );
+  };
+
+  // Add invoice view modal
+  const InvoiceViewModal = () => {
+    if (!showInvoiceView || !selectedInvoice) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className={`${themeClasses.modal} w-full max-w-4xl rounded-lg shadow-xl p-6 m-4 max-h-[90vh] overflow-y-auto`}>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold">Invoice Details</h2>
+            <button
+              onClick={() => {
+                setShowInvoiceView(false);
+                setSelectedInvoice(null);
+              }}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
+
+          <CarrierInvoiceDetail
+            invoiceInfo={{
+              load: loads.find((l: any) => l.loadId === selectedInvoice.loadId),
+              shipper: selectedInvoice.shipper,
+              carrier: selectedInvoice.carrier,
+              invoice: selectedInvoice
+            }}
+            token={loaderData.token}
+            theme={theme}
+            readOnly={true}
+            onClose={() => {
+              setShowInvoiceView(false);
+              setSelectedInvoice(null);
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
+
   // Conditional rendering for access denied or valid dashboard
-  if (carrierProfile.user.userType !== "carrier") {
+  if (carrierProfile?.user?.userType !== "carrier") {
     return (
       <AccessDenied
         returnUrl="/"
@@ -423,8 +558,7 @@ export default function CarrierViewLoads() {
   const currency = "ETB";
 
   const themeClasses = {
-    container:
-      theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
+    container: theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
     card: theme === "dark" ? "bg-gray-700" : "bg-gray-100",
     button: {
       primary:
@@ -445,6 +579,7 @@ export default function CarrierViewLoads() {
       secondary: theme === "dark" ? "text-gray-300" : "text-gray-600",
     },
     heading: theme === "dark" ? "text-white" : "text-green-800",
+    modal: theme === "dark" ? "bg-gray-800" : "bg-white",
   };
 
   return (
@@ -480,7 +615,7 @@ export default function CarrierViewLoads() {
                   <ContactShipperView
                     shipper={contactLoadShipper}
                     load={contactLoad}
-                    onClose={() => setShowContactShipper(false)}
+                    onClose={() => {}}
                     onChat={() => handleOpenChat(contactLoadShipper)}
                   />
                 )}
@@ -622,45 +757,7 @@ export default function CarrierViewLoads() {
                         </form>
 
                         {/* Generate Invoice button - only for delivered loads */}
-                        {load.loadStatus.toLowerCase() === "delivered" && (
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleInvoiceGeneration(load, carrierProfile, e)
-                            }
-                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`}
-                            aria-label="Generate Invoice"
-                          >
-                            <DocumentTextIcon className="w-5 h-5 mr-2" />
-                            Generate Invoice
-                          </button>
-                        )}
-
-                        {/* Place Bid button - only for open loads */}
-                        {load.loadStatus.toLowerCase() === "open" && (
-                          <form method="post" className="w-full sm:w-auto">
-                            <input
-                              type="hidden"
-                              name="bidLoadId"
-                              value={load.loadId}
-                            />
-                            <input
-                              type="hidden"
-                              name="offerAmount"
-                              value={load.offerAmount}
-                            />
-                            <button
-                              type="submit"
-                              name="_action"
-                              value="bid"
-                              className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-orange-500 hover:text-white focus:outline-none`}
-                              aria-label="Place Bid"
-                            >
-                              <CurrencyDollarIcon className="w-5 h-5 mr-2" />
-                              Place a Bid
-                            </button>
-                          </form>
-                        )}
+                        {renderInvoiceButton(load)}
                       </>
                     )}
                   </div>
@@ -683,6 +780,9 @@ export default function CarrierViewLoads() {
         }
         messages={chatMessages}
       />
+
+      {/* Add the invoice view modal */}
+      <InvoiceViewModal />
     </div>
   );
 }
