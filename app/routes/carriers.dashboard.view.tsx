@@ -10,11 +10,16 @@ import {
   useActionData,
   useLoaderData,
   useOutletContext,
+  useNavigate,
 } from "@remix-run/react";
 import { GetLoads } from "~/api/services/load.service";
 import { getCarrierInvoices } from "~/api/services/invoice.service";
 import { Disclosure } from "@headlessui/react";
-import { commitSession, destroySession, getSession } from "../api/services/session";
+import {
+  commitSession,
+  destroySession,
+  getSession,
+} from "../api/services/session";
 import "flowbite";
 import {
   ChevronUpIcon,
@@ -56,11 +61,11 @@ export const loader: LoaderFunction = async ({ request }) => {
     }
 
     if (!carrierProfile) {
-      return json({ 
+      return json({
         error: "Carrier profile not found",
         loads: [],
         invoices: [],
-        carrierProfile: null 
+        carrierProfile: null,
       });
     }
 
@@ -88,7 +93,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     try {
       const [loadsResponse, invoicesResponse] = await Promise.all([
         GetLoads(user.token),
-        getCarrierInvoices(user.token, carrierProfile.id)
+        getCarrierInvoices(user.token, carrierProfile.id),
       ]);
 
       return json({
@@ -96,7 +101,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         carrierProfile,
         invoices: Array.isArray(invoicesResponse) ? invoicesResponse : [],
         token: user.token,
-        error: null
+        error: null,
       });
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -105,13 +110,13 @@ export const loader: LoaderFunction = async ({ request }) => {
         carrierProfile,
         invoices: [],
         token: user.token,
-        error: "Failed to fetch data. Please try again."
+        error: "Failed to fetch data. Please try again.",
       });
     }
   } catch (error: any) {
     console.error("Loader error:", error);
     const session = await getSession(request.headers.get("Cookie"));
-    
+
     if (error.status === 401) {
       return redirect("/login/", {
         headers: {
@@ -120,11 +125,11 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    return json({ 
+    return json({
       error: "An unexpected error occurred",
       loads: [],
       invoices: [],
-      carrierProfile: null 
+      carrierProfile: null,
     });
   }
 };
@@ -155,7 +160,7 @@ export const action: ActionFunction = async ({ request }) => {
         const loadId = formData.get("loadId");
         const load = JSON.parse(formData.get("load") as string);
         const shipper = JSON.parse(formData.get("shipper") as string);
-        
+
         // Construct the invoice info with all required data
         return json({
           success: true,
@@ -164,20 +169,31 @@ export const action: ActionFunction = async ({ request }) => {
             load,
             shipper: {
               name: `${shipper.firstName} ${shipper.lastName}`,
-              companyName: shipper.businessProfile?.companyName || "Company Name Pending",
+              companyName:
+                shipper.businessProfile?.companyName || "Company Name Pending",
               address: shipper.businessProfile?.address || "Address pending",
-              taxId: shipper.businessProfile?.businessRegistrationNumber || "Tax ID pending",
+              taxId:
+                shipper.businessProfile?.businessRegistrationNumber ||
+                "Tax ID pending",
               email: shipper.email,
             },
             carrier: {
               name: `${carrierProfile.user.firstName} ${carrierProfile.user.lastName}`,
-              companyName: carrierProfile.user.businessProfile?.companyName || "Company Name Pending",
-              address: carrierProfile.user.businessProfile?.address || "Address pending",
-              taxId: carrierProfile.user.businessProfile?.businessRegistrationNumber || "Tax ID pending",
+              companyName:
+                carrierProfile.user.businessProfile?.companyName ||
+                "Company Name Pending",
+              address:
+                carrierProfile.user.businessProfile?.address ||
+                "Address pending",
+              taxId:
+                carrierProfile.user.businessProfile
+                  ?.businessRegistrationNumber || "Tax ID pending",
               email: carrierProfile.user.email,
             },
-            invoice: formData.get("invoice") ? JSON.parse(formData.get("invoice") as string) : null
-          }
+            invoice: formData.get("invoice")
+              ? JSON.parse(formData.get("invoice") as string)
+              : null,
+          },
         });
       }
 
@@ -241,10 +257,13 @@ export const action: ActionFunction = async ({ request }) => {
     }
   } catch (error) {
     console.error("Action error:", error);
-    return json({ 
-      error: "Failed to process request",
-      details: error.message 
-    }, { status: 500 });
+    return json(
+      {
+        error: "Failed to process request",
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 };
 
@@ -343,15 +362,17 @@ export default function CarrierViewLoads() {
   const { invoices, carrierProfile, error: loaderError } = loaderData;
   const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const navigate = useNavigate();
 
   // Early return if there's no carrier profile
   if (!carrierProfile || !carrierProfile.user) {
     return (
       <div className="p-4 text-center">
         <div className="p-4 mb-2 text-center text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-300">
-          {loaderError || "Unable to load carrier profile. Please try again later."}
+          {loaderError ||
+            "Unable to load carrier profile. Please try again later."}
         </div>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
@@ -467,37 +488,30 @@ export default function CarrierViewLoads() {
     return invoices.find((invoice: any) => invoice.loadId === loadId);
   };
 
-  // Handle invoice button click
+  // Update handleInvoiceAction to use navigation
   const handleInvoiceAction = (load: any, existingInvoice: any) => {
-    const form = new FormData();
-    form.append("_action", "view_invoice");
-    form.append("loadId", load.loadId);
-    form.append("load", JSON.stringify(load));
-    form.append("shipper", JSON.stringify(load.createdBy));
-    
     if (existingInvoice) {
-      form.append("invoice", JSON.stringify(existingInvoice));
-      form.append("invoiceId", existingInvoice.id);
+      // Navigate to view/edit route for existing invoice
+      navigate(`/carriers/dashboard/invoice/view/${existingInvoice.id}`);
+    } else {
+      // Navigate to generate invoice route
+      navigate(`/carriers/dashboard/invoice/${load.loadId}`);
     }
-
-    submit(form, { method: "post" });
   };
 
-  // Update the button rendering in the load card
+  // Update renderInvoiceButton to show appropriate text
   const renderInvoiceButton = (load: any) => {
     if (load.loadStatus.toLowerCase() !== "delivered") {
       return null;
     }
 
     const existingInvoice = getLoadInvoice(load.loadId);
-    const buttonClass = `w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`;
 
     return (
       <button
         type="button"
         onClick={() => handleInvoiceAction(load, existingInvoice)}
-        className={buttonClass}
-        aria-label={existingInvoice ? "View Invoice" : "Generate Invoice"}
+        className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`}
       >
         <DocumentTextIcon className="w-5 h-5 mr-2" />
         {existingInvoice ? "View Invoice" : "Generate Invoice"}
@@ -511,7 +525,9 @@ export default function CarrierViewLoads() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className={`${themeClasses.modal} w-full max-w-4xl rounded-lg shadow-xl p-6 m-4 max-h-[90vh] overflow-y-auto`}>
+        <div
+          className={`${themeClasses.modal} w-full max-w-4xl rounded-lg shadow-xl p-6 m-4 max-h-[90vh] overflow-y-auto`}
+        >
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Invoice Details</h2>
             <button
@@ -530,7 +546,7 @@ export default function CarrierViewLoads() {
               load: loads.find((l: any) => l.loadId === selectedInvoice.loadId),
               shipper: selectedInvoice.shipper,
               carrier: selectedInvoice.carrier,
-              invoice: selectedInvoice
+              invoice: selectedInvoice,
             }}
             token={loaderData.token}
             theme={theme}
@@ -558,7 +574,8 @@ export default function CarrierViewLoads() {
   const currency = "ETB";
 
   const themeClasses = {
-    container: theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
+    container:
+      theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
     card: theme === "dark" ? "bg-gray-700" : "bg-gray-100",
     button: {
       primary:
