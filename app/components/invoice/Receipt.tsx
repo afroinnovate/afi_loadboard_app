@@ -32,21 +32,23 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
   };
 
   return (
-    <div className={`${themeClasses.container} p-6`}>
+    <div className={`${themeClasses.container} p-6 receipt-content min-h-full`}>
       {/* Header with Logo */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center">
-          <img 
-            src="/logo2.ico" 
-            alt="AfroInnovate Logo" 
-            className="h-10 w-auto mr-2" 
+          <img
+            src="/logo2.ico"
+            alt="AfroInnovate Logo"
+            className="h-10 w-auto mr-2"
           />
           <div>
-            <h1 className="text-2xl font-bold text-orange-500">AFI LoadBoard</h1>
+            <h1 className="text-2xl font-bold text-orange-500">
+              AFI LoadBoard
+            </h1>
             <p className="text-sm text-gray-500">www.afiloadboard.com</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <Form method="post">
             <button
               type="submit"
@@ -94,7 +96,11 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
           </div>
           <div className="text-right">
             <p className="font-semibold">Payment Date:</p>
-            <p>{new Date(invoice.paymentDate || invoice.issueDate).toLocaleDateString()}</p>
+            <p>
+              {new Date(
+                invoice.paymentDate || invoice.issueDate
+              ).toLocaleDateString()}
+            </p>
             <p className="mt-2 font-semibold">Due Date:</p>
             <p>{new Date(invoice.dueDate).toLocaleDateString()}</p>
           </div>
@@ -106,7 +112,9 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
         <div className={`${themeClasses.header} p-4 rounded-lg`}>
           <h3 className="font-semibold mb-2">From (Carrier)</h3>
           <p>{invoice.carrier?.businessProfile?.companyName}</p>
-          <p>{invoice.carrier?.firstName} {invoice.carrier?.lastName}</p>
+          <p>
+            {invoice.carrier?.firstName} {invoice.carrier?.lastName}
+          </p>
           <p>{invoice.carrier?.email}</p>
           <p>{invoice.carrier?.phone}</p>
           {invoice.carrier?.businessProfile?.address && (
@@ -116,7 +124,9 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
         <div className={`${themeClasses.header} p-4 rounded-lg`}>
           <h3 className="font-semibold mb-2">Load Details</h3>
           <p>Load ID: {load.loadId}</p>
-          <p>Route: {load.origin} → {load.destination}</p>
+          <p>
+            Route: {load.origin} → {load.destination}
+          </p>
           <p>Commodity: {load.commodity}</p>
           <p>Weight: {load.weight} kg</p>
         </div>
@@ -157,7 +167,9 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
                   <p>Bank: {invoice.paymentMethod.bankName}</p>
                 )}
                 {invoice.paymentMethod.accountHolderName && (
-                  <p>Account Holder: {invoice.paymentMethod.accountHolderName}</p>
+                  <p>
+                    Account Holder: {invoice.paymentMethod.accountHolderName}
+                  </p>
                 )}
               </>
             )}
@@ -169,7 +181,9 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
       <div className="mt-8 pt-4 border-t text-center text-sm text-gray-500">
         <p>Thank you for your business!</p>
         <p>For any questions, please contact support@afiloadboard.com</p>
-        <p className="mt-2">© {new Date().getFullYear()} AFI LoadBoard. All rights reserved.</p>
+        <p className="mt-2">
+          © {new Date().getFullYear()} AFI LoadBoard. All rights reserved.
+        </p>
       </div>
     </div>
   );

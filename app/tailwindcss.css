@@ -1337,6 +1337,10 @@ input[type="range"]::-ms-fill-lower {
   min-height: 100vh;
 }
 
+.min-h-full {
+  min-height: 100%;
+}
+
 .w-1\/2 {
   width: 50%;
 }
@@ -3665,5 +3669,11 @@ input[type="range"]::-ms-fill-lower {
   .lg\:px-8 {
     padding-left: 2rem;
     padding-right: 2rem;
+  }
+}
+
+@media print {
+  .print\:hidden {
+    display: none;
   }
 }

@@ -21,6 +21,7 @@ import { commitSession, getSession } from "./api/services/session";
 import Header from "./components/headers";
 import { authenticator } from "./api/services/auth.server";
 import { ErrorBoundary } from "./components/errorBoundary";
+import printStyles from "~/styles/print.css";
 
 export const meta: MetaFunction = () => {
   return [
@@ -33,6 +34,7 @@ export const meta: MetaFunction = () => {
 
 export const links: LinksFunction = () => [
   ...(rootStyle ? [{ rel: "stylesheet", href: rootStyle }] : []),
+  { rel: "stylesheet", href: printStyles },
 ];
 
 export const loader: LoaderFunction = async ({ request }) => {

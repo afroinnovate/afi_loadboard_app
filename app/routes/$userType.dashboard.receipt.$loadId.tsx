@@ -69,7 +69,6 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       phone: user.user.phoneNumber,
     };
 
-    console.log("Getting invoice:", invoice);
     return json({
       invoice,
       currentUser: userInfo,

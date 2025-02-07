@@ -4,13 +4,20 @@ import {
   redirect,
   ActionFunction,
 } from "@remix-run/node";
-import { useLoaderData, useNavigate, useOutletContext } from "@remix-run/react";
+import {
+  useLoaderData,
+  useNavigate,
+  useOutletContext,
+  useActionData,
+} from "@remix-run/react";
 import { getInvoiceByLoadId } from "~/api/services/invoice.service";
 import { getSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
 import { Receipt } from "~/components/invoice/Receipt";
 import type { Invoice } from "~/api/models/invoice";
 import type { OutletContext as ShipperDashboardContext } from "~/routes/shipper.dashboard";
+import { useEffect } from "react";
+import { Form } from "@remix-run/react";
 
 interface OutletContext extends ShipperDashboardContext {
   loads: any[];
@@ -45,7 +52,6 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
   try {
     const invoice = await getInvoiceByLoadId(user.token, Number(params.loadId));
-    console.log("Getting invoice:", invoice);
 
     if (!invoice) {
       throw new Error("Invoice not found");
@@ -82,41 +88,34 @@ export const action: ActionFunction = async ({ request }) => {
 
   switch (buttonType) {
     case "close":
-      return redirect("/shipper/dashboard/invoices");
+      return redirect("/shipper/dashboard/loads/view");
     case "print":
-      // Handle print action if needed
-      return null;
     case "download":
-      // Handle download action if needed
-      return null;
+      // Both print and download will use browser's print functionality
+      return json({ action: buttonType });
     default:
       return null;
   }
 };
 
 export default function ShipperReceiptView() {
-  console.log("ShipperReceiptView rendering...");
   const { invoice, currentUser, loadId, error } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
-  const outletContext = useOutletContext<OutletContext>();
-  const { loads, theme } = outletContext;
+  const { loads, theme } = useOutletContext<OutletContext>();
+  const actionData = useActionData();
 
-  // Add debug logs
-  console.log("Outlet Context:", outletContext);
-  console.log("Available loads:", loads);
-
-  // Find load details from context using loadId
   const loadDetails = loads?.find((load) => load.loadId === Number(loadId));
-  console.log("LoadID being searched:", loadId);
-  console.log("Load details found:", loadDetails);
+
+  // Handle print/download action
+  useEffect(() => {
+    if (actionData?.action === "print" || actionData?.action === "download") {
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    }
+  }, [actionData]);
 
   if (error || !invoice || !loadDetails) {
-    console.log("Error condition met:", {
-      error,
-      hasInvoice: !!invoice,
-      hasLoadDetails: !!loadDetails,
-      loadsLength: loads?.length,
-    });
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">

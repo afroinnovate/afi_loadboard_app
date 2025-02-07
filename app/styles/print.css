@@ -1,0 +1,47 @@
+@media print {
+  /* Reset page breaks and overflow */
+  html, body {
+    height: 100%;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything except receipt */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show receipt content */
+  .receipt-content,
+  .receipt-content * {
+    visibility: visible !important;
+    overflow: visible !important;
+  }
+
+  /* Position receipt for printing */
+  .receipt-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Ensure proper page breaks */
+  .receipt-content {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Hide UI elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Set margins and background */
+  @page {
+    margin: 0.5cm;
+    size: auto;
+  }
+} 
