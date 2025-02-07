@@ -16,7 +16,7 @@ export function Alert({
   theme = "light",
   onClose,
   autoClose = false,
-  duration = 5000,
+  duration = 100,
   buttonText,
 }: AlertProps) {
   console.log("Rendering Alert:", { message, type, theme, buttonText });

@@ -48,6 +48,8 @@ export interface Invoice {
   createdAt: string;
   note: string;
   transactionId: string;
+  transactionDate: string;
+  transactionStatus: string;
   paymentMethod: PaymentMethod;
 }
 

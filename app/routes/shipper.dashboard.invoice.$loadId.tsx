@@ -12,23 +12,24 @@ import {
   useSubmit,
   useActionData,
 } from "@remix-run/react";
-import { getInvoiceByLoadId } from "~/api/services/invoice.service";
-import { getSession, commitSession } from '~/api/services/session';
+import {
+  getInvoiceByLoadId,
+  updateInvoice,
+} from "~/api/services/invoice.service";
+import { getSession, commitSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
 import { ShipperInvoiceDetail } from "~/components/invoice/ShipperInvoiceDetail";
-import { Alert } from "~/components/Alert";
 import type { Invoice } from "~/api/models/invoice";
-import type { Load } from "~/api/models/load";
 import type { OutletContext } from "~/routes/shipper.dashboard";
 import { processPayment } from "~/api/services/payment.service";
 import { useState, useEffect } from "react";
-import { Receipt } from "~/components/invoice/Receipt";
 import Popup from "~/components/popup";
 
 interface LoaderData {
   invoice: Invoice | null;
   currentUser: any;
   error?: string;
+  isServiceDown?: boolean;
 }
 
 export const loader: LoaderFunction = async ({ request, params }) => {
@@ -53,7 +54,6 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       throw new Error("Invoice not found");
     }
 
-    // Get shipper info from session
     const shipperInfo = {
       firstName: user.user.firstName,
       middleName: user.user.middleName,
@@ -66,12 +66,15 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       invoice,
       currentUser: shipperInfo,
     });
-  } catch (error) {
-    console.error("Error fetching invoice data:", error);
+  } catch (error: any) {
+    console.error("Error fetching data:", error);
+    const errorData = typeof error === "string" ? JSON.parse(error) : error;
+
     return json({
       invoice: null,
       currentUser: user,
-      error: "Failed to fetch invoice details",
+      error: errorData?.data?.message || "Failed to fetch invoice details",
+      isServiceDown: errorData?.data?.isServiceDown,
     });
   }
 };
@@ -83,7 +86,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 
     if (!user) {
       return json(
-        { success: false, error: "Not authenticated" },
+        { success: false, error: "Not authenticated. Please login again." },
         { status: 401 }
       );
     }
@@ -94,13 +97,92 @@ export const action: ActionFunction = async ({ request, params }) => {
     switch (buttonType) {
       case "Pay":
         const invoiceData = JSON.parse(formData.get("invoice") as string);
-        const updatedInvoice = await processPayment(user.token, invoiceData);
-        return json({
-          success: true,
-          message:
-            "Payment processed successfully! Your receipt has been generated.",
-          invoice: updatedInvoice,
-        });
+
+        try {
+          // Process payment through payment gateway
+          const paymentResult = await processPayment(user.token, invoiceData);
+
+          // If payment successful, update invoice
+          if (paymentResult) {
+            try {
+              const updatedInvoice = await updateInvoice(
+                user.token,
+                invoiceData.id.toString(),
+                {
+                  // All IDs for validation
+                  id: invoiceData.id,
+                  invoiceNumber: invoiceData.invoiceNumber,
+                  carrierId: invoiceData.carrierId,
+                  loadId: invoiceData.loadId,
+                  paymentMethodId: invoiceData.paymentMethodId,
+
+                  // All mutable fields
+                  status: "Completed",
+                  transactionId: paymentResult.transactionId,
+                  transactionDate: paymentResult.paymentDate,
+                  transactionStatus: "success",
+                  note: `Payment processed successfully via ${invoiceData.paymentMethod.paymentType}`,
+                  amountDue: invoiceData.amountDue,
+                  totalAmount: invoiceData.totalAmount,
+                  totalVat: invoiceData.totalVat,
+                  withholding: invoiceData.withholding,
+                  serviceFees: invoiceData.serviceFees,
+                  carrierName: invoiceData.carrierName,
+                  carrierEmail: invoiceData.carrierEmail,
+                  carrierPhone: invoiceData.carrierPhone,
+                  carrierBusinessName: invoiceData.carrierBusinessName,
+                }
+              );
+
+              return json({
+                success: true,
+                message:
+                  "Payment processed successfully! Your receipt has been generated.",
+                invoice: updatedInvoice,
+              });
+            } catch (updateError: any) {
+              console.error("Invoice update error:", updateError);
+              const errorData =
+                typeof updateError === "string"
+                  ? JSON.parse(updateError)
+                  : updateError;
+
+              if (errorData?.status === 400) {
+                return json({
+                  success: false,
+                  error:
+                    "Unable to update invoice status. The payment was processed but the invoice update failed. Our team has been notified and will resolve this shortly.",
+                  showWarning: true,
+                });
+              }
+
+              return json({
+                success: false,
+                error:
+                  errorData?.data?.message || "Failed to update invoice status",
+                showWarning: true,
+              });
+            }
+          }
+        } catch (paymentError: any) {
+          // Payment failed
+          await updateInvoice(user.token, invoiceData.id.toString(), {
+            status: "failed",
+            note: `Payment failed: ${paymentError.message || "Unknown error"}`,
+            transactionDate: new Date().toISOString(),
+          });
+
+          return json(
+            {
+              success: false,
+              error: `Payment processing failed: ${
+                paymentError.message || "Unknown error"
+              }. Please try again or use a different payment method.`,
+            },
+            { status: 400 }
+          );
+        }
+        break;
 
       case "showReceipt":
         return redirect(`/shipper/dashboard/receipt/${params.loadId}`, {
@@ -122,10 +204,12 @@ export const action: ActionFunction = async ({ request, params }) => {
         );
     }
   } catch (error: any) {
+    const errorMessage = error.message || "An unexpected error occurred";
+    console.error("Invoice action error:", error);
     return json(
       {
         success: false,
-        error: error.message || "Payment failed. Please try again.",
+        error: `Failed to process request: ${errorMessage}. Please try again or contact support if the issue persists.`,
       },
       { status: 500 }
     );
@@ -133,13 +217,15 @@ export const action: ActionFunction = async ({ request, params }) => {
 };
 
 export default function InvoiceLoadView() {
-  const { invoice, currentUser, error } = useLoaderData<LoaderData>();
+  const { invoice, currentUser, error, isServiceDown } =
+    useLoaderData<LoaderData>();
   const location = useLocation();
-  const navigate = useNavigate();
-  const loadDetails = location.state?.loadDetails;
-  const { theme } = useOutletContext<OutletContext>();
+  const { loads = [], theme } = useOutletContext<OutletContext>();
   const actionData = useActionData();
+  const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Handle successful payment first
   if (actionData?.success) {
     return (
       <Popup
@@ -153,35 +239,55 @@ export default function InvoiceLoadView() {
     );
   }
 
-  if (error || !invoice || !loadDetails) {
+  // Handle errors
+  if (actionData?.error) {
     return (
       <Popup
-        title="Warning"
-        message={error || "Failed to load invoice details. Please try again."}
-        type="warning"
+        title={actionData.showWarning ? "Warning" : "Error"}
+        message={actionData.error}
+        type={actionData.showWarning ? "warning" : "error"}
         theme={theme}
-        buttonText="Close"
         actionValue="close"
       />
     );
   }
 
+  // Get load details from outlet context or invoice
+  const loadId = Number(location.pathname.split("/").pop());
+  const loadDetails =
+    loads?.find((load) => load.loadId === loadId) || invoice?.load;
+
+  // Only show error if there's an actual error or no invoice
+  if (error || !invoice) {
+    const errorMessage =
+      error ||
+      (!invoice ? "Invoice not found" : "Failed to load invoice details");
+
+    return (
+      <Popup
+        title={isServiceDown ? "Service Unavailable" : "Warning"}
+        message={`${errorMessage}${
+          isServiceDown ? ". Our team has been notified." : ""
+        }`}
+        type={isServiceDown ? "error" : "warning"}
+        theme={theme}
+        buttonText={isServiceDown ? "Contact Support" : "Close"}
+        actionValue={isServiceDown ? "support" : "close"}
+      />
+    );
+  }
+
+  // Proceed with rendering
   return (
     <div className="container mx-auto px-4 py-8">
-      {actionData?.error && (
-        <Popup
-          title="Error"
-          message={actionData.error}
-          type="error"
-          theme={theme}
-          actionValue="close"
-        />
-      )}
       <ShipperInvoiceDetail
         invoice={invoice}
         load={loadDetails}
         currentUser={currentUser}
         theme={theme}
+        onClose={() => navigate(-1)}
+        isProcessing={isProcessing}
+        setIsProcessing={setIsProcessing}
       />
     </div>
   );

@@ -85,56 +85,45 @@ export async function deletePaymentMethod(token: string, paymentMethodId: string
 }
 
 export async function processPayment(token: string, invoice: Invoice) {
-  const transactionId = `TR-${invoice.id}-${invoice.invoiceNumber}`;
-  invoice.transactionId = transactionId;
-  invoice.status = "paid";
-  console.log("invoice ", invoice);
-
   try {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     // Create payment request body
     const paymentData = {
-      ...invoice,
-      status: "paid",
-      transactionId,
-      paymentDate: new Date().toISOString()
+      invoiceId: invoice.id,
+      amount: invoice.totalAmount,
+      paymentMethod: invoice.paymentMethod,
+      currency: "ETB",
+      description: `Payment for invoice ${invoice.invoiceNumber}`,
     };
 
-    // In real implementation, this would be an API call to your payment gateway
-    // const response = await fetch(`${baseUrl}payments`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     Authorization: `Bearer ${token}`,
-    //   },
-    //   body: JSON.stringify(paymentData),
-    // });
+    // Simulate loading delay (1 second)
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Mock successful payment response
-    const updatedInvoice: Invoice = {
-      ...invoice,
-      ...paymentData
+    // comment out real api call and mock the success response
+    const response = {
+      status: 200,
+      json: () => Promise.resolve({
+        ...paymentData,
+        transactionId: `TR-${invoice.id}-${invoice.invoiceNumber}`,
+        timestamp: new Date().toISOString(),
+        referenceNumber: `REF-${Date.now()}`,
+      }),
     };
 
-    // If the response.status of update works
-    // if (response.status === 200) {
-    //   return {
-    //     ...updatedInvoice,
-    //     message: "Payment processed successfully! Your receipt has been generated.",
-    //   };
-    // }
+    if (response.status !== 200) {
+      throw response;
+    }
 
-    // In real implementation, make API call to update invoice status
-    // await updateInvoiceStatus(token, invoice.id, updatedInvoice);
+    const result = await response.json();
 
     return {
-      ...updatedInvoice,
-      message: "Payment processed successfully! Your receipt has been generated."
+      transactionId: result.transactionId || `TR-${invoice.id}-${invoice.invoiceNumber}`,
+      paymentDate: result.timestamp || new Date().toISOString(),
+      status: 'paid',
+      gatewayReference: result.referenceNumber,
     };
+
   } catch (error) {
     console.error("Payment processing failed:", error);
-    throw new Error("Payment processing failed");
+    throw error;
   }
 } 

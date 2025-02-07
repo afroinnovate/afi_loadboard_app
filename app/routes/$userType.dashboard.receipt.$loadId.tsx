@@ -98,6 +98,8 @@ export const action: ActionFunction = async ({ request, params }) => {
       return null;
     case "download":
       // Handle download action if needed
+      // create the download as print (pdf) save of the receipt
+
       return null;
     default:
       return null;
@@ -114,7 +116,6 @@ export default function ReceiptView() {
   // Add console log after data load
   console.log("Data loaded in ReceiptView:", { invoice, currentUser, loadId });
 
-  const location = useLocation();
   const navigate = useNavigate();
   const { loads, theme } = useOutletContext<OutletContext>();
 

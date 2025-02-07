@@ -231,6 +231,7 @@ export async function getShipperInvoices(token: string, shipperId: string) {
 }
 
 export async function updateInvoice(token: string, invoiceId: string, updates: Partial<Invoice>) {
+  console.log("Updating invoice:", updates);
   try {
     const response = await fetch(`${baseUrl}invoices/${invoiceId}`, {
       method: "PUT",
@@ -241,18 +242,42 @@ export async function updateInvoice(token: string, invoiceId: string, updates: P
       body: JSON.stringify(updates),
     });
 
-    if (response.status !== 200) {
-      throw response;
+    console.log("Response:", response);
+
+    if (response.status !== 204) {
+      const errorData = await response.json().catch(() => null);
+      console.log("Error data:", errorData);
+      throw {
+        status: response.status,
+        data: {
+          message: errorData?.message || "Failed to update invoice",
+          status: response.status
+        }
+      };
     }
 
-    const data = await response.json();
-    return data as Invoice;
-  } catch (error: any) {
-    throw JSON.stringify({
-      data: {
-        message: "Failed to update invoice",
-        status: error.status || 500,
+    // Fetch the updated invoice after successful update
+    const updatedResponse = await fetch(`${baseUrl}invoices/${invoiceId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
+    });
+
+    if (!updatedResponse.ok) {
+      throw new Error("Failed to fetch updated invoice");
+    }
+
+    const updatedInvoice = await updatedResponse.json();
+    return updatedInvoice as Invoice;
+
+  } catch (error: any) {
+    console.error("Invoice update error:", error);
+    throw JSON.stringify({
+      status: error.status || 500,
+      data: {
+        message: error.data?.message || "Failed to update invoice",
+        status: error.status || 500
+      }
     });
   }
 }
@@ -305,32 +330,72 @@ export async function getCarrierInvoices(token: string, carrierId: string) {
   }
 }
 
-export async function getInvoiceByLoadId(token: string, loadId: number): Promise<Invoice | null> {
+export async function getInvoiceByLoadId(token: string, loadId: number) {
   try {
+    console.log("Fetching invoice for load:", loadId);
     const response = await fetch(`${baseUrl}invoices/load/${loadId}`, {
-      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
     });
+
+    console.log("Response status:", response.status);
     if (response.status !== 200) {
-      if (response.status === 404) {
-        return null;
-      }
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch invoice');
+      const errorData = await response.json().catch(() => null);
+      console.log("Error data:", errorData);
+      throw { status: response.status, data: errorData };
     }
 
     const data = await response.json();
     if (!data) {
-      return null;
+      throw new Error("No invoice data received");
     }
-
-    return data;
+    return data as Invoice;
   } catch (error: any) {
     console.error("Error fetching invoice by load:", error);
-    throw error;
+
+    // Check for network/connection errors
+    if (error.code === 'ECONNREFUSED' || error.type === 'system') {
+      throw JSON.stringify({
+        data: {
+          message: "Service is currently unavailable. Please contact support at support@afroinnovate.com",
+          status: 503,
+          isServiceDown: true
+        },
+      });
+    }
+
+    // Handle other errors
+    switch (error.status) {
+      case 404:
+        throw JSON.stringify({
+          data: {
+            message: "No invoice found for this load. Please ensure the load exists and try again.",
+            status: 404,
+          },
+        });
+      case 400:
+        throw JSON.stringify({
+          data: {
+            message: "Invalid request. Please check the load details and try again.",
+            status: 400,
+          },
+        });
+      case 401:
+        throw JSON.stringify({
+          data: {
+            message: "Your session has expired. Please login again.",
+            status: 401,
+          },
+        });
+      default:
+        throw JSON.stringify({
+          data: {
+            message: `Unable to fetch invoice details. ${error.message || 'Please try again later.'}`,
+            status: error.status || 500,
+          },
+        });
+    }
   }
 }
 
