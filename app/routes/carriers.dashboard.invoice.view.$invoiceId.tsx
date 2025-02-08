@@ -17,7 +17,7 @@ import { getInvoiceById, updateInvoice } from "~/api/services/invoice.service";
 import type { Invoice } from "~/api/models/invoice";
 import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { FEES_AND_TAXES, calculateCarrierDeductions } from "~/utils/constants";
+import { FEES_AND_TAXES } from "~/utils/constants";
 
 interface OutletContext {
   theme: "light" | "dark";
@@ -46,7 +46,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
   try {
     const invoice = await getInvoiceById(user.token, params.invoiceId);
-
+    console.log(invoice);
     if (!invoice) {
       throw new Error("Invoice not found");
     }
@@ -149,9 +149,6 @@ export default function ViewInvoice() {
     }
   );
 
-  // Calculate deductions
-  const deductions = calculateCarrierDeductions(invoice.amount);
-
   const themeClasses = {
     modal:
       theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
@@ -248,7 +245,7 @@ export default function ViewInvoice() {
           </div>
         </div>
 
-        {/* Invoice Details Section - Updated with comprehensive financial info */}
+        {/* Invoice Details Section */}
         <div className={`${themeClasses.section} p-4 rounded-lg mb-4`}>
           <h3 className="font-semibold mb-4">Invoice Details</h3>
 
@@ -256,7 +253,7 @@ export default function ViewInvoice() {
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <p className="text-sm text-gray-500">Invoice Number</p>
-              <p className="font-medium">{invoice.number}</p>
+              <p className="font-medium">{invoice.invoiceNumber}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Issue Date</p>
@@ -292,7 +289,7 @@ export default function ViewInvoice() {
             <div className="flex justify-between items-center mb-4">
               <p className="font-medium">Base Amount</p>
               <p className="font-medium">
-                ETB {invoice.amount?.toLocaleString()}
+                ETB {invoice.amountDue?.toLocaleString()}
               </p>
             </div>
 
@@ -306,13 +303,13 @@ export default function ViewInvoice() {
                   Platform Service Fee ({FEES_AND_TAXES.SERVICE_FEE_RATE * 100}
                   %)
                 </p>
-                <p>- ETB {deductions.serviceFee.toLocaleString()}</p>
+                <p>- ETB {invoice.serviceFees?.toLocaleString()}</p>
               </div>
 
               {/* VAT */}
               <div className="flex justify-between text-sm text-red-500">
                 <p>VAT ({FEES_AND_TAXES.VAT_RATE * 100}%)</p>
-                <p>- ETB {deductions.vat.toLocaleString()}</p>
+                <p>- ETB {invoice.totalVat?.toLocaleString()}</p>
               </div>
 
               {/* Withholding */}
@@ -320,13 +317,20 @@ export default function ViewInvoice() {
                 <p>
                   Withholding Tax ({FEES_AND_TAXES.WITHHOLDING_TAX_RATE * 100}%)
                 </p>
-                <p>- ETB {deductions.withholding.toLocaleString()}</p>
+                <p>- ETB {invoice.withholding?.toLocaleString()}</p>
               </div>
 
               {/* Total Deductions */}
               <div className="flex justify-between font-medium text-red-500 border-t border-red-200 pt-2 mt-2">
                 <p>Total Deductions</p>
-                <p>- ETB {deductions.totalDeductions.toLocaleString()}</p>
+                <p>
+                  - ETB{" "}
+                  {(
+                    invoice.serviceFees +
+                    invoice.totalVat +
+                    invoice.withholding
+                  ).toLocaleString()}
+                </p>
               </div>
             </div>
 
@@ -334,8 +338,14 @@ export default function ViewInvoice() {
             <div className="flex justify-between items-center pt-2">
               <p className="font-bold text-lg">Net Amount (You Will Receive)</p>
               <p className="font-bold text-lg text-green-600">
-                ETB {deductions.finalAmount.toLocaleString()}
+                ETB {invoice.totalAmount?.toLocaleString()}
               </p>
+            </div>
+
+            {/* Add Note Section */}
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-gray-500">Note</p>
+              <p className="text-sm mt-1">{invoice.note}</p>
             </div>
           </div>
         </div>
