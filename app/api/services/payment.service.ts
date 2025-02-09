@@ -130,7 +130,6 @@ export async function processPayment(token: string, invoice: Invoice) {
 }
 
 export async function updatePaymentMethod(token: string, paymentMethodId: string, paymentMethod: PaymentMethod) {
-  console.log("Updating payment method", paymentMethod);
   try {
     const response = await fetch(`${baseUrl}payment-methods/${paymentMethodId}`, {
       method: "PUT",
@@ -140,7 +139,6 @@ export async function updatePaymentMethod(token: string, paymentMethodId: string
       },
       body: JSON.stringify(paymentMethod),
     });
-    console.log("response", response);
 
     // 204 means success with no content
     if (response.status === 204) {

@@ -200,8 +200,6 @@ export default function ShipperDashboard() {
   }>();
   const { theme, timezone } = useOutletContext<OutletContext>();
 
-  // Add debug log
-  console.log("Dashboard loads:", loads);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();

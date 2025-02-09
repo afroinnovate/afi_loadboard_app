@@ -5,6 +5,7 @@ import {
   useLocation,
   NavLink,
   useOutletContext,
+  useNavigation,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
 import { Loader } from "~/components/loader";
@@ -164,17 +165,13 @@ interface OutletContext {
 
 export default function CarrierDashboard() {
   const { user, loads, bids, invoices } = useLoaderData<typeof loader>();
-  const [isLoading, setIsLoading] = useState(true);
+  const navigation = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
   const { theme, timezone, toggleTheme } = useOutletContext<OutletContext>();
 
-  useEffect(() => {
-    if (loads && bids && invoices) {
-      setIsLoading(false);
-    }
-  }, [loads, bids, invoices]);
+  const isLoading = navigation.state === "loading";
 
   // Calculate load counts by status
   const loadCounts = useMemo(() => {
@@ -307,47 +304,47 @@ export default function CarrierDashboard() {
         </h2>
       </header>
 
-      {isLoading ? (
+      {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
           <Loader size={60} fullScreen />
         </div>
-      ) : (
-        <div className="flex pt-16 mt-14">
-          <div className="top-40">
-            {sidebarOpen && (
-              <SidebarCarrier activeSection={activeSection} theme={theme} />
-            )}
-          </div>
-          <main
-            className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}
-          >
-            {location.pathname === "/carriers/dashboard/" && (
-              <CarrierOverview
-                loads={loads}
-                bids={bids}
-                loadCounts={loadCounts}
-                bidCounts={bidCounts}
-                theme={theme}
-                invoices={invoices}
-                isLoading={isLoading}
-              />
-            )}
-            <Outlet
-              context={{
-                loads,
-                bids,
-                invoices,
-                loadCounts,
-                bidCounts,
-                theme,
-                timezone,
-                toggleTheme,
-                isLoading,
-              }}
-            />
-          </main>
-        </div>
       )}
+
+      <div className="flex pt-16 mt-14">
+        <div className="top-40">
+          {sidebarOpen && (
+            <SidebarCarrier activeSection={activeSection} theme={theme} />
+          )}
+        </div>
+        <main
+          className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}
+        >
+          {location.pathname === "/carriers/dashboard/" && (
+            <CarrierOverview
+              loads={loads}
+              bids={bids}
+              loadCounts={loadCounts}
+              bidCounts={bidCounts}
+              theme={theme}
+              invoices={invoices}
+              isLoading={isLoading}
+            />
+          )}
+          <Outlet
+            context={{
+              loads,
+              bids,
+              invoices,
+              loadCounts,
+              bidCounts,
+              theme,
+              timezone,
+              toggleTheme,
+              isLoading,
+            }}
+          />
+        </main>
+      </div>
     </>
   );
 }
