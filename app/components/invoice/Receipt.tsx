@@ -2,13 +2,15 @@ import { Form } from "@remix-run/react";
 import { PrinterIcon, ArrowDownTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import type { Invoice } from "~/api/models/invoice";
 import type { Load } from "~/api/models/load";
-import type { Carrier } from "~/api/models/carrier";
 import type { LinksFunction } from "@remix-run/node";
+import { businessProfile } from '../../api/models/shipperUser';
 
 interface ReceiptProps {
   invoice: Invoice;
   load: Load;
   theme: "light" | "dark";
+  carrierProfile?: any;
+  userType?: string;
 }
 
 export const links: LinksFunction = () => [
@@ -19,7 +21,13 @@ export const links: LinksFunction = () => [
   },
 ];
 
-export function Receipt({ invoice, load, theme }: ReceiptProps) {
+export function Receipt({
+  invoice,
+  load,
+  theme,
+  carrierProfile,
+  userType = "carrier",
+}: ReceiptProps) {
   const themeClasses = {
     container:
       theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
@@ -29,6 +37,35 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
       theme === "dark"
         ? "hover:bg-gray-700 text-gray-200"
         : "hover:bg-gray-100 text-gray-700",
+  };
+
+  // Get carrier info with fallback logic
+  const carrierInfo = {
+    companyName:
+      carrierProfile?.user?.businessProfile?.companyName ||
+      invoice.carrierBusinessName ||
+      "N/A",
+    firstName:
+      carrierProfile?.user?.firstName ||
+      invoice.carrierName?.split(" ")[0] ||
+      "N/A",
+    lastName:
+      carrierProfile?.user?.lastName ||
+      invoice.carrierName?.split(" ")[1] ||
+      "",
+    email: carrierProfile?.user?.email || invoice.carrierEmail || "N/A",
+    phone: carrierProfile?.user?.phoneNumber || invoice.carrierPhone || "N/A",
+    address: carrierProfile?.user?.businessProfile?.address || "N/A",
+  };
+
+  // Get shipper info from load
+  const shipperInfo = {
+    companyName: load.createdBy?.businessProfile?.companyName || "N/A",
+    firstName: load.createdBy?.firstName || "N/A",
+    lastName: load.createdBy?.lastName || "",
+    email: load.createdBy?.email || "N/A",
+    phone: load.createdBy?.phone || "N/A",
+    address: load.createdBy?.businessProfile?.address || "N/A",
   };
 
   return (
@@ -72,6 +109,7 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
             </button>
           </Form>
           <Form method="post">
+            <input type="hidden" name="userType" value={userType} />
             <button
               type="submit"
               name="_action"
@@ -107,29 +145,39 @@ export function Receipt({ invoice, load, theme }: ReceiptProps) {
         </div>
       </div>
 
-      {/* Carrier and Load Details */}
+      {/* Carrier and Shipper Details */}
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div className={`${themeClasses.header} p-4 rounded-lg`}>
           <h3 className="font-semibold mb-2">From (Carrier)</h3>
-          <p>{invoice.carrier?.businessProfile?.companyName}</p>
+          <p>{carrierInfo.companyName}</p>
           <p>
-            {invoice.carrier?.firstName} {invoice.carrier?.lastName}
+            {carrierInfo.firstName} {carrierInfo.lastName}
           </p>
-          <p>{invoice.carrier?.email}</p>
-          <p>{invoice.carrier?.phone}</p>
-          {invoice.carrier?.businessProfile?.address && (
-            <p>{invoice.carrier.businessProfile.address}</p>
-          )}
+          <p>{carrierInfo.email}</p>
+          <p>{carrierInfo.phone}</p>
+          {carrierInfo.address !== "N/A" && <p>{carrierInfo.address}</p>}
         </div>
         <div className={`${themeClasses.header} p-4 rounded-lg`}>
-          <h3 className="font-semibold mb-2">Load Details</h3>
-          <p>Load ID: {load.loadId}</p>
+          <h3 className="font-semibold mb-2">To (Shipper)</h3>
+          <p>{shipperInfo.companyName}</p>
           <p>
-            Route: {load.origin} → {load.destination}
+            {shipperInfo.firstName} {shipperInfo.lastName}
           </p>
-          <p>Commodity: {load.commodity}</p>
-          <p>Weight: {load.weight} kg</p>
+          <p>{shipperInfo.email}</p>
+          <p>{shipperInfo.phone}</p>
+          {shipperInfo.address !== "N/A" && <p>{shipperInfo.address}</p>}
         </div>
+      </div>
+
+      {/* Load Details */}
+      <div className={`${themeClasses.header} p-4 rounded-lg mb-6`}>
+        <h3 className="font-semibold mb-2">Load Details</h3>
+        <p>Load ID: {load.loadId}</p>
+        <p>
+          Route: {load.origin} → {load.destination}
+        </p>
+        <p>Commodity: {load.commodity}</p>
+        <p>Weight: {load.weight} kg</p>
       </div>
 
       {/* Payment Details */}

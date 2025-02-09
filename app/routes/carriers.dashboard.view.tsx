@@ -288,8 +288,6 @@ export default function CarrierViewLoads() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const navigate = useNavigate();
 
-  console.log("invocies: ", invoices);
-
   // Early return if there's no carrier profile
   if (!carrierProfile || !carrierProfile.user) {
     return (
@@ -414,18 +412,15 @@ export default function CarrierViewLoads() {
     return invoices.find((invoice: any) => invoice.loadId === loadId);
   };
 
-  // Update handleInvoiceAction to use navigation
+  // Update handleInvoiceAction to use correct path
   const handleInvoiceAction = (load: any, existingInvoice: any) => {
     if (existingInvoice) {
       if (existingInvoice.status === "completed") {
-        // Navigate to receipt view for completed invoices
-        navigate(`/carrier/dashboard/receipt/${load.loadId}`);
+        navigate(`/carriers/dashboard/receipt/${load.loadId}`);
       } else {
-        // Navigate to view/edit route for pending invoices
         navigate(`/carriers/dashboard/invoice/view/${existingInvoice.id}`);
       }
     } else {
-      // Navigate to generate invoice route
       navigate(`/carriers/dashboard/invoice/${load.loadId}`);
     }
   };

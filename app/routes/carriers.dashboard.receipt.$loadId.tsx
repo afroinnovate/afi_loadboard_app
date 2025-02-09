@@ -1,8 +1,8 @@
 import {
   json,
-  LoaderFunction,
+  type LoaderFunction,
   redirect,
-  ActionFunction,
+  type ActionFunction,
 } from "@remix-run/node";
 import {
   useLoaderData,
@@ -10,7 +10,6 @@ import {
   useOutletContext,
   useActionData,
 } from "@remix-run/react";
-import { getInvoiceByLoadId } from "~/api/services/invoice.service";
 import { getSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
 import { Receipt } from "~/components/invoice/Receipt";
@@ -26,6 +25,7 @@ interface OutletContext {
 
 interface LoaderData {
   currentUser: any;
+  carrierProfile: any;
   loadId: number;
   error?: string;
 }
@@ -42,6 +42,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   if (!params.loadId) {
     return json({
       currentUser: user,
+      carrierProfile,
       error: "Load ID is required",
       loadId: 0,
     });
@@ -50,21 +51,24 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   try {
     // Get carrier info from session
     const carrierInfo = {
-      firstName: user.user.firstName,
-      middleName: user.user.middleName,
-      lastName: user.user.lastName,
-      email: user.user.email,
-      phone: user.user.phoneNumber,
+      firstName: carrierProfile.user.firstName,
+      middleName: carrierProfile.user.middleName,
+      lastName: carrierProfile.user.lastName,
+      email: carrierProfile.user.email,
+      phone: carrierProfile.user.phoneNumber,
+      businessProfile: carrierProfile.user.businessProfile,
     };
 
     return json({
       currentUser: carrierInfo,
+      carrierProfile,
       loadId: Number(params.loadId),
     });
   } catch (error) {
     console.error("Error fetching receipt data:", error);
     return json({
       currentUser: user,
+      carrierProfile,
       error: "Failed to fetch receipt details",
       loadId: Number(params.loadId),
     });
@@ -74,13 +78,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const buttonType = formData.get("_action");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get(authenticator.sessionKey);
 
   switch (buttonType) {
     case "close":
-      return redirect("/carrier/dashboard/loads");
+      // Get user type from session and redirect accordingly
+      const userType = user?.user?.userType || "carrier";
+      return redirect(`/${userType}s/dashboard/invoices`);
     case "print":
     case "download":
-      // Both print and download will use browser's print functionality
       return json({ action: buttonType });
     default:
       return null;
@@ -88,7 +95,8 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export default function CarrierReceiptView() {
-  const { currentUser, loadId, error } = useLoaderData<LoaderData>();
+  const { currentUser, carrierProfile, loadId, error } =
+    useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const { loads, theme, invoices } = useOutletContext<OutletContext>();
   const actionData = useActionData();
@@ -155,7 +163,13 @@ export default function CarrierReceiptView() {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <Receipt invoice={invoice} load={loadDetails} theme={theme} />
+        <Receipt
+          invoice={invoice}
+          load={loadDetails}
+          theme={theme}
+          carrierProfile={carrierProfile}
+          userType="carrier"
+        />
       </div>
     </div>
   );

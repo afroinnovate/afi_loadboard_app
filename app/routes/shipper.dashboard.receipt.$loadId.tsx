@@ -85,13 +85,15 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const buttonType = formData.get("_action");
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get(authenticator.sessionKey);
 
   switch (buttonType) {
     case "close":
-      return redirect("/shipper/dashboard/loads/view");
+      const userType = user?.user?.userType || "shipper";
+      return redirect(`/${userType}s/dashboard/invoices`);
     case "print":
     case "download":
-      // Both print and download will use browser's print functionality
       return json({ action: buttonType });
     default:
       return null;
@@ -137,7 +139,12 @@ export default function ShipperReceiptView() {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <Receipt invoice={invoice} load={loadDetails} theme={theme} />
+        <Receipt
+          invoice={invoice}
+          load={loadDetails}
+          theme={theme}
+          userType="shipper"
+        />
       </div>
     </div>
   );

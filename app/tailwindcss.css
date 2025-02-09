@@ -1106,10 +1106,6 @@ input[type="range"]::-ms-fill-lower {
   z-index: 100;
 }
 
-.z-\[60\] {
-  z-index: 60;
-}
-
 .col-span-2 {
   grid-column: span 2 / span 2;
 }
@@ -1416,10 +1412,6 @@ input[type="range"]::-ms-fill-lower {
 
 .max-w-2xl {
   max-width: 42rem;
-}
-
-.max-w-3xl {
-  max-width: 48rem;
 }
 
 .max-w-4xl {
