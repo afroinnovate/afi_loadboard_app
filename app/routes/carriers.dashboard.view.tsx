@@ -91,24 +91,24 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     // Get both loads and invoices
     try {
-      const [loadsResponse, invoicesResponse] = await Promise.all([
-        GetLoads(user.token),
-        getCarrierInvoices(user.token, carrierProfile.id),
-      ]);
+      // const [loadsResponse, invoicesResponse] = await Promise.all([
+      //   GetLoads(user.token),
+      //   getCarrierInvoices(user.token, carrierProfile.id),
+      // ]);
 
       return json({
-        loads: loadsResponse,
+        // loads: loadsResponse,
         carrierProfile,
-        invoices: Array.isArray(invoicesResponse) ? invoicesResponse : [],
+        // invoices: Array.isArray(invoicesResponse) ? invoicesResponse : [],
         token: user.token,
         error: null,
       });
     } catch (error) {
       console.error("Error fetching data:", error);
       return json({
-        loads: [],
+        // loads: [],
         carrierProfile,
-        invoices: [],
+        // invoices: [],
         token: user.token,
         error: "Failed to fetch data. Please try again.",
       });
@@ -269,6 +269,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 interface OutletContext {
   loads: any[];
+  invoices: any[];
   bids: any[];
   theme: "light" | "dark";
   timezone: string;
@@ -358,8 +359,8 @@ export default function CarrierViewLoads() {
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
-  const { theme, loads } = useOutletContext<OutletContext>();
-  const { invoices, carrierProfile, error: loaderError } = loaderData;
+  const { theme, loads, invoices } = useOutletContext<OutletContext>();
+  const { carrierProfile, error: loaderError } = loaderData;
   const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const navigate = useNavigate();

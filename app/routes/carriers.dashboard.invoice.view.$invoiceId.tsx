@@ -18,15 +18,25 @@ import type { Invoice } from "~/api/models/invoice";
 import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { FEES_AND_TAXES } from "~/utils/constants";
+import {
+  savePaymentMethod,
+  updatePaymentMethod,
+} from "~/api/services/payment.service";
+import Popup from "~/components/popup";
+import { Loader } from "~/components/loader";
 
 interface OutletContext {
   theme: "light" | "dark";
   loads: any[];
   bids: any[];
+  loads: any[];
+  invoices: Invoice[];
+  timezone: string;
+  toggleTheme: () => void;
 }
 
 interface LoaderData {
-  invoice: Invoice;
+  invoiceId: string;
   carrierProfile: any;
   token: string;
 }
@@ -45,21 +55,13 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   }
 
   try {
-    const invoice = await getInvoiceById(user.token, params.invoiceId);
-    console.log(invoice);
-    if (!invoice) {
-      throw new Error("Invoice not found");
-    }
-
-    // Ensure carrier can only view their own invoices
-    if (invoice.carrierId !== carrierProfile.id) {
-      return redirect("/carriers/dashboard/invoices");
-    }
+    // Convert the invoice ID to the correct type if needed
+    const invoiceId = params.invoiceId;
 
     return json({
-      invoice,
       carrierProfile,
       token: user.token,
+      invoiceId,
     });
   } catch (error) {
     console.error("Error loading invoice:", error);
@@ -68,30 +70,86 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 };
 
 export const action: ActionFunction = async ({ request, params }) => {
+  console.log("Action started");
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get(authenticator.sessionKey);
 
   if (!user) {
+    console.log("No user found");
     return redirect("/logout/");
   }
 
+  const formData = await request.formData();
+  const _action = formData.get("_action");
+  console.log("Action type:", _action);
+
   try {
-    const formData = await request.formData();
-    const paymentMethod = JSON.parse(formData.get("paymentMethod") as string);
+    switch (_action) {
+      case "update_payment_method": {
+        console.log("Processing payment method update");
+        const paymentMethodData = formData.get("paymentMethod");
+        console.log("Raw payment method data:", paymentMethodData);
 
-    const updatedInvoice = await updateInvoice(
-      user.token,
-      params.invoiceId as string,
-      {
-        paymentMethod,
+        const newPaymentMethod = JSON.parse(paymentMethodData as string);
+        console.log("Parsed payment method:", newPaymentMethod);
+
+        // Check if paymentMethodId exists
+        if (!newPaymentMethod.paymentMethodId) {
+          return json(
+            {
+              error: "Payment method ID is required for updates",
+              details: "Missing payment method ID",
+            },
+            { status: 400 }
+          );
+        }
+
+        try {
+          // Update the payment method
+          const updatedPaymentMethod = await updatePaymentMethod(
+            user.token,
+            newPaymentMethod.paymentMethodId,
+            {
+              paymentMethodId: newPaymentMethod.paymentMethodId,
+              paymentType: newPaymentMethod.paymentType,
+              carrierId: newPaymentMethod.carrierId,
+              bankName: newPaymentMethod.bankName || "",
+              bankAccount: newPaymentMethod.bankAccount || "",
+              accountHolderName: newPaymentMethod.accountHolderName || "",
+              phoneNumber: newPaymentMethod.phoneNumber || "",
+              cardMethod: newPaymentMethod.cardMethod || "",
+              cardType: newPaymentMethod.cardType || "",
+              lastFourDigits: newPaymentMethod.lastFourDigits || "",
+              billingAddress: newPaymentMethod.billingAddress || "",
+            }
+          );
+
+          return json({
+            success: true,
+            message: "Payment information updated successfully",
+            paymentMethod: updatedPaymentMethod,
+          });
+        } catch (error: any) {
+          console.error("Update payment method error:", error);
+          const errorData = JSON.parse(error);
+          return json(
+            {
+              error:
+                errorData.data.message || "Failed to update payment method",
+              details: errorData.data.status,
+            },
+            { status: errorData.data.status || 500 }
+          );
+        }
       }
-    );
 
-    return json({
-      success: true,
-      message: "Payment information updated successfully",
-      invoice: updatedInvoice,
-    });
+      case "close":
+        return redirect("/carriers/dashboard/invoices");
+
+      default:
+        console.log("Invalid action:", _action);
+        return json({ error: "Invalid action" }, { status: 400 });
+    }
   } catch (error: any) {
     console.error("Action error:", error);
     return json(
@@ -105,11 +163,69 @@ export const action: ActionFunction = async ({ request, params }) => {
 };
 
 export default function ViewInvoice() {
-  const { invoice, carrierProfile, token } = useLoaderData<LoaderData>();
+  const { carrierProfile, invoiceId } = useLoaderData<LoaderData>();
   const actionData = useActionData();
   const navigate = useNavigate();
-  const { theme, loads } = useOutletContext<OutletContext>();
+  const { theme, loads, invoices } = useOutletContext<OutletContext>();
   const [isEditing, setIsEditing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showDialog, setShowDialog] = useState(true);
+
+  // Check if invoices is undefined or null (service down)
+  if (!invoices) {
+    return (
+      <Popup
+        title="Service Unavailable"
+        message="Unable to load invoice details. Our team has been notified."
+        type="error"
+        theme={theme}
+        buttonText="Return to Invoices"
+        actionValue="close"
+        onAction={() => navigate("/carriers/dashboard/invoices")}
+      />
+    );
+  }
+
+  // The issue is here - we need to convert the IDs to the same type for comparison
+  const invoice = invoices.find(
+    (inv: Invoice) => inv.id.toString() === invoiceId.toString()
+  );
+
+  console.log("Looking for invoice with ID:", invoiceId);
+  console.log(
+    "Available invoice IDs:",
+    invoices.map((inv) => inv.id)
+  );
+  console.log("Found invoice:", invoice);
+
+  if (!invoice) {
+    return (
+      <Popup
+        title="Invoice Not Found"
+        message="The requested invoice could not be found. Please try again later."
+        type="warning"
+        theme={theme}
+        buttonText="Return to Invoices"
+        actionValue="close"
+        onAction={() => navigate("/carriers/dashboard/invoices")}
+      />
+    );
+  }
+
+  // Ensure carrier can only view their own invoices
+  if (invoice.carrierId !== carrierProfile.id) {
+    return (
+      <Popup
+        title="Access Denied"
+        message="You do not have permission to view this invoice."
+        type="error"
+        theme={theme}
+        buttonText="Return to Invoices"
+        actionValue="close"
+        onAction={() => navigate("/carriers/dashboard/invoices")}
+      />
+    );
+  }
 
   // Get load details from outlet context loads
   const loadDetails = loads.find((load) => load.loadId === invoice.loadId);
@@ -136,11 +252,13 @@ export default function ViewInvoice() {
   // Initialize payment method state
   const [editedPaymentMethod, setEditedPaymentMethod] = useState(
     invoice.paymentMethod || {
-      method: "bank",
-      type: "",
+      paymentType: "bank",
+      carrierId: carrierProfile.id,
+      paymentMethodId: invoice.paymentMethodId,
       bankName: "",
       bankAccount: "",
       accountHolderName: "",
+      // Keep these empty as they're not used for bank payments
       phoneNumber: "",
       cardMethod: "",
       cardType: "",
@@ -160,24 +278,37 @@ export default function ViewInvoice() {
         : "bg-white border-gray-300",
   };
 
-  const handlePaymentMethodUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = new FormData();
-    form.append("_action", "update_payment_method");
-    form.append("paymentMethod", JSON.stringify(editedPaymentMethod));
+  // Handle successful update first
+  if (actionData?.success) {
+    return (
+      <Popup
+        title="Success"
+        message={actionData.message}
+        type="success"
+        theme={theme}
+        buttonText="Close"
+        actionValue="close"
+      />
+    );
+  }
 
-    try {
-      const response = await fetch(``, {
-        method: "POST",
-        body: form,
-      });
+  // Handle errors
+  if (actionData?.error) {
+    return (
+      <Popup
+        title="Error"
+        message={actionData.error}
+        type="error"
+        theme={theme}
+        actionValue="close"
+      />
+    );
+  }
 
-      if (response.ok) {
-        setIsEditing(false);
-      }
-    } catch (error) {
-      console.error("Failed to update payment method:", error);
-    }
+  // Handle form submission
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    setIsProcessing(true); // Start loading
+    // Don't prevent default - let Remix handle the form submission
   };
 
   return (
@@ -194,17 +325,6 @@ export default function ViewInvoice() {
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
-
-        {actionData?.error && (
-          <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">
-            {actionData.error}
-          </div>
-        )}
-        {actionData?.success && (
-          <div className="p-4 mb-4 text-green-700 bg-green-100 rounded-lg">
-            {actionData.message}
-          </div>
-        )}
 
         {/* Load Information Section */}
         <div className={`${themeClasses.section} p-4 rounded-lg mb-4`}>
@@ -379,11 +499,19 @@ export default function ViewInvoice() {
           </div>
 
           {isEditing ? (
-            <Form method="post" onSubmit={handlePaymentMethodUpdate}>
+            <Form method="post" onSubmit={handleSubmit}>
               <input
                 type="hidden"
                 name="_action"
                 value="update_payment_method"
+              />
+              <input
+                type="hidden"
+                name="paymentMethod"
+                value={JSON.stringify({
+                  ...editedPaymentMethod,
+                  paymentMethodId: invoice.paymentMethodId,
+                })}
               />
               <div className="space-y-4">
                 <div>
@@ -444,15 +572,32 @@ export default function ViewInvoice() {
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                    disabled={isProcessing}
+                    className={`px-4 py-2 text-gray-600 hover:bg-gray-100 rounded ${
+                      isProcessing ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    name="_action"
+                    value="update_payment_method"
+                    disabled={isProcessing}
+                    className={`w-full sm:w-auto py-2 px-4 rounded-md font-medium transition-colors duration-300 relative ${
+                      theme === "dark"
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-green-500 hover:bg-green-600 text-white"
+                    } ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    Save Changes
+                    {isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <Loader size={24} strokeWidth={4} />
+                        <span className="ml-2">Updating...</span>
+                      </div>
+                    ) : (
+                      "Save Changes"
+                    )}
                   </button>
                 </div>
               </div>
@@ -484,3 +629,5 @@ export default function ViewInvoice() {
     </div>
   );
 }
+
+

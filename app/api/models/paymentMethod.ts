@@ -1,4 +1,5 @@
 export interface PaymentMethod {
+  paymentMethodId: string;
   paymentType: string;
   carrierId: string;
   bankName: string;

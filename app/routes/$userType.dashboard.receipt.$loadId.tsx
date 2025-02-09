@@ -1,5 +1,3 @@
-console.log("Loading receipt route file...");
-
 import {
   json,
   LoaderFunction,
@@ -19,21 +17,17 @@ import { Receipt } from "~/components/invoice/Receipt";
 import type { Invoice } from "~/api/models/invoice";
 import type { Load } from "~/api/models/load";
 import type { OutletContext } from "~/routes/shipper.dashboard";
+import { Loader } from "~/components/loader";
 
 interface LoaderData {
-  invoice: Invoice | null;
+  // invoice: Invoice | null;
   currentUser: any;
   error?: string;
   loadId: string | number;
 }
 
-// Add console log before loader
-console.log("Setting up loader...");
-
 // Add route ID to help with debugging
 export const routeId = "$userType.dashboard.receipt.$loadId";
-
-console.log(`Route ${routeId} loading...`);
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   console.log("Loader executing...");
@@ -54,11 +48,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   }
 
   try {
-    const invoice = await getInvoiceByLoadId(user.token, Number(params.loadId));
+    // const invoice = await getInvoiceByLoadId(user.token, Number(params.loadId));
 
-    if (invoice === undefined) {
-      throw new Error("Invoice not found");
-    }
+    // if (invoice === undefined) {
+    //   throw new Error("Invoice not found");
+    // }
 
     // Get user info from session
     const userInfo = {
@@ -70,7 +64,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     };
 
     return json({
-      invoice,
+      // invoice,
       currentUser: userInfo,
       loadId: Number(params.loadId),
     });
@@ -105,27 +99,34 @@ export const action: ActionFunction = async ({ request, params }) => {
   }
 };
 
+interface OutletContext {
+  loads: any[];
+  invoices: any[];
+  theme: "light" | "dark";
+  timezone: string;
+  toggleTheme: () => void;
+}
 // Add console log before component
 console.log("Defining ReceiptView component...");
 
 export default function ReceiptView() {
   console.log("ReceiptView component rendering...");
-  const { invoice, currentUser, loadId, error } = useLoaderData<LoaderData>();
+  const { error, loadId } = useLoaderData<LoaderData>();
+  const navigate = useNavigate();
+  const { loads, invoices, theme, timezone, toggleTheme } = useOutletContext<OutletContext>();
+
+  if (!loads || !invoices || !theme || !timezone || !toggleTheme) {
+    return <Loader />
+  } 
+
+  const invoice = invoices.find((invoice: Invoice) => invoice.loadId === Number(loadId));
 
   // Add console log after data load
-  console.log("Data loaded in ReceiptView:", { invoice, currentUser, loadId });
-
-  const navigate = useNavigate();
-  const { loads, theme } = useOutletContext<OutletContext>();
+  console.log("Data loaded in ReceiptView:", { invoice, loadId });
 
   // Convert loadId to number for comparison
   const loadDetails = loads?.find((load: Load) => load.id === Number(loadId));
 
-  // Add more detailed logging
-  console.log("LoadID from params:", loadId);
-  console.log("Available loads:", loads);
-  console.log("Found load details:", loadDetails);
-  console.log("Current user:", currentUser);
   console.log("Invoice details:", invoice);
 
   if (error || !invoice || !loadDetails) {

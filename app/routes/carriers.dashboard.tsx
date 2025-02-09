@@ -23,6 +23,7 @@ import CarrierOverview from "~/components/carrierOverview";
 import { getUserInfo } from "~/api/services/user.service";
 import { GetLoads } from "~/api/services/load.service";
 import { GetBidsByCarrierId } from "~/api/services/bid.service";
+import { getCarrierInvoices } from "~/api/services/invoice.service";
 
 export const meta: MetaFunction = () => {
   return [
@@ -125,12 +126,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     // Fetch loads and bids
     const loads = await GetLoads(user?.token);
     const bids = await GetBidsByCarrierId(user?.token, carrierProfile.id);
+    const invoices = await getCarrierInvoices(user?.token, carrierProfile.id);
     // console.log("loads: ", loads);
     return json(
       { 
         user: carrierProfile,
         loads,
-        bids
+        bids,
+        invoices
       },
       {
         headers: {
@@ -154,7 +157,7 @@ interface OutletContext {
 }
 
 export default function CarrierDashboard() {
-  const { user, loads, bids } = useLoaderData<typeof loader>();
+  const { user, loads, bids, invoices } = useLoaderData<typeof loader>();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
@@ -247,7 +250,7 @@ export default function CarrierDashboard() {
           {location.pathname === "/carriers/dashboard/" && (
             <CarrierOverview loads={loads} bids={bids} theme={theme} />
           )}
-          <Outlet context={{ loads, bids, theme, timezone, toggleTheme }} />
+          <Outlet context={{ loads, bids, invoices, theme, timezone, toggleTheme }} />
         </main>
       </div>
     </>

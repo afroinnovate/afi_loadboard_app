@@ -2,7 +2,8 @@ import { type PaymentMethod } from "../models/paymentMethod";
 import type { Invoice } from "~/api/models/invoice";
 import { json } from '@remix-run/node';
 
-const baseUrl = "https://api.frieght.afroinnovate.com/api/";
+// const baseUrl = "https://api.frieght.afroinnovate.com/api/";
+const baseUrl = "http://localhost:7070/api/";
 
 export async function savePaymentMethod(token: string, paymentMethod: PaymentMethod) {
   try {
@@ -125,5 +126,40 @@ export async function processPayment(token: string, invoice: Invoice) {
   } catch (error) {
     console.error("Payment processing failed:", error);
     throw error;
+  }
+}
+
+export async function updatePaymentMethod(token: string, paymentMethodId: string, paymentMethod: PaymentMethod) {
+  console.log("Updating payment method", paymentMethod);
+  try {
+    const response = await fetch(`${baseUrl}payment-methods/${paymentMethodId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(paymentMethod),
+    });
+    console.log("response", response);
+
+    // 204 means success with no content
+    if (response.status === 204) {
+      // Return the payment method we sent since 204 has no response body
+      return paymentMethod;
+    }
+
+    if (response.status !== 200) {
+      throw response;
+    }
+
+    const data = await response.json();
+    return data as PaymentMethod;
+  } catch (error: any) {
+    throw JSON.stringify({
+      data: {
+        message: "Failed to update payment method",
+        status: error.status || 500,
+      },
+    });
   }
 } 
