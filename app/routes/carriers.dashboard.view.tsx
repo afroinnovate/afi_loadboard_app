@@ -89,13 +89,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    // Get both loads and invoices
     try {
-      // const [loadsResponse, invoicesResponse] = await Promise.all([
-      //   GetLoads(user.token),
-      //   getCarrierInvoices(user.token, carrierProfile.id),
-      // ]);
-
       return json({
         // loads: loadsResponse,
         carrierProfile,
@@ -152,9 +146,9 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     const formData = await request.formData();
-    const actionType = formData.get("_action");
+    const _action = formData.get("_action");
 
-    switch (actionType) {
+    switch (_action) {
       case "view_invoice": {
         const invoiceId = formData.get("invoiceId");
         const loadId = formData.get("loadId");
@@ -213,18 +207,40 @@ export const action: ActionFunction = async ({ request }) => {
           offerAmount: formData.get("offerAmount"),
         });
 
-      case "placebid":
+      case "placebid": {
+        const bidLoadId = formData.get("bidLoadId");
         const bidAmount = formData.get("bidAmount");
-        const bidDetails = await manageBidProcess(
-          carrierProfile,
-          Number(formData.get("bidLoadId")),
-          Number(bidAmount)
-        );
-        return json({
-          error: "",
-          message: bidDetails.message,
-          amount: bidDetails.amount,
-        });
+
+        if (!bidLoadId || !bidAmount) {
+          return json({
+            success: false,
+            message: "Invalid bid data",
+            bidModalState: "close",
+          });
+        }
+
+        try {
+          const bidDetails = await manageBidProcess(
+            carrierProfile,
+            Number(bidLoadId),
+            Number(bidAmount)
+          );
+
+          return json({
+            success: true,
+            message: bidDetails.message,
+            amount: bidDetails.amount,
+            bidModalState: "close",
+            redirectTo: "/carriers/dashboard/bid",
+          });
+        } catch (error) {
+          return json({
+            success: false,
+            message: "Failed to place bid",
+            bidModalState: "close",
+          });
+        }
+      }
 
       case "closeContact":
         return redirect("/carriers/dashboard/view");
@@ -282,11 +298,16 @@ export default function CarrierViewLoads() {
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [selectedShipper, setSelectedShipper] = useState<any>(null);
-  const { theme, loads, invoices } = useOutletContext<OutletContext>();
+  const { theme, loads, invoices, bids } = useOutletContext<OutletContext>();
   const { carrierProfile, error: loaderError } = loaderData;
   const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const navigate = useNavigate();
+  const [showBidAdjustment, setShowBidAdjustment] = useState(false);
+  const [selectedLoad, setSelectedLoad] = useState<any>(null);
+  const [bidModalState, setBidModalState] = useState<"open" | "close" | null>(
+    null
+  );
 
   // Early return if there's no carrier profile
   if (!carrierProfile || !carrierProfile.user) {
@@ -381,6 +402,33 @@ export default function CarrierViewLoads() {
       ]);
     }
   }, [actionData]);
+
+  // Add useEffect to handle bid success and navigation
+  useEffect(() => {
+    if (actionData?.success && actionData?.redirectTo) {
+      // Close the modal
+      setShowBidAdjustment(false);
+      setSelectedLoad(null);
+      // Navigate to the bids page
+      navigate(actionData.redirectTo);
+    }
+  }, [actionData, navigate]);
+
+  // Add effect to handle bid modal state
+  useEffect(() => {
+    if (actionData?.bidModalState === "close") {
+      setShowBidAdjustment(false);
+      setSelectedLoad(null);
+      setBidModalState(null);
+    }
+  }, [actionData?.bidModalState]);
+
+  // Update effect for navigation
+  useEffect(() => {
+    if (actionData?.success && actionData?.redirectTo && !showBidAdjustment) {
+      navigate(actionData.redirectTo);
+    }
+  }, [actionData, navigate, showBidAdjustment]);
 
   const handleOpenChat = (shipper: any) => {
     setSelectedShipper(shipper);
@@ -491,6 +539,13 @@ export default function CarrierViewLoads() {
     );
   };
 
+  // Update the bid click handler
+  const handleBidClick = (load: any) => {
+    setSelectedLoad(load);
+    setShowBidAdjustment(true);
+    setBidModalState("open");
+  };
+
   // Conditional rendering for access denied or valid dashboard
   if (carrierProfile?.user?.userType !== "carrier") {
     return (
@@ -527,6 +582,15 @@ export default function CarrierViewLoads() {
     },
     heading: theme === "dark" ? "text-white" : "text-green-800",
     modal: theme === "dark" ? "bg-gray-800" : "bg-white",
+  };
+
+  const shouldShowBidButton = (load: any, existingBids: any[]) => {
+    // Check if load status is open (case insensitive)
+    const isLoadOpen =
+      load.loadStatus?.toLowerCase() === "open" || load.loadStatus === "Open";
+
+    // Show button if load is open and carrier hasn't bid yet
+    return isLoadOpen;
   };
 
   return (
@@ -705,6 +769,15 @@ export default function CarrierViewLoads() {
 
                         {/* Generate Invoice button - only for delivered loads */}
                         {renderInvoiceButton(load)}
+
+                        {shouldShowBidButton(load, bids) && (
+                          <button
+                            onClick={() => handleBidClick(load)}
+                            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`}
+                          >
+                            Place Bid
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -730,6 +803,19 @@ export default function CarrierViewLoads() {
 
       {/* Add the invoice view modal */}
       <InvoiceViewModal />
+
+      {/* Update BidAdjustmentView rendering */}
+      {showBidAdjustment && selectedLoad && bidModalState === "open" && (
+        <BidAdjustmentView
+          loadId={selectedLoad.loadId}
+          initialBid={selectedLoad.offerAmount}
+          onClose={() => {
+            setShowBidAdjustment(false);
+            setSelectedLoad(null);
+            setBidModalState(null);
+          }}
+        />
+      )}
     </div>
   );
 }

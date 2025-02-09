@@ -163,6 +163,23 @@ interface OutletContext {
   toggleTheme: () => void;
 }
 
+interface LoadCounts {
+  available: number;
+  pending: number;
+  assigned: number;
+  in_transit: number;
+  delivered: number;
+  cancelled: number;
+  completed: number;
+}
+
+interface BidCounts {
+  pending: number;
+  accepted: number;
+  rejected: number;
+  cancelled: number;
+}
+
 export default function CarrierDashboard() {
   const { user, loads, bids, invoices } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
@@ -174,8 +191,8 @@ export default function CarrierDashboard() {
   const isLoading = navigation.state === "loading";
 
   // Calculate load counts by status
-  const loadCounts = useMemo(() => {
-    const initialCounts = {
+  const loadCounts = useMemo((): LoadCounts => {
+    const initialCounts: LoadCounts = {
       available: 0,
       pending: 0,
       assigned: 0,
@@ -189,18 +206,22 @@ export default function CarrierDashboard() {
       return initialCounts;
     }
 
-    return loads.reduce((acc: { [key: string]: number }, load: any) => {
-      // Normalize the status to lowercase and map "open" to "available"
-      const status = load?.loadStatus?.toLowerCase() || "pending";
-      const normalizedStatus = status === "open" ? "available" : status;
-      acc[normalizedStatus] = (acc[normalizedStatus] || 0) + 1;
-      return acc;
-    }, initialCounts);
+    return loads.reduce(
+      (acc: LoadCounts, load: any) => {
+        const status = load?.loadStatus?.toLowerCase() || "pending";
+        const normalizedStatus = status === "open" ? "available" : status;
+        if (normalizedStatus in acc) {
+          acc[normalizedStatus as keyof LoadCounts]++;
+        }
+        return acc;
+      },
+      { ...initialCounts }
+    );
   }, [loads]);
 
   // Calculate bid counts
-  const bidCounts = useMemo(() => {
-    const initialCounts = {
+  const bidCounts = useMemo((): BidCounts => {
+    const initialCounts: BidCounts = {
       pending: 0,
       accepted: 0,
       rejected: 0,
@@ -211,12 +232,16 @@ export default function CarrierDashboard() {
       return initialCounts;
     }
 
-    return bids.reduce((acc: { [key: string]: number }, bid: any) => {
-      // Handle case where bid or bid.status might be undefined
-      const status = bid?.status?.toLowerCase() || "pending";
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, initialCounts);
+    return bids.reduce(
+      (acc: BidCounts, bid: any) => {
+        const status = bid?.status?.toLowerCase() || "pending";
+        if (status in acc) {
+          acc[status as keyof BidCounts]++;
+        }
+        return acc;
+      },
+      { ...initialCounts }
+    );
   }, [bids]);
 
   const isLoadOperationsActive = location.pathname.startsWith(
