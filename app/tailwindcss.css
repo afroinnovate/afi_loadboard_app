@@ -1050,6 +1050,10 @@ input[type="range"]::-ms-fill-lower {
   right: 0px;
 }
 
+.right-16 {
+  right: 4rem;
+}
+
 .right-2 {
   right: 0.5rem;
 }
@@ -1076,6 +1080,10 @@ input[type="range"]::-ms-fill-lower {
 
 .top-32 {
   top: 8rem;
+}
+
+.top-4 {
+  top: 1rem;
 }
 
 .top-40 {
@@ -3675,6 +3683,12 @@ input[type="range"]::-ms-fill-lower {
   .lg\:px-8 {
     padding-left: 2rem;
     padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

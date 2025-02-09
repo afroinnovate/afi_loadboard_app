@@ -1,17 +1,50 @@
-import { useState, useEffect } from "react";
-import { useLocation, useOutletContext } from "@remix-run/react";
-import { mockInvoices } from "~/api/mocks/invoiceData";
-import { ShipperInvoiceDetail } from "~/components/invoice/ShipperInvoiceDetail";
-import ContactShipperView from "~/components/contactshipper";
+import { useOutletContext, useLoaderData, useNavigate } from "@remix-run/react";
+import type { LoaderFunction } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
+import type { Invoice } from "~/api/models/invoice";
+import { getSession } from "~/api/services/session";
+import { authenticator } from "~/api/services/auth.server";
+import { getShipperInvoices } from "~/api/services/invoice.service";
+import { ClipboardDocumentIcon } from "@heroicons/react/24/outline";
+
+interface OutletContext {
+  theme: "light" | "dark";
+  loads: any[];
+  invoices: any[];
+}
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get(authenticator.sessionKey);
+  const shipperProfile = session.get("shipper");
+
+  if (!user) {
+    return redirect("/logout/");
+  }
+
+  try {
+    const invoices = await getShipperInvoices(user.token, user.user.id);
+
+    return json({
+      shipperProfile,
+      token: user.token,
+      invoices: invoices || [],
+    });
+  } catch (error) {
+    console.error("Error fetching invoices:", error);
+    return json({
+      shipperProfile,
+      token: user.token,
+      invoices: [],
+      error: "Failed to fetch invoices",
+    });
+  }
+};
 
 export default function ShipperInvoices() {
-  const [invoices, setInvoices] = useState(mockInvoices);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-  const [selectedCarrier, setSelectedCarrier] = useState(null);
-  const location = useLocation();
-  const { theme } = useOutletContext();
+  const { theme } = useOutletContext<OutletContext>();
+  const { invoices } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
 
   const themeClasses = {
     container:
@@ -20,51 +53,58 @@ export default function ShipperInvoices() {
     border: theme === "dark" ? "border-gray-700" : "border-gray-200",
     text: theme === "dark" ? "text-white" : "text-gray-900",
     subtext: theme === "dark" ? "text-gray-400" : "text-gray-600",
+    modal: theme === "dark" ? "bg-gray-800" : "bg-white",
   };
 
-  useEffect(() => {
-    // Check for message in location state
-    if (location.state?.message) {
-      // Show message to user (you can implement a proper notification system)
-      alert(location.state.message);
-      // Clear the message
-      window.history.replaceState({}, document.title);
+  const handleInvoiceClick = (invoice: Invoice) => {
+    if (invoice.status.toLowerCase() === "completed") {
+      // Navigate to receipt view for completed invoices
+      navigate(`/shipper/dashboard/receipt/${invoice.loadId}`);
+    } else {
+      // Navigate to invoice view/edit for pending invoices
+      navigate(`/shipper/dashboard/invoice/${invoice.loadId}`);
     }
-  }, [location]);
-
-  const handleInvoiceClick = (invoice: any) => {
-    setSelectedInvoice(invoice);
-    setShowInvoice(true);
   };
 
-  const handleMessageCarrier = (carrierId: string) => {
-    setSelectedCarrier(carrierId);
-    setShowContact(true);
-    setShowInvoice(false);
-  };
+  // Handle empty state
+  if (!invoices || invoices.length === 0) {
+    return (
+      <div className={`w-full ${themeClasses.container} p-4`}>
+        <h1 className="text-2xl font-bold mb-6">Invoices</h1>
+        <div className="flex flex-col items-center justify-center py-12">
+          <ClipboardDocumentIcon className="w-16 h-16 text-gray-400 mb-4" />
+          <h3 className="text-xl font-medium mb-2">No Invoices Yet</h3>
+          <p className={`${themeClasses.subtext} text-center max-w-md mb-6`}>
+            You haven't received any invoices yet. Invoices will appear here
+            after carriers generate them for completed deliveries.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`p-6 ${themeClasses.container}`}>
+    <div className={`w-full ${themeClasses.container} p-4`}>
       <h1 className="text-2xl font-bold mb-6">Invoices</h1>
 
-      {/* Invoices Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {invoices.map((invoice) => (
-          <div
+      {/* List of Invoices */}
+      <div className="grid gap-4">
+        {invoices.map((invoice: Invoice) => (
+          <button
             key={invoice.id}
             onClick={() => handleInvoiceClick(invoice)}
-            className={`${themeClasses.card} p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow border ${themeClasses.border}`}
+            className={`w-full text-left ${themeClasses.card} p-4 rounded-lg shadow hover:shadow-lg transition-shadow border ${themeClasses.border}`}
           >
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-semibold">{invoice.invoiceNumber}</h3>
                 <p className={themeClasses.subtext}>
-                  {new Date(invoice.issuedDate).toLocaleDateString()}
+                  {new Date(invoice.issueDate).toLocaleDateString()}
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-bold">
-                  ETB {invoice.charges.total.toLocaleString()}
+                  ETB {invoice.totalAmount.toLocaleString()}
                 </p>
                 <span
                   className={`inline-block px-2 py-1 rounded text-sm ${
@@ -72,6 +112,8 @@ export default function ShipperInvoices() {
                       ? "bg-green-500 text-white"
                       : invoice.status === "pending"
                       ? "bg-yellow-500 text-white"
+                      : invoice.status === "completed"
+                      ? "bg-blue-500 text-white"
                       : "bg-red-500 text-white"
                   }`}
                 >
@@ -80,40 +122,14 @@ export default function ShipperInvoices() {
               </div>
             </div>
             <div className="mt-2">
+              <p className={themeClasses.subtext}>Load ID: {invoice.loadId}</p>
               <p className={themeClasses.subtext}>
-                From: {invoice.carrier.companyName}
-              </p>
-              <p className={themeClasses.subtext}>
-                Load: {invoice.load.origin} → {invoice.load.destination}
+                Due Date: {new Date(invoice.dueDate).toLocaleDateString()}
               </p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
-
-      {/* Invoice Detail Modal */}
-      {showInvoice && selectedInvoice && (
-        <ShipperInvoiceDetail
-          invoice={selectedInvoice}
-          theme={theme}
-          onClose={() => setShowInvoice(false)}
-          onMessageCarrier={handleMessageCarrier}
-        />
-      )}
-
-      {/* Contact Carrier Modal */}
-      {showContact && selectedCarrier && (
-        <ContactShipperView
-          shipper={selectedCarrier} // In this case, we're contacting the carrier
-          load={selectedInvoice?.load}
-          theme={theme}
-          onClose={() => setShowContact(false)}
-          onChat={() => {
-            // Handle chat initiation
-            console.log("Starting chat with carrier:", selectedCarrier);
-          }}
-        />
-      )}
     </div>
   );
 }

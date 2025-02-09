@@ -2,8 +2,8 @@ import { type PaymentMethod } from "../models/paymentMethod";
 import type { Invoice } from "~/api/models/invoice";
 import { json } from '@remix-run/node';
 
-// const baseUrl = "https://api.frieght.afroinnovate.com/api/";
-const baseUrl = "http://localhost:7070/api/";
+const baseUrl = "https://api.frieght.afroinnovate.com/api/";
+// const baseUrl = "http://localhost:7070/api/";
 
 export async function savePaymentMethod(token: string, paymentMethod: PaymentMethod) {
   try {

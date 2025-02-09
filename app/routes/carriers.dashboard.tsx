@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Outlet,
   useLoaderData,
@@ -7,6 +7,7 @@ import {
   useOutletContext,
 } from "@remix-run/react";
 import { ErrorBoundary } from "~/components/errorBoundary";
+import { Loader } from "~/components/loader";
 
 import type {
   MetaFunction,
@@ -42,7 +43,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     console.log("Carrier dashboard loader");
     const session = await getSession(request.headers.get("Cookie"));
     let user = session.get(authenticator.sessionKey);
-    
+
     if (!user) {
       return redirect("/logout/");
     }
@@ -75,19 +76,23 @@ export const loader: LoaderFunction = async ({ request }) => {
           userType: userBusinessInfo.userType,
           businessProfile: {
             companyName: userBusinessInfo.businessProfile.companyName,
-            motorCarrierNumber: userBusinessInfo.businessProfile.motorCarrierNumber,
+            motorCarrierNumber:
+              userBusinessInfo.businessProfile.motorCarrierNumber,
             dotNumber: userBusinessInfo.businessProfile.dotNumber,
             equipmentType: userBusinessInfo.businessProfile.equipmentType,
-            availableCapacity: userBusinessInfo.businessProfile.availableCapacity,
-            idCardOrDriverLicenceNumber: userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
+            availableCapacity:
+              userBusinessInfo.businessProfile.availableCapacity,
+            idCardOrDriverLicenceNumber:
+              userBusinessInfo.businessProfile.idCardOrDriverLicenceNumber,
             insuranceName: userBusinessInfo.businessProfile.insuranceName,
             businessType: userBusinessInfo.businessProfile.businessType,
             carrierRole: userBusinessInfo.businessProfile.carrierRole,
             shipperRole: null,
-            businessRegistrationNumber: userBusinessInfo.businessProfile.businessRegistrationNumber,
+            businessRegistrationNumber:
+              userBusinessInfo.businessProfile.businessRegistrationNumber,
             carrierVehicles: userBusinessInfo.businessProfile.carrierVehicles,
           },
-        }
+        },
       };
       session.set("carrier", carrierUser);
     } else {
@@ -127,13 +132,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     const loads = await GetLoads(user?.token);
     const bids = await GetBidsByCarrierId(user?.token, carrierProfile.id);
     const invoices = await getCarrierInvoices(user?.token, carrierProfile.id);
+
     // console.log("loads: ", loads);
     return json(
-      { 
+      {
         user: carrierProfile,
         loads,
         bids,
-        invoices
+        invoices,
       },
       {
         headers: {
@@ -158,10 +164,63 @@ interface OutletContext {
 
 export default function CarrierDashboard() {
   const { user, loads, bids, invoices } = useLoaderData<typeof loader>();
+  const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const location = useLocation();
   const { theme, timezone, toggleTheme } = useOutletContext<OutletContext>();
+
+  useEffect(() => {
+    if (loads && bids && invoices) {
+      setIsLoading(false);
+    }
+  }, [loads, bids, invoices]);
+
+  // Calculate load counts by status
+  const loadCounts = useMemo(() => {
+    const initialCounts = {
+      available: 0,
+      pending: 0,
+      assigned: 0,
+      in_transit: 0,
+      delivered: 0,
+      cancelled: 0,
+      completed: 0,
+    };
+
+    if (!loads || !Array.isArray(loads)) {
+      return initialCounts;
+    }
+
+    return loads.reduce((acc: { [key: string]: number }, load: any) => {
+      // Normalize the status to lowercase and map "open" to "available"
+      const status = load?.loadStatus?.toLowerCase() || "pending";
+      const normalizedStatus = status === "open" ? "available" : status;
+      acc[normalizedStatus] = (acc[normalizedStatus] || 0) + 1;
+      return acc;
+    }, initialCounts);
+  }, [loads]);
+
+  // Calculate bid counts
+  const bidCounts = useMemo(() => {
+    const initialCounts = {
+      pending: 0,
+      accepted: 0,
+      rejected: 0,
+      cancelled: 0,
+    };
+
+    if (!bids || !Array.isArray(bids)) {
+      return initialCounts;
+    }
+
+    return bids.reduce((acc: { [key: string]: number }, bid: any) => {
+      // Handle case where bid or bid.status might be undefined
+      const status = bid?.status?.toLowerCase() || "pending";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, initialCounts);
+  }, [bids]);
 
   const isLoadOperationsActive = location.pathname.startsWith(
     "/carriers/dashboard/view/"
@@ -186,9 +245,13 @@ export default function CarrierDashboard() {
   }
 
   const themeClasses = {
-    header: theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200",
+    header:
+      theme === "dark"
+        ? "bg-gray-800 border-gray-700"
+        : "bg-gray-100 border-gray-200",
     headerText: theme === "dark" ? "text-white" : "text-black",
-    headerHover: theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
+    headerHover:
+      theme === "dark" ? "hover:text-gray-300" : "hover:text-gray-600",
     activeLink: theme === "dark" ? "border-blue-400" : "border-blue-600",
     inactiveLink: theme === "dark" ? "text-gray-400" : "text-gray-500",
     welcomeText: theme === "dark" ? "text-green-400" : "text-green-800",
@@ -198,7 +261,9 @@ export default function CarrierDashboard() {
   return (
     <>
       {/* Desktop view header */}
-      <header className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}>
+      <header
+        className={`hidden lg:flex justify-between items-center py-4 px-8 border-b-2 fixed top-16 left-0 right-0 ${themeClasses.header}`}
+      >
         <div className="flex items-center space-x-4">
           <button
             onClick={toggleSidebar}
@@ -242,17 +307,47 @@ export default function CarrierDashboard() {
         </h2>
       </header>
 
-      <div className="flex pt-16 mt-14">
-        <div className="top-40">
-          {sidebarOpen && <SidebarCarrier activeSection={activeSection} theme={theme} />}
+      {isLoading ? (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
+          <Loader size={60} fullScreen />
         </div>
-        <main className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}>
-          {location.pathname === "/carriers/dashboard/" && (
-            <CarrierOverview loads={loads} bids={bids} theme={theme} />
-          )}
-          <Outlet context={{ loads, bids, invoices, theme, timezone, toggleTheme }} />
-        </main>
-      </div>
+      ) : (
+        <div className="flex pt-16 mt-14">
+          <div className="top-40">
+            {sidebarOpen && (
+              <SidebarCarrier activeSection={activeSection} theme={theme} />
+            )}
+          </div>
+          <main
+            className={`w-full flex justify-center content-center p-5 shadow-lg overflow-y-auto ${themeClasses.main}`}
+          >
+            {location.pathname === "/carriers/dashboard/" && (
+              <CarrierOverview
+                loads={loads}
+                bids={bids}
+                loadCounts={loadCounts}
+                bidCounts={bidCounts}
+                theme={theme}
+                invoices={invoices}
+                isLoading={isLoading}
+              />
+            )}
+            <Outlet
+              context={{
+                loads,
+                bids,
+                invoices,
+                loadCounts,
+                bidCounts,
+                theme,
+                timezone,
+                toggleTheme,
+                isLoading,
+              }}
+            />
+          </main>
+        </div>
+      )}
     </>
   );
 }

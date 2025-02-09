@@ -1,8 +1,8 @@
 import type { Invoice, InvoiceRequest } from "../models/invoice";
 import { calculateCarrierDeductions } from "~/utils/constants";
 
-// const baseUrl = "https://api.frieght.afroinnovate.com/api/";
-const baseUrl = "http://localhost:7070/api/";
+const baseUrl = "https://api.frieght.afroinnovate.com/api/";
+// const baseUrl = "http://localhost:7070/api/";
 
 const defaultPaymentMethod = {
   method: "bank",
@@ -35,6 +35,7 @@ export async function generateInvoice(token: string, invoice: InvoiceRequest) {
 
     if (response.status !== 201) {
       const error = await response.json();
+      console.log(error);
       throw new Error(error.message || "Failed to generate invoice");
     }
   } catch (error: any) {

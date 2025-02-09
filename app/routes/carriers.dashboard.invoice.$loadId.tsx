@@ -10,10 +10,6 @@ import { CarrierInvoiceDetail } from "~/components/invoice/CarrierInvoiceDetail"
 import { getSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
 import { generateInvoice } from "~/api/services/invoice.service";
-import {
-  savePaymentMethod,
-  getPaymentMethods,
-} from "~/api/services/payment.service";
 import type {
   InvoiceRequest,
   Invoice,
@@ -43,26 +39,10 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     return redirect("/shipper/dashboard/");
   }
 
-  let savedPaymentMethod = null;
-  try {
-    // Get any saved payment method from the user profile if exists
-    const paymentMethods = await getPaymentMethods(
-      user.token,
-      carrierProfile.id
-    );
-    // Use the first payment method if any exists
-    savedPaymentMethod =
-      paymentMethods && paymentMethods.length > 0 ? paymentMethods[0] : null;
-  } catch (error) {
-    console.error("Error fetching payment methods:", error);
-    // Don't throw error, just continue without saved payment method
-  }
-
   return json({
     carrierProfile,
     loadId: params.loadId,
     token: user.token,
-    savedPaymentMethod,
   });
 };
 
@@ -84,79 +64,83 @@ export const action: ActionFunction = async ({ request }) => {
     switch (_action) {
       case "publish_invoice": {
         // Get invoice data from form
+        const loadId = Number(formData.get("loadId"));
+        const today = new Date();
+        const month = (today.getMonth() + 1).toString().padStart(2, "0");
+        const day = today.getDate().toString().padStart(2, "0");
+        const invoiceNumber = `INV-${loadId}-${month}${day}`;
+
+        const paymentMethodData = JSON.parse(
+          formData.get("paymentMethod") as string
+        );
+
+        console.log(paymentMethodData);
+
+        // Validate phone number for mobile money payments
+        if (
+          paymentMethodData.paymentType === "mobile_money" &&
+          !paymentMethodData.phoneNumber
+        ) {
+          return json(
+            {
+              error: "Phone number is required for mobile money payments",
+              field: "phoneNumber",
+            },
+            { status: 400 }
+          );
+        }
+
         const invoiceRequest = {
-          id: 0, // Default to 0 for new invoices
-          invoiceNumber: `INV-${formData.get("loadId")}-${Date.now()}`, // Added invoiceNumber
-          loadId: Number(formData.get("loadId")),
+          id: 0,
+          invoiceNumber,
+          loadId,
           issueDate: new Date().toISOString(),
           dueDate: new Date(
             Date.now() + 30 * 24 * 60 * 60 * 1000
           ).toISOString(),
           status: "pending",
           carrierId: carrierProfile.id,
+          carrierName: `${carrierProfile.user.firstName} ${
+            carrierProfile.user.middleName || ""
+          } ${carrierProfile.user.lastName}`.trim(),
+          carrierEmail: carrierProfile.user.email,
+          carrierPhone: carrierProfile.user.phoneNumber,
+          carrierBusinessName: carrierProfile.user.businessProfile.companyName,
           amountDue: Number(formData.get("amountDue")),
           totalAmount: Number(formData.get("totalAmount")),
           totalVat: Number(formData.get("totalVat")),
           withholding: Number(formData.get("withholding")),
           serviceFees: Number(formData.get("serviceFees")),
           createdAt: new Date().toISOString(),
-          note: `This invoice is for transportation of ${formData.get(
+          note: `Invoice for load ${loadId} - ${formData.get(
             "commodity"
           )} from ${formData.get("origin")} to ${formData.get("destination")}`,
           transactionId: "",
+          transactionDate: "",
+          transactionStatus: "",
+          paymentMethodId: "",
           paymentMethod: {
-            paymentType: JSON.parse(formData.get("paymentMethod") as string)
-              .paymentType,
+            paymentType: paymentMethodData.paymentType,
             carrierId: carrierProfile.id,
-            bankName: JSON.parse(formData.get("paymentMethod") as string)
-              .bankName,
-            bankAccount: JSON.parse(formData.get("paymentMethod") as string)
-              .bankAccount,
-            accountHolderName: JSON.parse(
-              formData.get("paymentMethod") as string
-            ).accountHolderName,
-            phoneNumber:
-              JSON.parse(formData.get("paymentMethod") as string).phoneNumber ||
-              "",
-            cardMethod:
-              JSON.parse(formData.get("paymentMethod") as string).cardMethod ||
-              "",
-            cardType:
-              JSON.parse(formData.get("paymentMethod") as string).cardType ||
-              "",
-            lastFourDigits:
-              JSON.parse(formData.get("paymentMethod") as string)
-                .lastFourDigits || "",
-            billingAddress:
-              JSON.parse(formData.get("paymentMethod") as string)
-                .billingAddress || "",
+            bankName: paymentMethodData.bankName || "",
+            bankAccount: paymentMethodData.bankAccount || "",
+            accountHolderName: paymentMethodData.accountHolderName || "",
+            phoneNumber: paymentMethodData.phoneNumber || "",
+            cardMethod: paymentMethodData.cardMethod || "",
+            cardType: paymentMethodData.cardType || "",
+            lastFourDigits: paymentMethodData.lastFourDigits || "",
+            billingAddress: paymentMethodData.billingAddress || "",
           },
         };
 
-        const today = new Date();
-        const month = (today.getMonth() + 1).toString().padStart(2, "0");
-        const day = today.getDate().toString().padStart(2, "0");
-        const invoiceNumber = `INV-${invoiceRequest.loadId}-${month}${day}`;
-
-        invoiceRequest.invoiceNumber = invoiceNumber;
-
         console.log("Invoice request:", invoiceRequest);
         const invoice = await generateInvoice(user.token, invoiceRequest);
-      
+
         if (invoice && invoice.invoiceNumber !== "") {
           return json({ success: true, invoice });
         } else {
           return json({ error: "Failed to publish invoice" }, { status: 400 });
         }
-      }
-
-      case "save-payment": {
-        const paymentMethod = JSON.parse(
-          formData.get("paymentMethod") as string
-        );
-        console.log("Saving payment method:", paymentMethod);
-        const savedPayment = await savePaymentMethod(user.token, paymentMethod);
-        return json({ success: true, paymentMethod: savedPayment });
       }
 
       default:
@@ -175,8 +159,7 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export default function CarrierInvoicePage() {
-  const { carrierProfile, loadId, token, savedPaymentMethod } =
-    useLoaderData<typeof loader>();
+  const { carrierProfile, loadId, token } = useLoaderData<typeof loader>();
   const { loads, theme } = useOutletContext<OutletContext>();
   const actionData = useActionData<typeof action>();
   const navigate = useNavigate();
@@ -223,7 +206,7 @@ export default function CarrierInvoicePage() {
       serviceFees: 0,
       notes: "",
       transactionId: "",
-      paymentMethod: savedPaymentMethod || {
+      paymentMethod: {
         method: "bank",
         type: "",
         bankName: "",

@@ -4,8 +4,7 @@ import { json, redirect } from "@remix-run/node";
 import type { Invoice } from "~/api/models/invoice";
 import { getSession } from "~/api/services/session";
 import { authenticator } from "~/api/services/auth.server";
-import { ClipboardDocumentIcon, XMarkIcon } from "@heroicons/react/24/outline";
-
+import { ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 
 interface OutletContext {
   theme: "light" | "dark";
@@ -24,9 +23,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   try {
-    // const response = await getCarrierInvoices(user.token, carrierProfile.id);
     return json({
-      // invoices: Array.isArray(response) ? response : [],
       carrierProfile,
       token: user.token,
     });
@@ -41,6 +38,7 @@ export default function CarrierInvoices() {
   const { token } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const initialInvoices = invoices || [];
+
   const themeClasses = {
     container:
       theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900",
@@ -51,14 +49,24 @@ export default function CarrierInvoices() {
     modal: theme === "dark" ? "bg-gray-800" : "bg-white",
   };
 
+  const handleInvoiceClick = (invoice: Invoice) => {
+    if (invoice.status === "completed") {
+      // Navigate to receipt view for completed invoices
+      navigate(`/carriers/dashboard/receipt/${invoice.loadId}`);
+    } else {
+      // Navigate to invoice view/edit for pending invoices
+      navigate(`/carriers/dashboard/invoice/view/${invoice.id}`);
+    }
+  };
+
   // Handle empty state
   if (!initialInvoices || initialInvoices.length === 0) {
     return (
       <div className={`w-full ${themeClasses.container} p-4`}>
-        <h1 className="text-2xl font-bold mb-6"> Invoices </h1>
+        <h1 className="text-2xl font-bold mb-6">Invoices</h1>
         <div className="flex flex-col items-center justify-center py-12">
           <ClipboardDocumentIcon className="w-16 h-16 text-gray-400 mb-4" />
-          <h3 className="text-xl font-medium mb-2"> No Invoices Yet </h3>
+          <h3 className="text-xl font-medium mb-2">No Invoices Yet</h3>
           <p className={`${themeClasses.subtext} text-center max-w-md mb-6`}>
             You haven't created any invoices yet. Invoices will appear here
             after you complete deliveries and generate invoices.
@@ -70,21 +78,19 @@ export default function CarrierInvoices() {
 
   return (
     <div className={`w-full ${themeClasses.container} p-4`}>
-      <h1 className="text-2xl font-bold mb-6"> Invoices </h1>
+      <h1 className="text-2xl font-bold mb-6">Invoices</h1>
 
       {/* List of Invoices */}
       <div className="grid gap-4">
         {initialInvoices.map((invoice: Invoice) => (
           <button
             key={invoice.id}
-            onClick={() =>
-              navigate(`/carriers/dashboard/invoice/view/${invoice.id}`)
-            }
+            onClick={() => handleInvoiceClick(invoice)}
             className={`w-full text-left ${themeClasses.card} p-4 rounded-lg shadow hover:shadow-lg transition-shadow border ${themeClasses.border}`}
           >
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-semibold"> {invoice.invoiceNumber} </h3>
+                <h3 className="font-semibold">{invoice.invoiceNumber}</h3>
                 <p className={themeClasses.subtext}>
                   {new Date(invoice.issueDate).toLocaleDateString()}
                 </p>
@@ -99,6 +105,8 @@ export default function CarrierInvoices() {
                       ? "bg-green-500 text-white"
                       : invoice.status === "pending"
                       ? "bg-yellow-500 text-white"
+                      : invoice.status === "completed"
+                      ? "bg-blue-500 text-white"
                       : "bg-red-500 text-white"
                   }`}
                 >
@@ -107,10 +115,7 @@ export default function CarrierInvoices() {
               </div>
             </div>
             <div className="mt-2">
-              <p className={themeClasses.subtext}>
-                {" "}
-                Load ID: {invoice.loadId}{" "}
-              </p>
+              <p className={themeClasses.subtext}>Load ID: {invoice.loadId}</p>
               <p className={themeClasses.subtext}>
                 Due Date: {new Date(invoice.dueDate).toLocaleDateString()}
               </p>

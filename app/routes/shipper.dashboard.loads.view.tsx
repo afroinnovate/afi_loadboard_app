@@ -550,21 +550,24 @@ export default function ViewLoads() {
                           className="mt-4 flex justify-end space-x-2"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {load.loadStatus.toLowerCase() === "delivered" && (
-                            <button
-                              type="button"
-                              onClick={() => handleInvoiceAction(load)}
-                              className={`${themeClasses.button.secondary} flex items-center px-4 py-2 rounded-md`}
-                              style={{ zIndex: 10 }}
-                            >
-                              <DocumentTextIcon className="w-5 h-5 mr-2" />
-                              {invoices
-                                .find((inv) => inv.loadId === load.loadId)
-                                ?.status?.toLowerCase() === "completed"
-                                ? "View Receipt"
-                                : "View Invoice"}
-                            </button>
-                          )}
+                          {load.loadStatus.toLowerCase() === "delivered" &&
+                            invoices.find(
+                              (inv) => inv.loadId === load.loadId
+                            ) && (
+                              <button
+                                type="button"
+                                onClick={() => handleInvoiceAction(load)}
+                                className={`${themeClasses.button.secondary} flex items-center px-4 py-2 rounded-md`}
+                                style={{ zIndex: 10 }}
+                              >
+                                <DocumentTextIcon className="w-5 h-5 mr-2" />
+                                {invoices
+                                  .find((inv) => inv.loadId === load.loadId)
+                                  ?.status?.toLowerCase() === "completed"
+                                  ? "View Receipt"
+                                  : "View Invoice"}
+                              </button>
+                            )}
                           <ActionButton
                             type="edit"
                             loadId={load.loadId}

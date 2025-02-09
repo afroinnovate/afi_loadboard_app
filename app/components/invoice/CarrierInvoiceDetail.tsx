@@ -302,7 +302,7 @@ export function CarrierInvoiceDetail({
     }
     if (
       invoice.paymentMethod.paymentType === "mobile_money" &&
-      (!invoice.paymentMethod.type ||
+      (!invoice.paymentMethod.paymentType ||
         !invoice.paymentMethod.phoneNumber ||
         !invoice.paymentMethod.accountHolderName)
     ) {
@@ -834,43 +834,8 @@ export function CarrierInvoiceDetail({
             <Form
               method="post"
               onSubmit={(e) => {
-                if (!isPaymentInfoComplete()) {
+                if (!validatePaymentInfo()) {
                   e.preventDefault();
-
-                  // Highlight missing fields
-                  const errors: FormErrors = {};
-                  if (paymentInfo.preferredMethod === "bank") {
-                    if (!paymentInfo.bankDetails.bankName) {
-                      errors.bankName = "Please enter your bank name";
-                    }
-                    if (!paymentInfo.bankDetails.accountNumber) {
-                      errors.accountNumber = "Please enter your account number";
-                    }
-                    if (!paymentInfo.bankDetails.accountHolderName) {
-                      errors.accountHolderName =
-                        "Please enter account holder name";
-                    }
-                  } else {
-                    if (!paymentInfo.mobileMoneyDetails.provider) {
-                      errors.provider =
-                        "Please select your mobile money provider";
-                    }
-                    if (!paymentInfo.mobileMoneyDetails.phoneNumber) {
-                      errors.phoneNumber = "Please enter your phone number";
-                    }
-                    if (!paymentInfo.mobileMoneyDetails.accountHolderName) {
-                      errors.accountHolderName =
-                        "Please enter account holder name";
-                    }
-                  }
-                  setFormErrors(errors);
-
-                  // Scroll to payment section
-                  paymentSectionRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                  });
-
                   return;
                 }
               }}
@@ -905,22 +870,6 @@ export function CarrierInvoiceDetail({
               <input type="hidden" name="note" value="" />
               <input
                 type="hidden"
-                name="paymentMethod"
-                value={JSON.stringify({
-                  paymentType: paymentInfo.preferredMethod,
-                  carrierId: initialInvoiceInfo.carrier.id,
-                  bankName: paymentInfo.bankDetails.bankName,
-                  bankAccount: paymentInfo.bankDetails.accountNumber,
-                  accountHolderName: paymentInfo.bankDetails.accountHolderName,
-                  phoneNumber: "",
-                  cardMethod: "",
-                  cardType: "",
-                  lastFourDigits: "",
-                  billingAddress: "",
-                })}
-              />
-              <input
-                type="hidden"
                 name="commodity"
                 value={initialInvoiceInfo.load.commodity}
               />
@@ -934,6 +883,151 @@ export function CarrierInvoiceDetail({
                 name="destination"
                 value={initialInvoiceInfo.load.destination}
               />
+
+              {/* Payment Method Fields */}
+              <input
+                type="hidden"
+                name="paymentMethod"
+                value={JSON.stringify({
+                  paymentType: paymentInfo.preferredMethod,
+                  carrierId: initialInvoiceInfo.carrier.id,
+                  bankName: paymentInfo.bankDetails.bankName,
+                  bankAccount: paymentInfo.bankDetails.accountNumber,
+                  accountHolderName:
+                    paymentInfo.preferredMethod === "bank"
+                      ? paymentInfo.bankDetails.accountHolderName
+                      : paymentInfo.mobileMoneyDetails.accountHolderName,
+                  phoneNumber: paymentInfo.mobileMoneyDetails.phoneNumber,
+                  provider: paymentInfo.mobileMoneyDetails.provider,
+                  cardMethod: "",
+                  cardType: "",
+                  lastFourDigits: "",
+                  billingAddress: "",
+                })}
+              />
+
+              {/* UI Fields */}
+              <div className="space-y-2">
+                <select
+                  name="paymentType"
+                  value={paymentInfo.preferredMethod}
+                  onChange={(e) =>
+                    handlePaymentMethodChange(
+                      e.target.value as "bank" | "mobile_money"
+                    )
+                  }
+                  className={`w-full p-2 rounded ${themeClasses.input}`}
+                >
+                  <option value="bank">Bank Transfer</option>
+                  <option value="mobile_money">Mobile Money</option>
+                </select>
+
+                {paymentInfo.preferredMethod === "mobile_money" ? (
+                  <>
+                    <select
+                      name="provider"
+                      value={paymentInfo.mobileMoneyDetails.provider}
+                      onChange={(e) =>
+                        handleMobileMoneyDetailsChange(
+                          "provider",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 rounded ${themeClasses.input}`}
+                    >
+                      <option value="">Select Provider</option>
+                      <option value="TeleBirr">TeleBirr</option>
+                      <option value="CBEBirr">CBE Birr</option>
+                      <option value="HelloCash">HelloCash</option>
+                      <option value="AmolePay">Amole Pay</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      name="phoneNumber"
+                      placeholder="Phone Number"
+                      value={paymentInfo.mobileMoneyDetails.phoneNumber}
+                      onChange={(e) =>
+                        handleMobileMoneyDetailsChange(
+                          "phoneNumber",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 rounded ${themeClasses.input}`}
+                    />
+
+                    <input
+                      type="text"
+                      name="accountHolderName"
+                      placeholder="Account Holder Name"
+                      value={paymentInfo.mobileMoneyDetails.accountHolderName}
+                      onChange={(e) =>
+                        handleMobileMoneyDetailsChange(
+                          "accountHolderName",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 rounded ${themeClasses.input}`}
+                    />
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Bank Name"
+                      value={paymentInfo.bankDetails.bankName}
+                      onChange={(e) =>
+                        handleBankDetailsChange("bankName", e.target.value)
+                      }
+                      className={`w-full p-2 rounded ${themeClasses.input} ${
+                        formErrors.bankName ? "border-red-500" : ""
+                      }`}
+                    />
+                    {formErrors.bankName && (
+                      <p className="text-red-500 text-sm">
+                        {formErrors.bankName}
+                      </p>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Account Number"
+                      value={paymentInfo.bankDetails.accountNumber}
+                      onChange={(e) =>
+                        handleBankDetailsChange("accountNumber", e.target.value)
+                      }
+                      className={`w-full p-2 rounded ${themeClasses.input} ${
+                        formErrors.accountNumber ? "border-red-500" : ""
+                      }`}
+                    />
+                    {formErrors.accountNumber && (
+                      <p className="text-red-500 text-sm">
+                        {formErrors.accountNumber}
+                      </p>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Account Holder Name"
+                      value={paymentInfo.bankDetails.accountHolderName}
+                      onChange={(e) =>
+                        handleBankDetailsChange(
+                          "accountHolderName",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 rounded ${themeClasses.input} ${
+                        formErrors.accountHolderName ? "border-red-500" : ""
+                      }`}
+                    />
+                    {formErrors.accountHolderName && (
+                      <p className="text-red-500 text-sm">
+                        {formErrors.accountHolderName}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <button
                 type="submit"

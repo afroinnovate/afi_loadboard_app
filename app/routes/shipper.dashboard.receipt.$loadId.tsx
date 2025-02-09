@@ -91,7 +91,7 @@ export const action: ActionFunction = async ({ request }) => {
   switch (buttonType) {
     case "close":
       const userType = user?.user?.userType || "shipper";
-      return redirect(`/${userType}s/dashboard/invoices`);
+      return redirect(`/${userType}/dashboard/invoices`);
     case "print":
     case "download":
       return json({ action: buttonType });
@@ -125,12 +125,16 @@ export default function ShipperReceiptView() {
           <p className="text-gray-700">
             {error || "Failed to load receipt. Please try again."}
           </p>
-          <button
-            onClick={() => navigate(-1)}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Go Back
-          </button>
+          <Form method="post">
+            <button
+              type="submit"
+              name="_action"
+              value="close"
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Go Back
+            </button>
+          </Form>
         </div>
       </div>
     );
@@ -138,7 +142,7 @@ export default function ShipperReceiptView() {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
         <Receipt
           invoice={invoice}
           load={loadDetails}

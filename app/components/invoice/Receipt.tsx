@@ -70,57 +70,59 @@ export function Receipt({
 
   return (
     <div className={`${themeClasses.container} p-6 receipt-content min-h-full`}>
-      {/* Header with Logo */}
-      <div className="flex justify-between items-start mb-8">
-        <div className="flex items-center">
-          <img
-            src="/logo2.ico"
-            alt="AfroInnovate Logo"
-            className="h-10 w-auto mr-2"
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-orange-500">
-              AFI LoadBoard
-            </h1>
-            <p className="text-sm text-gray-500">www.afiloadboard.com</p>
-          </div>
+      {/* Close button like invoice view */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">Receipt Details</h2>
+        <Form method="post">
+          <input type="hidden" name="userType" value={userType} />
+          <button
+            type="submit"
+            name="_action"
+            value="close"
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </Form>
+      </div>
+
+      {/* Logo section */}
+      <div className="flex items-center mb-8">
+        <img
+          src="/logo2.ico"
+          alt="AfroInnovate Logo"
+          className="h-10 w-auto mr-2"
+        />
+        <div>
+          <h1 className="text-2xl font-bold text-orange-500">AFI LoadBoard</h1>
+          <p className="text-sm text-gray-500">www.afiloadboard.com</p>
         </div>
-        <div className="flex gap-2 print:hidden">
-          <Form method="post">
-            <button
-              type="submit"
-              name="_action"
-              value="print"
-              className={`p-2 rounded-full ${themeClasses.button}`}
-              title="Print Receipt"
-            >
-              <PrinterIcon className="w-6 h-6" />
-            </button>
-          </Form>
-          <Form method="post">
-            <button
-              type="submit"
-              name="_action"
-              value="download"
-              className={`p-2 rounded-full ${themeClasses.button}`}
-              title="Download Receipt"
-            >
-              <ArrowDownTrayIcon className="w-6 h-6" />
-            </button>
-          </Form>
-          <Form method="post">
-            <input type="hidden" name="userType" value={userType} />
-            <button
-              type="submit"
-              name="_action"
-              value="close"
-              className={`p-2 rounded-full ${themeClasses.button}`}
-              title="Close"
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-          </Form>
-        </div>
+      </div>
+
+      {/* Print/Download buttons */}
+      <div className="flex gap-2 print:hidden absolute top-4 right-16">
+        <Form method="post">
+          <button
+            type="submit"
+            name="_action"
+            value="print"
+            className={`p-2 rounded-full ${themeClasses.button}`}
+            title="Print Receipt"
+          >
+            <PrinterIcon className="w-6 h-6" />
+          </button>
+        </Form>
+        <Form method="post">
+          <button
+            type="submit"
+            name="_action"
+            value="download"
+            className={`p-2 rounded-full ${themeClasses.button}`}
+            title="Download Receipt"
+          >
+            <ArrowDownTrayIcon className="w-6 h-6" />
+          </button>
+        </Form>
       </div>
 
       {/* Receipt Details */}
