@@ -276,83 +276,6 @@ interface OutletContext {
   toggleTheme: () => void;
 }
 
-const handleInvoiceGeneration = (
-  load: any,
-  carrierProfile: any,
-  e: React.MouseEvent
-) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  const currentDate = new Date();
-  const dueDate = new Date(currentDate);
-  dueDate.setDate(dueDate.getDate() + 30);
-
-  const partialInvoice = {
-    id: `INV-${load.loadId}`,
-    invoiceNumber: `INV/${currentDate.getFullYear()}/${load.loadId
-      .toString()
-      .padStart(3, "0")}`,
-    loadId: load.loadId.toString(),
-    issuedDate: currentDate.toISOString().split("T")[0],
-    dueDate: dueDate.toISOString().split("T")[0],
-    createdAt: currentDate.toISOString(),
-    status: "pending",
-    shipper: {
-      name: `${load.createdBy.firstName} ${load.createdBy.lastName}`,
-      companyName:
-        load.createdBy.businessProfile?.companyName || "Company Name Pending",
-      address: load.createdBy.businessProfile?.address || "Address pending",
-      taxId:
-        load.createdBy.businessProfile?.businessRegistrationNumber ||
-        "Tax ID pending",
-      email: load.createdBy.email,
-    },
-    carrier: {
-      name: `${carrierProfile.user.firstName} ${carrierProfile.user.lastName}`,
-      companyName:
-        carrierProfile.user.businessProfile?.companyName ||
-        "Company Name Pending",
-      address:
-        carrierProfile.user.businessProfile?.address || "Address pending",
-      taxId:
-        carrierProfile.user.businessProfile?.businessRegistrationNumber ||
-        "Tax ID pending",
-      email: carrierProfile.user.email,
-    },
-    load: {
-      origin: load.origin,
-      destination: load.destination,
-      pickupDate: new Date(load.pickupDate).toLocaleDateString(),
-      deliveryDate: new Date(load.deliveryDate).toLocaleDateString(),
-      commodity: load.commodity,
-      weight: `${load.weight} kg`,
-      details: load.loadDetails,
-    },
-    charges: {
-      baseRate: Number(load.offerAmount),
-      additionalServices: [],
-      subtotal: Number(load.offerAmount),
-      taxes: {
-        VAT: Number(load.offerAmount) * 0.15,
-        withholding: Number(load.offerAmount) * 0.02,
-      },
-      total: Number(load.offerAmount) * 1.17, // Base + VAT + Withholding
-    },
-    paymentTerms: "Net 30",
-    notes: `Invoice for load ${load.loadId} - ${load.commodity} shipment from ${
-      load.origin
-    } to ${load.destination}. Generated on ${currentDate.toLocaleDateString()}`,
-  };
-
-  try {
-    sessionStorage.setItem("draftInvoice", JSON.stringify(partialInvoice));
-    window.location.href = `/carriers/dashboard/invoice/${load.loadId}`;
-  } catch (error) {
-    console.error("Error handling invoice generation:", error);
-  }
-};
-
 export default function CarrierViewLoads() {
   const loaderData: any = useLoaderData();
   const actionData: any = useActionData();
@@ -364,6 +287,8 @@ export default function CarrierViewLoads() {
   const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const navigate = useNavigate();
+
+  console.log("invocies: ", invoices);
 
   // Early return if there's no carrier profile
   if (!carrierProfile || !carrierProfile.user) {
@@ -492,15 +417,20 @@ export default function CarrierViewLoads() {
   // Update handleInvoiceAction to use navigation
   const handleInvoiceAction = (load: any, existingInvoice: any) => {
     if (existingInvoice) {
-      // Navigate to view/edit route for existing invoice
-      navigate(`/carriers/dashboard/invoice/view/${existingInvoice.id}`);
+      if (existingInvoice.status === "completed") {
+        // Navigate to receipt view for completed invoices
+        navigate(`/carrier/dashboard/receipt/${load.loadId}`);
+      } else {
+        // Navigate to view/edit route for pending invoices
+        navigate(`/carriers/dashboard/invoice/view/${existingInvoice.id}`);
+      }
     } else {
       // Navigate to generate invoice route
       navigate(`/carriers/dashboard/invoice/${load.loadId}`);
     }
   };
 
-  // Update renderInvoiceButton to show appropriate text
+  // Update renderInvoiceButton to check invoice status
   const renderInvoiceButton = (load: any) => {
     if (load.loadStatus.toLowerCase() !== "delivered") {
       return null;
@@ -515,7 +445,11 @@ export default function CarrierViewLoads() {
         className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium ${themeClasses.button.primary} rounded hover:bg-blue-500 hover:text-white focus:outline-none`}
       >
         <DocumentTextIcon className="w-5 h-5 mr-2" />
-        {existingInvoice ? "View Invoice" : "Generate Invoice"}
+        {existingInvoice?.status === "completed"
+          ? "View Receipt"
+          : existingInvoice
+          ? "View Invoice"
+          : "Generate Invoice"}
       </button>
     );
   };
